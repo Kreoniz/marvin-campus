@@ -20,7 +20,7 @@ FROM alpine:3.24
 RUN apk add --no-cache ca-certificates && addgroup -g 10001 campus && adduser -D -u 10001 -G campus campus && mkdir /data && chown campus:campus /data
 WORKDIR /app
 COPY --from=backend /campus /app/campus
-COPY --from=frontend /build/dist /app/dist
+COPY --from=frontend --chown=campus:campus /build/dist /app/dist
 USER campus
 ENV LISTEN_ADDR=:8080 CACHE_PATH=/data/campus.sqlite STATIC_DIR=/app/dist
 EXPOSE 8080
