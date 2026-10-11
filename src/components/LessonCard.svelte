@@ -15,15 +15,13 @@
     colors,
     subgroupCatalog = {},
     style,
-    active = false,
-    onactive,
+    horizontal = false,
   }: {
     block: LessonBlock;
     colors: GroupColors;
     subgroupCatalog?: Record<number, Subgroup[]>;
     style: string;
-    active?: boolean;
-    onactive?: (identity: string | undefined) => void;
+    horizontal?: boolean;
   } = $props();
   let lesson = $derived(block.lesson),
     shared = $derived(block.members.length > 1),
@@ -46,6 +44,17 @@
   const groupLabel = (group: Selection, lessons = events) =>
     lessonGroupLabel(group, lessons, subgroupCatalog[group.id] ?? []);
   let labels = $derived(block.members.map((g) => groupLabel(g)).join(', '));
+  let visibleMembers = $derived(
+    block.members.length > 3 ? block.members.slice(0, 2) : block.members,
+  );
+  let long = $derived(lesson.end - lesson.start >= 240);
+  function groupParts(group: Selection) {
+    const label = groupLabel(group),
+      split = label.lastIndexOf('-');
+    return split > 0
+      ? { name: label.slice(0, split), number: label.slice(split + 1) }
+      : { name: label, number: '' };
+  }
   let open = $state(false),
     hovering = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -54,7 +63,6 @@
     if (event.pointerType !== 'mouse') return;
     cancel();
     hovering = true;
-    onactive?.(block.identity);
     timer = setTimeout(() => {
       open = true;
     }, 180);
@@ -64,28 +72,25 @@
     cancel();
     timer = setTimeout(() => {
       if (hovering) open = false;
-      onactive?.(undefined);
     }, 180);
   }
   onDestroy(cancel);
 </script>
 
-<div class="lesson-position" {style}>
+<div class="lesson-position" class:horizontal class:long {style}>
   <Popover.Root bind:open>
     <Popover.Trigger
       style={colorStyle(colors[block.members[0].id] ?? 0)}
-      class={`lesson-card ${shared ? 'shared-card' : ''} ${block.parallel ? 'parallel-card' : ''} ${events.every((event) => event.remote) ? 'remote-lesson' : ''} ${active ? 'linked-active' : ''}`}
-      aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}${block.linked ? '. Участники показаны в отдельных связанных карточках.' : ''}`}
+      class={`lesson-card ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${events.every((event) => event.remote) ? 'remote-lesson' : ''}`}
+      aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`}
       onpointerenter={enter}
       onpointerleave={leave}
-      onfocus={() => onactive?.(block.identity)}
-      onblur={() => onactive?.(undefined)}
       onclick={() => {
         hovering = false;
         track('lesson_opened', { remote: lesson.remote });
       }}
     >
-      {#if shared}<span class="participant-stripe" aria-hidden="true"
+      {#if shared && long}<span class="participant-stripe" aria-hidden="true"
           >{#each block.members as group (group.id)}<span
               style={colorStyle(colors[group.id] ?? 0)}
             ></span>{/each}</span
@@ -95,18 +100,37 @@
           >{block.parallel
             ? `${events.length} занятия`
             : lesson.subject || 'Занятие'}</span
-        >{#if block.linked}<span
-            class="linked-mark"
-            title={`Эта пара объединяет ${labels}`}
-            >↔{block.members.length}</span
-          >{/if}</span
+        ></span
       >
-      <span class="participant-chips"
-        >{#each block.shown as group (group.id)}<span
-            class="participant-chip"
-            style={colorStyle(colors[group.id] ?? 0)}>{groupLabel(group)}</span
-          >{/each}</span
-      >
+      {#if long && !horizontal}<span class="card-time"
+          >{timeLabel(lesson.start)}–{timeLabel(lesson.end)}</span
+        >{/if}
+      {#if shared}<span class="participant-sectors">
+          {#each visibleMembers as group (group.id)}
+            {@const parts = groupParts(group)}
+            <span
+              class="participant-sector"
+              style={colorStyle(colors[group.id] ?? 0)}
+              title={groupLabel(group)}
+            >
+              {#if horizontal && long}<span class="group-name"
+                  >{groupLabel(group)}</span
+                >
+              {:else}<span class="group-prefix">{parts.name}</span>
+                {#if parts.number}<span class="group-number"
+                    >{parts.number}</span
+                  >{/if}
+              {/if}
+            </span>
+          {/each}
+          {#if visibleMembers.length < block.members.length}<span
+              class="more-participants"
+              title={labels}
+              >+{block.members.length - visibleMembers.length}</span
+            >{/if}
+        </span>
+      {:else}<span class="single-group">{groupLabel(block.members[0])}</span
+        >{/if}
       <span class="card-meta"
         ><span class="card-room">{place}</span>
         <span class="kind-badges"
@@ -168,8 +192,7 @@
         {#if block.common}<p class="common-label">
             Общая пара всех выбранных групп
           </p>{:else if shared}<p class="common-label">
-            Общая пара {block.members.length} групп.{#if block.linked}
-              Участники в отдельных колонках отмечены ↔.{/if}
+            Общая пара {block.members.length} групп.
           </p>{/if}
       </Popover.Content></Popover.Portal
     >
@@ -205,11 +228,11 @@
     background: var(--surface);
     color: var(--ink);
     border-color: var(--line);
-    padding-top: 7px;
-    padding-bottom: 3px;
+    padding: 0;
+    gap: 0;
   }
   :global(.lesson-card:hover),
-  :global(.lesson-card.linked-active) {
+  :global(.lesson-card:focus-visible) {
     box-shadow: 0 0 0 1px var(--ink);
   }
   :global(.lesson-card.parallel-card) {
@@ -249,6 +272,77 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  :global(.shared-card) .card-heading {
+    padding: 1px 4px;
+  }
+  .card-time {
+    font-size: 10px;
+    padding: 0 4px 3px;
+    opacity: 0.8;
+  }
+  .single-group {
+    font-size: 13px;
+    font-weight: 650;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .participant-sectors {
+    display: flex;
+    gap: 1px;
+    flex: none;
+    min-width: 0;
+  }
+  .participant-sector,
+  .more-participants {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1px 2px;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.05;
+    text-align: center;
+  }
+  .participant-sector {
+    background: var(--chip);
+    color: #142016;
+  }
+  .group-prefix,
+  .group-number,
+  .group-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .group-prefix {
+    font-size: 10px;
+  }
+  .group-number {
+    font-size: 11px;
+  }
+  .more-participants {
+    background: var(--grid);
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .horizontal.long .participant-sectors,
+  .horizontal.long .card-meta {
+    width: min(260px, 100%);
+  }
+  .horizontal.long .card-heading {
+    padding: 3px 5px;
+  }
+  .horizontal.long .card-subject {
+    font-size: 12px;
+  }
+  .horizontal.long .participant-sector,
+  .horizontal.long .more-participants {
+    padding: 3px;
+    font-size: 12px;
+  }
   .kind-badge {
     flex: none;
     font-size: 9px;
@@ -280,7 +374,6 @@
     background: #f3e7bd;
     border-color: #ad934c;
   }
-  .participant-chips,
   .popover-participants {
     display: flex;
     gap: 3px;
@@ -290,16 +383,11 @@
   .participant-chip {
     background: var(--chip);
     color: #142016;
-    border: 1px solid color-mix(in srgb, var(--chip) 65%, #384333);
     font-size: 12px;
     font-weight: 650;
     line-height: 1.2;
     padding: 1px 3px;
     border-radius: 3px;
-    white-space: nowrap;
-  }
-  .linked-mark {
-    font-size: 11px;
     white-space: nowrap;
   }
   .card-meta {
@@ -309,6 +397,14 @@
     font-size: 11px;
     font-weight: 500;
     min-width: 0;
+  }
+  :global(.shared-card) .card-meta {
+    padding: 1px 4px;
+    font-size: 10px;
+  }
+  :global(.shared-card) .kind-badge {
+    padding: 1px 2px;
+    line-height: 1;
   }
   .card-room {
     min-width: 0;
@@ -387,14 +483,19 @@
       font-size: 10px;
     }
   }
+  @container (width < 120px) {
+    .group-number {
+      font-size: 10px;
+    }
+  }
   @container (height < 58px) {
     :global(.lesson-card) {
       padding: 3px;
       gap: 2px;
     }
     :global(.lesson-card.shared-card) {
-      padding-top: 7px;
-      padding-bottom: 2px;
+      padding: 0;
+      gap: 0;
     }
     .card-subject {
       font-size: 10px;
@@ -405,10 +506,6 @@
     }
     .kind-badge {
       padding: 1px 2px;
-    }
-    .participant-chips {
-      flex-wrap: nowrap;
-      overflow: hidden;
     }
   }
 </style>

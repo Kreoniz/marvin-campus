@@ -16,10 +16,17 @@ weeks without subgroup data. Public subgroup numbers appear beside group names.
 Desktop uses a week grid and a detailed selected day. Mobile starts with a
 compact day grid; its summary follows the grid. Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
-Ordinary cards use the group color; shared cards use a neutral background, a
-stripe of participant colors, and colored group labels. Lesson-kind badges sit
-beside the room. Nonadjacent participants get linked pieces that do not cover
-intermediate groups. Simultaneous distinct lessons of one group use stripes.
+Ordinary cards use the group color. Each shared event appears once with a common
+subject and room, and colored participant sections in stable group-ID order.
+Group names and subgroup numbers occupy two lines; more than three participants
+show the first two and a count, with the full list in the popover. Lesson-kind
+badges sit beside the room. Lanes belong to overlapping events, so empty groups
+reserve no space. Week-grid cards are at most 160 pixels wide; their height still
+represents duration, including long military classes. Simultaneous distinct
+lessons of one group use stripes. The selected-day timeline uses event rows and
+reserves the week's peak row count to keep its panel height stable.
+Long events in the horizontal day timeline keep their temporal length, but their
+participant labels stay compact; the time range is available in the popover.
 
 Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for ten minutes, future weeks for an hour, past weeks for a day; group

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compareDay, forSelection, placeLessons } from './domain.ts';
+import { compareDay, forSelection } from './domain.ts';
 import { addDays, monday, omskToday } from './dates.ts';
 import { parseView, viewURL } from './url.ts';
 import type { GroupSchedule, Lesson } from './types.ts';
@@ -125,26 +125,6 @@ test('common events need matching source identity and details across all groups'
     0,
   );
 });
-test('parallel blocks use thirds and reuse a freed column', () => {
-  const items = placeLessons(
-    [
-      group(1, [lesson(480, 600)]),
-      group(2, [lesson(480, 540), lesson(540, 600)]),
-      group(3, [lesson(510, 570)]),
-    ],
-    date,
-  );
-  assert.ok(items.every((item) => item.columns === 3));
-  assert.equal(
-    items.filter((i) => i.group.id === 2)[0].column,
-    items.filter((i) => i.group.id === 2)[1].column,
-  );
-  assert.equal(
-    placeLessons([group(1, [lesson(480, 540), lesson(540, 600)])], date)[1]
-      .columns,
-    1,
-  );
-});
 test('URL round-trip preserves labels, subgroups, date, mode; ignores malformed state', () => {
   const state = {
     groups: [
@@ -182,19 +162,9 @@ test('today and week follow Omsk even when the browser is in another timezone', 
   assert.equal(addDays('2026-12-28', 6), '2027-01-03');
 });
 
-test('selection order determines columns for simultaneous events and survives a shared link', () => {
+test('selection order survives a shared link', () => {
   const first = group(694, [lesson(480, 600)]),
     second = group(370, [lesson(480, 540)]);
-  const columns = (groups: GroupSchedule[]) =>
-    placeLessons(groups, date).map(({ group, column }) => [group.id, column]);
-  assert.deepEqual(columns([first, second]), [
-    [694, 0],
-    [370, 1],
-  ]);
-  assert.deepEqual(columns([second, first]), [
-    [370, 0],
-    [694, 1],
-  ]);
   const state = {
     groups: [first.selection, second.selection],
     week: date,

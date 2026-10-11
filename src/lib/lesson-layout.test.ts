@@ -31,32 +31,28 @@ const group = (
     stale: false,
   },
 });
-test('adjacent participants share one card; nonadjacent participants never cover the middle group', () => {
+test('shared events render once beside other events, independently of selection order', () => {
   const a = group(1, [lesson('shared')]),
     b = group(2, [lesson('solo')]),
     c = group(3, [lesson('shared')]);
   const mixed = lessonBlocks([a, b, c], date);
   const shared = mixed.filter((b) => b.members.length === 2);
+  assert.equal(shared.length, 1);
+  assert.equal(shared[0].width, 0.5);
+  assert.equal(shared[0].common, false);
+  assert.equal(new Set(mixed.map((b) => b.column)).size, 2);
+  for (const selections of [
+    [c, a, b],
+    [b, c, a],
+    [c, b, a],
+  ])
+    assert.deepEqual(lessonBlocks(selections, date), mixed);
   assert.deepEqual(
-    shared.map((b) => [b.left, b.width]),
-    [
-      [0, 1 / 3],
-      [2 / 3, 1 / 3],
-    ],
-  );
-  assert.ok(shared.every((b) => b.linked && !b.common));
-  const reordered = lessonBlocks([c, a, b], date).find(
-    (b) => b.members.length === 2,
-  )!;
-  assert.equal(reordered.left, 0);
-  assert.equal(reordered.width, 2 / 3);
-  assert.equal(reordered.linked, false);
-  assert.deepEqual(
-    reordered.members.map((g) => g.id),
+    shared[0].members.map((g) => g.id),
     [1, 3],
   );
 });
-test('parallel subgroups use disjoint sublanes, including a concurrent stream lesson', () => {
+test('a concurrent shared lesson and subgroup bundle use separate event lanes', () => {
   const blocks = lessonBlocks(
     [
       group(1, [
@@ -68,10 +64,11 @@ test('parallel subgroups use disjoint sublanes, including a concurrent stream le
     ],
     date,
   );
-  for (const block of blocks.filter((b) => b.shown.some((g) => g.id === 1)))
-    assert.ok(block.left + block.width <= 0.5 + 1e-8);
+  assert.equal(blocks.length, 2);
+  assert.equal(new Set(blocks.map((b) => b.column)).size, 2);
+  assert.ok(blocks.every((b) => b.width === 0.5));
   const stream = blocks.filter((b) => b.lesson.id === 'stream');
-  assert.equal(stream.length, 2);
+  assert.equal(stream.length, 1);
   const filtered = lessonBlocks(
     [
       group(
@@ -117,7 +114,7 @@ test('matching text, missing IDs or different occurrences never establish a shar
   );
   assert.equal(partial[0].members.length, 2);
   assert.equal(partial[0].common, false);
-  assert.equal(partial[0].width, 2 / 3);
+  assert.equal(partial[0].width, 1);
   assert.equal(
     lessonBlocks(
       [group(1, [lesson('same'), lesson('same')]), group(2, [lesson('same')])],
@@ -167,4 +164,69 @@ test('simultaneous distinct lessons of one group form a visual bundle without in
   );
   assert.equal(differentTime.length, 2);
   assert.ok(differentTime.every((b) => !b.parallel));
+});
+
+test('empty groups do not reserve lanes, and a long shared event stays one lane', () => {
+  const military = lesson('military', { end: 1100 });
+  const two = lessonBlocks([group(1, [military]), group(2, [military])], date);
+  const five = lessonBlocks(
+    [1, 2, 3, 4, 5].map((id) => group(id, [military])),
+    date,
+  );
+  for (const blocks of [two, five]) {
+    assert.equal(blocks.length, 1);
+    assert.equal(blocks[0].width, 1);
+    assert.equal(blocks[0].columns, 1);
+    assert.equal(blocks[0].lesson.end, 1100);
+    assert.equal(blocks[0].common, true);
+  }
+  const withEmpty = lessonBlocks([group(9, []), group(1, [military])], date);
+  assert.equal(withEmpty[0].width, 1);
+  assert.equal(withEmpty[0].common, false);
+});
+
+test('overlap chains reuse lanes at touching boundaries; disjoint clusters regain full width', () => {
+  const blocks = lessonBlocks(
+    [
+      group(1, [lesson('a', { end: 540 })]),
+      group(2, [lesson('b', { start: 510, end: 600 })]),
+      group(3, [
+        lesson('c', { start: 540, end: 600 }),
+        lesson('d', { start: 600, end: 660 }),
+      ]),
+    ],
+    date,
+  );
+  const [a, b, c, d] = blocks;
+  assert.equal(a.column, c.column);
+  assert.notEqual(a.column, b.column);
+  assert.equal(a.columns, 2);
+  assert.equal(d.width, 1);
+  for (const x of blocks)
+    for (const y of blocks) {
+      if (
+        x === y ||
+        x.lesson.end <= y.lesson.start ||
+        y.lesson.end <= x.lesson.start
+      )
+        continue;
+      assert.ok(x.left + x.width <= y.left || y.left + y.width <= x.left);
+    }
+});
+
+test('a long event does not hide concurrent lessons or allocate lanes for every participant', () => {
+  const long = lesson('military', { end: 1100 });
+  const blocks = lessonBlocks(
+    [
+      group(1, [long]),
+      group(2, [long]),
+      group(3, [lesson('lab', { start: 600, end: 690 })]),
+      group(4, []),
+    ],
+    date,
+  );
+  assert.equal(blocks.length, 2);
+  assert.ok(blocks.every((b) => b.columns === 2));
+  assert.equal(blocks[0].members.length, 2);
+  assert.equal(blocks[0].common, false);
 });

@@ -23,7 +23,6 @@
     loading: boolean;
     placeholder?: boolean;
   } = $props();
-  let activeIdentity = $state<string>();
   let result = $derived(compareDay(schedules, day));
   let placed = $derived(lessonBlocks(schedules, day));
   // Use the whole week's clock so selecting another day keeps the same axis.
@@ -37,13 +36,21 @@
   let hours = $derived(
     Array.from({ length: (end - start) / 60 + 1 }, (_, i) => start + i * 60),
   );
-  let rows = $derived(Math.max(1, schedules.length));
+  let rows = $derived(Math.max(1, ...placed.map((block) => block.columns)));
+  // Reserve the week's peak event count, so changing the day doesn't move
+  // the footer while empty group lanes disappear from the timeline.
+  let weekRows = $derived(
+    Math.max(
+      1,
+      ...[...new Set(all.map((l) => l.date))].flatMap((date) =>
+        lessonBlocks(schedules, date).map((block) => block.columns),
+      ),
+    ),
+  );
   const rowHeight = 68;
   let panelHeight = $derived(
-    Math.max(252, Math.min(496, rows * rowHeight + 104)),
+    Math.max(252, Math.min(496, weekRows * rowHeight + 104)),
   );
-  const cardHeight = (span: number, participants: number) =>
-    Math.min(Math.max(80, participants * 17 + 46), span - 6);
   let highlights = $derived(
     mode === 'presence' ? result.presence : result.free,
   );
@@ -97,13 +104,12 @@
               class:free-highlight={mode === 'free'}
               style={`left:${((range.start - start) * 100) / (end - start)}%;width:${((range.end - range.start) * 100) / (end - start)}%`}
             ></div>{/each}
-          {#each placed as block (`${block.identity}:${block.left}`)}<LessonCard
+          {#each placed as block (block.identity)}<LessonCard
               {block}
               {colors}
               {subgroupCatalog}
-              active={activeIdentity === block.identity}
-              onactive={(identity) => (activeIdentity = identity)}
-              style={`left:calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px);width:calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px);top:${block.left * rows * rowHeight + 36 + (block.width * rows * rowHeight - 6 - cardHeight(block.width * rows * rowHeight, block.shown.length)) / 2}px;height:${cardHeight(block.width * rows * rowHeight, block.shown.length)}px`}
+              horizontal
+              style={`left:calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px);width:calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px);top:${block.column * rowHeight + 36}px;height:${rowHeight - 6}px`}
             />{/each}
           {#if !placed.length}<p class="day-empty">
               {schedules.some((g) => g.error)

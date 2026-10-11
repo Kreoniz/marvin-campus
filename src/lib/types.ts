@@ -52,9 +52,3 @@ export interface DayResult {
   lessons: Lesson[];
   complete: boolean;
 }
-export interface PlacedLesson {
-  lesson: Lesson;
-  group: Selection;
-  column: number;
-  columns: number;
-}

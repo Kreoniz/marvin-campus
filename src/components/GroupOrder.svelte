@@ -55,8 +55,8 @@
         >
       </div>
       <Dialog.Description
-        >Поменяй порядок в списке и у параллельных пар. Цвета останутся за
-        группами.</Dialog.Description
+        >Поменяй порядок групп в списке. Цвета и расположение пар в календаре
+        останутся прежними.</Dialog.Description
       >
       <ol class="order-list">
         {#each groups as group, index (group.id)}<li

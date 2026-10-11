@@ -51,7 +51,7 @@ test('subgroup names survive empty weeks; newer source labels replace old ones',
 
 test('public subgroup numbers wait for the catalog and never expand to all subgroups', async () => {
   const { selectedSubgroup, publicSubgroup } = await import('./subgroups.ts');
-  const { lessonsFor, presenceFor } = await import('./domain.ts');
+  const { lessonsFor } = await import('./domain.ts');
   const selection = { id: 694, label: 'ФИТ-232', subgroupNumber: 2 };
   const catalog = [
     { id: 1110, label: 'ФИТ-232/1' },
@@ -88,7 +88,6 @@ test('public subgroup numbers wait for the catalog and never expand to all subgr
     lessonsFor(group).map((l) => l.start),
     [480],
   );
-  assert.equal(presenceFor([group], '2026-10-12')[0].range.end, 540);
   assert.deepEqual(
     lessonsFor({
       ...group,

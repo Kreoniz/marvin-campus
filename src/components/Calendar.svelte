@@ -2,8 +2,8 @@
   import { tick, untrack } from 'svelte';
   import type { GroupSchedule, Mode, Subgroup } from '../lib/types.ts';
   import { addDays, formatDay, timeLabel } from '../lib/dates.ts';
-  import { compareDay, presenceFor } from '../lib/domain.ts';
-  import { colorStyle, type GroupColors } from '../lib/colors.ts';
+  import { compareDay } from '../lib/domain.ts';
+  import type { GroupColors } from '../lib/colors.ts';
   import { lessonBlocks } from '../lib/lesson-layout.ts';
   import LessonCard from './LessonCard.svelte';
   let {
@@ -29,7 +29,6 @@
     singleDay?: boolean;
     placeholder?: boolean;
   } = $props();
-  let activeIdentity = $state<string>();
   let scroller: HTMLDivElement;
   let viewportWidth = $state(innerWidth);
   let dates = $derived(
@@ -65,39 +64,40 @@
       date,
       result: compareDay(schedules, date),
       placed: lessonBlocks(schedules, date),
-      presence: presenceFor(schedules, date),
     })),
   );
   // Each visible event keeps a readable width, including parallel sublanes.
   let overlapWidth = $derived(
     Math.max(
-      144,
-      schedules.length * 80,
+      160,
       ...layout.flatMap((column) =>
-        column.placed.map((block) => 80 / block.width),
+        column.placed.map((block) => 112 * block.columns),
       ),
     ),
   );
   $effect(() => {
     const index = dates.indexOf(day);
     const width = viewportWidth;
+    const minWidth = overlapWidth;
     if (singleDay) return;
     tick().then(() => {
       if (!scroller) return;
       const column = scroller.querySelector<HTMLElement>('.day-column');
-      if (column)
+      if (column) {
+        const columnWidth = Math.max(minWidth, column.offsetWidth);
         scroller.scrollTo({
           left:
             width <= 700
-              ? Math.max(0, index) * column.offsetWidth
+              ? Math.max(0, index) * columnWidth
               : Math.max(
                   0,
-                  (index + 1) * column.offsetWidth + 48 - scroller.clientWidth,
+                  (index + 1) * columnWidth + 48 - scroller.clientWidth,
                 ),
           behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
             ? 'auto'
             : 'smooth',
         });
+      }
     });
   });
 </script>
@@ -159,23 +159,17 @@
               ></div>{/each}
           </div>
         {:else}
-          {#each column.presence as presence}<div
-              class="presence-fill"
-              style={`${colorStyle(colors[presence.group] ?? 0)};top:${(presence.range.start - start) * scale}px;height:${(presence.range.end - presence.range.start) * scale}px;left:${(schedules.findIndex((g) => g.selection.id === presence.group) * 100) / Math.max(schedules.length, 1)}%;width:${100 / Math.max(schedules.length, 1)}%`}
-            ></div>{/each}
           {#each highlights as range}<div
               class="shared-highlight"
               class:free-highlight={mode === 'free'}
               style={`top:${(range.start - start) * scale}px;height:${(range.end - range.start) * scale}px`}
             ></div>{/each}
-          {#each column.placed as block (`${block.identity}:${block.left}`)}
+          {#each column.placed as block (block.identity)}
             <LessonCard
               {block}
               {colors}
               {subgroupCatalog}
-              active={activeIdentity === block.identity}
-              onactive={(identity) => (activeIdentity = identity)}
-              style={`top:${(block.lesson.start - start) * scale}px;height:${Math.max((block.lesson.end - block.lesson.start) * scale - 3, 18)}px;left:calc(${block.left * 100}% + 3px);width:calc(${block.width * 100}% - 6px)`}
+              style={`top:${(block.lesson.start - start) * scale}px;height:${Math.max((block.lesson.end - block.lesson.start) * scale - 3, 18)}px;left:calc(${block.left * 100}% + 3px);width:calc(${block.width * 100}% - 6px);max-width:160px`}
             />
           {/each}
           {#if !column.placed.length}<div class="empty-column">
@@ -198,12 +192,12 @@
       ? 'Полоса — общее время в вузе'
       : 'Зелёные полосы — свободны все'}</span
   ><span class="lesson-hint">
-    Цветная полоска — общая пара, ↔ — связанные части. Диагональные полосы —
-    одновременные занятия одной группы. Подробности по нажатию.{#if !singleDay || overlapWidth + 46 > viewportWidth - 40}<span
+    Цветные секции — участники общей пары. Диагональные полосы — одновременные
+    занятия одной группы. Подробности по нажатию.{#if !singleDay || overlapWidth + 46 > viewportWidth - 40}<span
         class="mobile-hint"
       >
         {singleDay
-          ? 'Группы можно прокручивать →'
+          ? 'Пары можно прокручивать →'
           : 'Дни можно прокручивать →'}</span
       >{/if}
   </span>
@@ -293,16 +287,6 @@
   }
   .day-column.chosen {
     background-color: color-mix(in srgb, var(--sage) 5%, transparent);
-  }
-  .presence-fill {
-    position: absolute;
-    background: color-mix(
-      in srgb,
-      var(--chip) var(--presence-strength),
-      transparent
-    );
-    border-inline: 1px solid color-mix(in srgb, var(--chip) 40%, transparent);
-    pointer-events: none;
   }
   .shared-highlight {
     position: absolute;

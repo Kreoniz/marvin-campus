@@ -29,7 +29,6 @@
   --aqua: #bde2dc;
   --yellow: #ffe393;
   --highlight: #e8b53a;
-  --presence-strength: 28%;
   color-scheme: light;
 }
 :root[data-theme='dark'] {
@@ -47,7 +46,6 @@
   --peach: #d6b384;
   --aqua: #93c6bc;
   --yellow: #ddc36d;
-  --presence-strength: 30%;
   color-scheme: dark;
 }
 * {
