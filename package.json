@@ -1,0 +1,33 @@
+{
+  "name": "marvin-campus",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@12.5.1",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "node --test --test-isolation=none src/lib/*.test.ts",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@internationalized/date": "3.12.4",
+    "@lucide/svelte": "1.54.0",
+    "@tanstack/svelte-query": "6.3.1",
+    "bits-ui": "2.19.5",
+    "svelte": "5.57.2"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.4",
+    "prettier": "3.9.9",
+    "prettier-plugin-svelte": "4.1.1",
+    "svelte-check": "4.7.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}

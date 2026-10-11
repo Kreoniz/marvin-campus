@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Марвин Campus",
+  "short_name": "Марвин Campus",
+  "description": "Расписание ОмГТУ и сравнение групп",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ec",
+  "theme_color": "#242923",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+.git
+.cache
+node_modules
+dist
+data
+.env
+*.tar
+handoff
+*.md
