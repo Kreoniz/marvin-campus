@@ -24,6 +24,11 @@
     placeholder?: boolean;
   } = $props();
   let result = $derived(compareDay(schedules, day));
+  let saved = $derived(
+    schedules.some(
+      (group) => group.snapshot && (group.snapshot.stale || group.error),
+    ),
+  );
   let placed = $derived(lessonBlocks(schedules, day));
   // Use the whole week's clock so selecting another day keeps the same axis.
   let all = $derived(schedules.flatMap((g) => g.snapshot?.data.lessons ?? []));
@@ -102,6 +107,8 @@
           {#each highlights as range}<div
               class="day-highlight"
               class:free-highlight={mode === 'free'}
+              class:saved-highlight={saved}
+              aria-hidden="true"
               style={`left:${((range.start - start) * 100) / (end - start)}%;width:${((range.end - range.start) * 100) / (end - start)}%`}
             ></div>{/each}
           {#each placed as block (block.identity)}<LessonCard
@@ -112,11 +119,14 @@
               style={`left:calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px);width:calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px);top:${block.column * rowHeight + 36}px;height:${rowHeight - 6}px`}
             />{/each}
           {#if !placed.length}<p class="day-empty">
-              {schedules.some((g) => g.error)
+              {schedules.some((g) => g.error && !g.snapshot)
                 ? 'Часть расписаний недоступна.'
                 : schedules.some((g) => !g.snapshot)
                   ? 'Ждём данные расписания.'
                   : 'В этот день занятий нет.'}
+              {#if saved && schedules.every((group) => group.snapshot)}<span
+                  >По сохранённым данным</span
+                >{/if}
             </p>{/if}
         {/if}
       </div>
@@ -191,6 +201,15 @@
   .day-highlight.free-highlight {
     background: color-mix(in srgb, var(--sage) 55%, transparent);
     border-color: #85a474;
+  }
+  .day-highlight.saved-highlight {
+    background: color-mix(in srgb, var(--sage) 18%, transparent);
+    border-top-style: dashed;
+  }
+  .day-empty > span {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
   }
   .day-empty {
     position: absolute;

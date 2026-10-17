@@ -22,6 +22,10 @@
     schedules.some((g) => lessonsFor(g).some((l) => l.date === day)),
   );
   let ranges = $derived(mode === 'free' ? result.free : result.presence);
+  let saved = $derived(
+    schedules.some((g) => g.snapshot && (g.snapshot.stale || g.error)),
+  );
+  let hasSnapshot = $derived(schedules.some((g) => g.snapshot));
 </script>
 
 <aside
@@ -47,7 +51,7 @@
           month: 'short',
         })}{/if}
     </p>
-    {#if loading}
+    {#if loading && !hasSnapshot}
       <div class="summary-skeleton" aria-hidden="true">
         <span class="skeleton"></span><span class="skeleton"></span>
       </div>
@@ -59,23 +63,25 @@
     {:else if !hasLessons}<strong>На этот день занятий нет.</strong>
       <p>Выбери другой день — проверим общее время.</p>
     {:else if compact}
-      <strong>{mode === 'free' ? 'Свободны вместе' : 'Вместе в вузе'}</strong>
+      <strong
+        >{mode === 'free' ? 'Все без занятий' : 'Общее время в вузе'}</strong
+      >
       <p class="result-time">
         {ranges.length
           ? ranges
               .map((i) => `${timeLabel(i.start)}–${timeLabel(i.end)}`)
               .join(', ')
           : mode === 'free'
-            ? 'Нет свободных окон'
+            ? 'Нет общего времени без занятий'
             : 'Нет общего времени'}
       </p>
       {#if mode === 'presence' && result.free.length}<p>
-          Свободны: {result.free
+          Без занятий: {result.free
             .map((i) => `${timeLabel(i.start)}–${timeLabel(i.end)}`)
             .join(', ')}
         </p>{/if}
     {:else}
-      <strong>Вместе в вузе:</strong>
+      <strong>Общее время в вузе:</strong>
       <p class="result-time">
         {result.presence.length
           ? result.presence
@@ -83,18 +89,25 @@
               .join(', ')
           : 'Нет общего времени'}
       </p>
-      <strong>Свободны вместе:</strong>
+      <strong>Все без занятий:</strong>
       <p class="result-time">
         {result.free.length
           ? result.free
               .map((i) => `${timeLabel(i.start)}–${timeLabel(i.end)}`)
               .join(', ')
-          : 'Нет свободных окон'}
+          : 'Нет общего времени без занятий'}
       </p>
       {#if result.lessons.length}<span class="shared-count"
           >Общих пар: {result.lessons.length}</span
         >{/if}
     {/if}
+    <p class="saved-qualification">
+      {saved
+        ? 'По сохранённым данным'
+        : result.complete
+          ? 'По расписанию'
+          : '\u00a0'}
+    </p>
   </div>
   {#if !compact}<p class="marvin-caption">
       {result.free.length
@@ -106,18 +119,15 @@
 <style>
   .marvin-card.compact-summary {
     width: 100%;
-    height: 88px;
-    min-height: 88px;
+    min-height: 86px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
-    padding: 10px 12px;
+    padding: 9px 12px;
     gap: 0;
     align-items: center;
     background: color-mix(in srgb, var(--sage) 24%, var(--surface));
     color: var(--ink);
     border: 1px solid var(--grid);
-    overflow-y: auto;
-    scrollbar-gutter: stable;
   }
   .compact-summary .marvin-result .result-time {
     font-size: 16px;
@@ -130,8 +140,12 @@
     font-size: 12px;
   }
   .compact-summary .summary-date {
+    display: none;
+  }
+  .marvin-result .saved-qualification {
     color: var(--muted);
-    margin-bottom: 4px;
+    font-size: 11px;
+    margin: 5px 0 0;
   }
   .marvin-card {
     flex: 0 0 340px;

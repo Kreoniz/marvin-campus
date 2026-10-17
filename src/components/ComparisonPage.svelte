@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { Tooltip } from 'bits-ui';
   import { parseView } from '../lib/url.ts';
   import { addDays, monday, omskToday } from '../lib/dates.ts';
@@ -23,6 +23,7 @@
   import { createComparisonView } from '../lib/comparison-view.svelte.ts';
   import { createComparisonLinks } from '../lib/comparison-links.svelte.ts';
   import { createSchedules } from '../lib/schedules.svelte.ts';
+  import { scheduleNavigation } from '../lib/keyboard.ts';
   let toasts = $state<
     { id: number; kind: 'success' | 'error' | 'info'; message: string }[]
   >([]);
@@ -86,6 +87,40 @@
   const add = view.add,
     moveGroup = view.move,
     selectDay = view.selectDay;
+  async function navigateWithKeyboard(event: KeyboardEvent) {
+    if (openingShare || shareError || !(event.target instanceof HTMLElement))
+      return;
+    const target = event.target;
+    if (
+      target.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+      ) ||
+      document.querySelector(
+        '[role="dialog"][data-state="open"], [role="menu"][data-state="open"], [role="listbox"][data-state="open"]',
+      )
+    )
+      return;
+    const dayButton = target.closest<HTMLElement>('[data-schedule-day]');
+    const weekControls = target.closest('[data-schedule-week]');
+    if (!dayButton && !weekControls) return;
+    const action = scheduleNavigation(
+      event,
+      dayButton ? 'day' : 'week',
+      dayButton?.dataset.scheduleDay ?? day,
+      week,
+    );
+    if (!action) return;
+    event.preventDefault();
+    const dayControls = dayButton?.closest('[data-schedule-days]');
+    if (action.type === 'week') view.selectWeek(action.value);
+    else selectDay(action.value);
+    if (dayControls) {
+      await tick();
+      dayControls
+        .querySelector<HTMLButtonElement>(`[data-schedule-day="${view.day}"]`)
+        ?.focus({ preventScroll: true });
+    }
+  }
   let reportKey = '';
   const reportedLoads = new Set<string>();
   $effect(() => {
@@ -234,7 +269,10 @@
       : 'найдём время пересечься'}</title
   ></svelte:head
 >
-<svelte:window bind:innerWidth={viewportWidth} />
+<svelte:window
+  bind:innerWidth={viewportWidth}
+  onkeydown={navigateWithKeyboard}
+/>
 <Tooltip.Provider delayDuration={350} ignoreNonKeyboardFocus>
   <a class="skip-link" href="#comparison">Перейти к расписанию</a>
   <GroupOrder
@@ -276,12 +314,22 @@
             onerror={(message) => notify(message, 'error')}
           />
           {#if groups.length || openingShare}
-            <ComparisonStatus schedules={live} {fetching} {links} />
             {#if mobile}<MobileDayNav
                 {view}
                 opening={openingShare}
                 bind:mobileView
               />{/if}
+            <ComparisonStatus schedules={live} {fetching} {links} />
+            {#if mobile}<div class="mobile-result">
+                <ComparisonSummary
+                  schedules={live}
+                  {day}
+                  {mode}
+                  loading={busy}
+                  placeholder={openingShare}
+                  compact
+                />
+              </div>{/if}
             <Calendar
               schedules={live}
               {colors}
@@ -293,17 +341,8 @@
               placeholder={openingShare}
               onday={selectDay}
               singleDay={mobile && mobileView === 'day'}
+              compactHeader={mobile}
             />
-            {#if mobile}<div class="mobile-result">
-                <ComparisonSummary
-                  schedules={live}
-                  {day}
-                  {mode}
-                  loading={busy}
-                  placeholder={openingShare}
-                  compact
-                />
-              </div>{/if}
           {:else}<div class="welcome">
               <img
                 src="/assets/marvin.webp"
@@ -365,8 +404,7 @@
 
 <style>
   .mobile-result {
-    padding: 10px;
-    border-top: 1px solid var(--grid);
+    padding: 0 9px 9px;
   }
   .comparison {
     box-shadow: 4px 5px 0 var(--shadow);

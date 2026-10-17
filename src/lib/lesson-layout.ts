@@ -5,6 +5,9 @@ export interface LessonBlock {
   identity: string;
   lesson: Lesson;
   members: Selection[];
+  // Subgroup IDs belong to each participant's source response.
+  memberLessons: Record<number, Lesson[]>;
+  staleMembers: number[];
   column: number;
   columns: number;
   left: number;
@@ -21,9 +24,12 @@ export function lessonBlocks(
 ): LessonBlock[] {
   const events = new Map<
     string,
-    { lesson: Lesson; members: Selection[]; parallel?: Lesson[] }
+    Pick<
+      LessonBlock,
+      'lesson' | 'members' | 'memberLessons' | 'staleMembers' | 'parallel'
+    >
   >();
-  for (const { selection, snapshot } of schedules) {
+  for (const { selection, snapshot, error } of schedules) {
     lessonsFor({ selection, snapshot }).forEach((lesson, index) => {
       if (lesson.date !== date || lesson.end <= lesson.start) return;
       const identity = lesson.id
@@ -33,7 +39,19 @@ export function lessonBlocks(
       if (event) {
         if (!event.members.some((g) => g.id === selection.id))
           event.members.push(selection);
-      } else events.set(identity, { lesson, members: [selection] });
+        (event.memberLessons[selection.id] ??= []).push(lesson);
+        if (
+          (snapshot?.stale || error) &&
+          !event.staleMembers.includes(selection.id)
+        )
+          event.staleMembers.push(selection.id);
+      } else
+        events.set(identity, {
+          lesson,
+          members: [selection],
+          memberLessons: { [selection.id]: [lesson] },
+          staleMembers: snapshot?.stale || error ? [selection.id] : [],
+        });
     });
   }
   // Bundle only separate events of ONE group with exactly matching intervals.
@@ -48,9 +66,20 @@ export function lessonBlocks(
     if (keys.length < 2) continue;
     keys.sort();
     const first = events.get(keys[0])!;
-    const parallel = keys.map((key) => events.get(key)!.lesson);
+    const bundled = keys.map((key) => events.get(key)!);
+    const parallel = bundled.map((event) => event.lesson);
+    const member = first.members[0].id;
     for (const key of keys) events.delete(key);
-    events.set(`parallel:${JSON.stringify(keys)}`, { ...first, parallel });
+    events.set(`parallel:${JSON.stringify(keys)}`, {
+      ...first,
+      parallel,
+      memberLessons: {
+        [member]: bundled.flatMap((event) => event.memberLessons[member]),
+      },
+      staleMembers: [
+        ...new Set(bundled.flatMap((event) => event.staleMembers)),
+      ],
+    });
   }
   const ordered = [...events].sort(
     ([a, x], [b, y]) =>
@@ -70,12 +99,22 @@ export function lessonBlocks(
       ends[column] = event.lesson.end;
       return { identity, ...event, column };
     });
-    for (const { identity, lesson, members, parallel, column } of placed)
+    for (const {
+      identity,
+      members,
+      memberLessons,
+      staleMembers,
+      parallel,
+      column,
+    } of placed) {
+      const sortedMembers = members.slice().sort((a, b) => a.id - b.id);
       blocks.push({
         identity,
-        lesson,
+        lesson: memberLessons[sortedMembers[0].id][0],
         parallel,
-        members: members.slice().sort((a, b) => a.id - b.id),
+        members: sortedMembers,
+        memberLessons,
+        staleMembers: staleMembers.slice().sort((a, b) => a - b),
         column,
         columns: ends.length,
         left: column / ends.length,
@@ -85,6 +124,7 @@ export function lessonBlocks(
           schedules.length > 1 &&
           members.length === schedules.length,
       });
+    }
     cluster = [];
   }
   for (const event of ordered) {

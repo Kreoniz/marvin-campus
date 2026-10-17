@@ -29,13 +29,8 @@
   let error = $derived(term === debounced ? (search.error?.message ?? '') : '');
   let stale = $derived(term === debounced && !!search.data?.stale);
   let comboOpen = $state(true);
-  const suggestions: Group[] = [
-    { id: 373, label: 'ИВТ-241' },
-    { id: 374, label: 'ИВТ-242' },
-    { id: 375, label: 'ИВТ-243' },
-  ];
   let visible = $derived(
-    (query.trim().length < 2 ? suggestions : results).filter(
+    (term.length < 2 ? [] : results).filter(
       (group) => !selected.some((s) => s.id === group.id),
     ),
   );
@@ -108,7 +103,7 @@
           <Icon name="search" /><Combobox.Input
             id="group-search"
             aria-label="Название группы"
-            placeholder="Например, ИВТ-241"
+            placeholder="Например, ФИТ-232"
             autocomplete="off"
             oninput={(e) => {
               query = e.currentTarget.value;
@@ -116,7 +111,7 @@
             }}
           />
         </div>
-        <div class="group-results-slot">
+        <div class="group-results-slot" class:searching={term.length >= 2}>
           <Combobox.ContentStatic class="group-results">
             {#each visible as group (group.id)}
               <Combobox.Item
@@ -174,7 +169,11 @@
     outline-offset: 2px;
   }
   .group-results-slot {
-    margin-top: 14px;
+    height: 0;
+    overflow: hidden;
+  }
+  .group-results-slot.searching {
+    margin-top: 12px;
     height: clamp(120px, calc(100dvh - 300px), 290px);
   }
   :global(.group-results) {

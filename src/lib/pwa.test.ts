@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { readSavedSchedule } from './saved-schedules.ts';
 
 function worker() {
   const handlers: Record<string, (event: any) => void> = {};
@@ -26,8 +27,12 @@ function worker() {
         stores.set(name, data);
         return {
           put: async (key: string, response: Response) =>
-            data.set(key, response.clone()),
-          match: async (key: string) => data.get(key)?.clone(),
+            data.set(
+              new URL(key, 'https://campus.example').href,
+              response.clone(),
+            ),
+          match: async (key: string) =>
+            data.get(new URL(key, 'https://campus.example').href)?.clone(),
           keys: async () => [...data.keys()],
           delete: async (key: string) => data.delete(key),
         };
@@ -48,7 +53,11 @@ const key = 'https://campus.example/api/schedule/370?week=2026-10-12';
 const request = new Request(key);
 function snapshot(expiresAt = new Date(Date.now() + 600_000).toISOString()) {
   return {
-    data: { lessons: [{ id: 'lesson' }] },
+    data: {
+      groupId: 370,
+      lessons: [{ id: 'lesson', date: '2026-10-12' }],
+      subgroups: [],
+    },
     checkedAt: new Date().toISOString(),
     expiresAt,
     stale: false,
@@ -72,10 +81,12 @@ test('offline snapshots are labelled and retain the server timestamp/deadline', 
 test('HTTP failures and cancellation are not silently replaced by cached success', async () => {
   const w = worker();
   await w.context.saveData(key, snapshot());
-  w.network(async () =>
-    Response.json({ error: 'upstream failed' }, { status: 502 }),
-  );
-  assert.equal((await w.context.networkData(request, key)).status, 502);
+  for (const status of [429, 502, 503]) {
+    w.network(async () =>
+      Response.json({ error: 'refresh failed' }, { status }),
+    );
+    assert.equal((await w.context.networkData(request, key)).status, status);
+  }
   const controller = new AbortController();
   controller.abort();
   w.network(async () => {
@@ -84,6 +95,28 @@ test('HTTP failures and cancellation are not silently replaced by cached success
   await assert.rejects(
     w.context.networkData(new Request(key, { signal: controller.signal }), key),
     /cancelled/,
+  );
+});
+
+test('the page can restore the saved schedule while its ordinary network request is still pending', async () => {
+  const w = worker();
+  const saved = snapshot();
+  await w.context.saveData(key, saved);
+  let finish!: (response: Response) => void;
+  w.network(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const network = w.context.networkData(request, key);
+  const restored = await readSavedSchedule(370, '2026-10-12', w.context.caches);
+  assert.deepEqual(restored, saved);
+  finish(Response.json({ error: 'refresh failed' }, { status: 503 }));
+  assert.equal((await network).status, 503);
+  assert.deepEqual(
+    await readSavedSchedule(370, '2026-10-12', w.context.caches),
+    saved,
   );
 });
 test('unknown and expired offline data are errors; refresh replaces the same key', async () => {

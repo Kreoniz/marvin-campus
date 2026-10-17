@@ -1,4 +1,4 @@
-import { monday, omskToday } from './dates.ts';
+import { addDays, monday, omskToday } from './dates.ts';
 import type { Snapshot } from './types.ts';
 
 const MINUTE = 60_000;
@@ -43,13 +43,39 @@ export function usableSnapshot<T>(
   week: string,
   now: number,
 ): Snapshot<T> | undefined {
-  if (!snapshot || now > snapshotDeadline(snapshot, week) + STALE_GRACE)
+  if (!snapshot) return undefined;
+  const deadline = snapshotDeadline(
+    snapshot,
+    week,
+    monday(omskToday(new Date(now))),
+  );
+  if (!Number.isFinite(deadline) || now > deadline + STALE_GRACE)
     return undefined;
-  if (snapshot.stale || now <= snapshotDeadline(snapshot, week))
-    return snapshot;
+  if (snapshot.stale || now <= deadline) return snapshot;
   return {
     ...snapshot,
     stale: true,
-    warning: snapshot.warning || 'Снимок устарел. Обновляем данные источника.',
+    warning:
+      snapshot.warning || 'Сохранённый снимок. Возможны изменения расписания.',
   };
+}
+
+// A focused, idle tab still has to mark stale data and stop using old snapshots.
+// Monday can shorten a future week's TTL before its original deadline.
+export function snapshotChangeAt(
+  snapshot: Snapshot<unknown> | undefined,
+  week: string,
+  now: number,
+): number | undefined {
+  if (!snapshot) return undefined;
+  const currentWeek = monday(omskToday(new Date(now)));
+  const deadline = snapshotDeadline(snapshot, week, currentWeek);
+  if (!Number.isFinite(deadline) || now > deadline + STALE_GRACE)
+    return undefined;
+  const change =
+    snapshot.stale || now > deadline
+      ? deadline + STALE_GRACE + 1
+      : deadline + 1;
+  const nextMonday = Date.parse(`${addDays(currentWeek, 7)}T00:00:00+06:00`);
+  return Math.min(change, nextMonday);
 }

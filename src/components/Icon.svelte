@@ -17,6 +17,7 @@
   import Alert from '@lucide/svelte/icons/circle-alert';
   import Grip from '@lucide/svelte/icons/grip-vertical';
   import Up from '@lucide/svelte/icons/chevron-up';
+  import Clock from '@lucide/svelte/icons/clock-3';
   const icons = {
     pin: MapPin,
     plus: Plus,
@@ -36,6 +37,7 @@
     alert: Alert,
     order: Grip,
     up: Up,
+    clock: Clock,
   };
   let { name, size = 20 }: { name: keyof typeof icons; size?: number } =
     $props();

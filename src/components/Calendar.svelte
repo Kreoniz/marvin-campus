@@ -17,6 +17,7 @@
     onday,
     singleDay = false,
     placeholder = false,
+    compactHeader = false,
   }: {
     schedules: GroupSchedule[];
     colors: GroupColors;
@@ -28,6 +29,7 @@
     onday: (day: string) => void;
     singleDay?: boolean;
     placeholder?: boolean;
+    compactHeader?: boolean;
   } = $props();
   let scroller: HTMLDivElement;
   let viewportWidth = $state(innerWidth);
@@ -59,6 +61,10 @@
   );
   let height = $derived((end - start) * scale);
   let complete = $derived(schedules.every((g) => g.snapshot));
+  let saved = $derived(
+    schedules.some((g) => g.snapshot && (g.snapshot.stale || g.error)),
+  );
+  let hideHeader = $derived(compactHeader && singleDay);
   let layout = $derived(
     dates.map((date) => ({
       date,
@@ -79,7 +85,10 @@
     const index = dates.indexOf(day);
     const width = viewportWidth;
     const minWidth = overlapWidth;
-    if (singleDay) return;
+    if (singleDay) {
+      tick().then(() => scroller?.scrollTo({ left: 0, behavior: 'auto' }));
+      return;
+    }
     tick().then(() => {
       if (!scroller) return;
       const column = scroller.querySelector<HTMLElement>('.day-column');
@@ -108,10 +117,11 @@
 <div
   class="week-scroll"
   class:day-view={singleDay}
+  class:no-day-header={hideHeader}
   bind:this={scroller}
   tabindex="0"
   role="region"
-  style={`--calendar-viewport:${660 * scale}px;--calendar-header:${singleDay ? 36 : 44}px`}
+  style={`--calendar-viewport:${660 * scale}px;--calendar-header:${hideHeader ? 0 : singleDay ? 36 : 44}px`}
   aria-label={singleDay
     ? `Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}. Время слева, одновременно идущие пары рядом.`
     : 'Недельное расписание. На узком экране прокручивается горизонтально.'}
@@ -119,26 +129,28 @@
 >
   <div
     class="week-grid"
+    data-schedule-days
     style={`--calendar-height:${height}px;--hour-height:${60 * scale}px;--overlap-min:${overlapWidth}px;--day-count:${dates.length}`}
   >
-    <div class="time-header"></div>
-    {#each dates as date}<button
-        class:selected={!placeholder && day === date}
-        class="day-heading"
-        disabled={placeholder}
-        aria-pressed={!placeholder && day === date}
-        aria-label={formatDay(date, {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        })}
-        onclick={() => onday(date)}
-        >{#if placeholder}<span
-            class="skeleton day-label-placeholder"
-            aria-hidden="true"
-          ></span>{:else}<span>{formatDay(date, { weekday: 'short' })}</span>
-          {Number(date.slice(8))}{/if}</button
-      >{/each}
+    {#if !hideHeader}<div class="time-header"></div>
+      {#each dates as date}<button
+          class:selected={!placeholder && day === date}
+          class="day-heading"
+          data-schedule-day={date}
+          disabled={placeholder}
+          aria-pressed={!placeholder && day === date}
+          aria-label={formatDay(date, {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          })}
+          onclick={() => onday(date)}
+          >{#if placeholder}<span
+              class="skeleton day-label-placeholder"
+              aria-hidden="true"
+            ></span>{:else}<span>{formatDay(date, { weekday: 'short' })}</span>
+            {Number(date.slice(8))}{/if}</button
+        >{/each}{/if}
     <div class="time-rail">
       {#each hours as hour}<span style={`top:${(hour - start) * scale}px`}
           >{timeLabel(hour)}</span
@@ -162,6 +174,8 @@
           {#each highlights as range}<div
               class="shared-highlight"
               class:free-highlight={mode === 'free'}
+              class:saved-highlight={saved}
+              aria-hidden="true"
               style={`top:${(range.start - start) * scale}px;height:${(range.end - range.start) * scale}px`}
             ></div>{/each}
           {#each column.placed as block (block.identity)}
@@ -173,8 +187,16 @@
             />
           {/each}
           {#if !column.placed.length}<div class="empty-column">
-              <span>{!complete ? 'Ждём данные' : 'Нет занятий'}</span
-              >{#if complete}<img
+              <span
+                >{!complete
+                  ? schedules.some((g) => g.error && !g.snapshot)
+                    ? 'Данные недоступны'
+                    : 'Ждём данные'
+                  : 'Нет занятий'}</span
+              >{#if complete && saved}<span class="empty-saved"
+                  >По сохранённым данным</span
+                >{/if}
+              {#if complete}<img
                   src="/assets/planet.webp"
                   alt=""
                   width="52"
@@ -187,13 +209,15 @@
   </div>
 </div>
 <p class="calendar-hint">
-  <span class="mode-legend" class:free-legend={mode === 'free'}
-    >{mode === 'presence'
-      ? 'Полоса — общее время в вузе'
-      : 'Зелёные полосы — свободны все'}</span
-  ><span class="lesson-hint">
-    Цветные секции — участники общей пары. Диагональные полосы — одновременные
-    занятия одной группы. Подробности по нажатию.{#if !singleDay || overlapWidth + 46 > viewportWidth - 40}<span
+  {#if schedules.length >= 2}<span
+      class="mode-legend"
+      class:free-legend={mode === 'free'}
+      >{mode === 'presence'
+        ? 'Полоса — общее время в вузе'
+        : 'Полоса — все без занятий'}{#if saved}
+        · по сохранённым данным{/if}</span
+    >{/if}<span class="lesson-hint">
+    Нажми на занятие — подробности.{#if !singleDay || overlapWidth + 46 > viewportWidth - 40}<span
         class="mobile-hint"
       >
         {singleDay
@@ -234,6 +258,9 @@
   }
   .day-view .week-grid {
     grid-template-rows: 36px var(--calendar-height);
+  }
+  .no-day-header .week-grid {
+    grid-template-rows: var(--calendar-height);
   }
   .time-header {
     position: sticky;
@@ -302,6 +329,13 @@
     background: color-mix(in srgb, var(--sage) 55%, transparent);
     border-color: #85a474;
   }
+  .saved-highlight {
+    border-left-style: dashed;
+    background: color-mix(in srgb, var(--sage) 18%, transparent);
+  }
+  .empty-saved {
+    font-size: 11px;
+  }
   .empty-column {
     position: absolute;
     inset: 0;
@@ -341,7 +375,7 @@
       font-size: 13px;
     }
     .calendar-hint {
-      font-size: 9px;
+      font-size: 11px;
       padding: 9px;
       line-height: 1.5;
     }

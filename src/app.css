@@ -29,6 +29,9 @@
   --aqua: #bde2dc;
   --yellow: #ffe393;
   --highlight: #e8b53a;
+  --saved-card: #e6e9e0;
+  --saved-card-ink: #142016;
+  --saved-card-line: #86917e;
   color-scheme: light;
 }
 :root[data-theme='dark'] {
@@ -46,6 +49,9 @@
   --peach: #d6b384;
   --aqua: #93c6bc;
   --yellow: #ddc36d;
+  --saved-card: #394235;
+  --saved-card-ink: var(--ink);
+  --saved-card-line: #84927e;
   color-scheme: dark;
 }
 * {
@@ -92,6 +98,10 @@ a:focus-visible {
   outline-offset: 3px;
 }
 input:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 3px;
+}
+select:focus-visible {
   outline: 3px solid var(--highlight);
   outline-offset: 3px;
 }

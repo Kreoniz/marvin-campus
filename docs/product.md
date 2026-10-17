@@ -12,9 +12,15 @@ must never be interpreted as an empty schedule.
 The whole group is the default selection. Selecting a subgroup includes that
 subgroup and group/stream lessons. The choice persists across weeks, including
 weeks without subgroup data. Public subgroup numbers appear beside group names.
+Lesson labels describe source membership, independently of that filter. A
+whole-group lesson keeps the base group name when a subgroup is selected; shared
+events retain each participant's own subgroup membership.
 
 Desktop uses a week grid and a detailed selected day. Mobile starts with a
-compact day grid; its summary follows the grid. Sunday defaults to next Monday,
+compact day grid; its summary precedes the grid. Mobile group chips open subgroup,
+order and removal controls. Group search starts empty, without suggested groups.
+Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
+Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
 Ordinary cards use the group color. Each shared event appears once with a common
 subject and room, and colored participant sections in stable group-ID order.
@@ -32,8 +38,18 @@ Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for ten minutes, future weeks for an hour, past weeks for a day; group
 searches for a day. A successful stale snapshot is available for at most another
 24 hours and retains its original check time. There is no manual source refresh.
+Usable saved responses appear during reload and revalidation. A stable status row
+shows freshness and opens per-group details; affected cards/participants use a
+muted background and clock marker. Derived results and empty days identify saved
+data too. A missing or expired snapshot never becomes an empty schedule.
 
 The installable PWA keeps a complete application build and recently opened
 schedules for offline restart. It does not invent schedules for unopened groups
 or extend snapshot freshness. HTTP errors and cancelled requests remain errors.
 App updates are offered separately from schedule updates.
+
+Keyboard day selectors support Left/Right and Home/End. Page Up/Page Down change
+weeks while preserving the selected weekday; week controls also support
+Left/Right. Commands are scoped to navigation controls and do not intercept
+typing, native selects or open dialogs. Ordinary keyboard access works at every
+viewport width; the small command set adds no hotkey dependency.

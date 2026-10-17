@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { lessonBlocks } from './lesson-layout.ts';
 import { lessonKind } from './lesson-kind.ts';
+import { lessonGroupLabel } from './subgroups.ts';
 import type { GroupSchedule, Lesson } from './types.ts';
 const date = '2026-10-12';
 const lesson = (id: string, fields: Partial<Lesson> = {}): Lesson => ({
@@ -51,6 +52,91 @@ test('shared events render once beside other events, independently of selection 
     shared[0].members.map((g) => g.id),
     [1, 3],
   );
+});
+test('shared events retain each participant subgroup membership in either group order', () => {
+  const a = group(1, [lesson('shared', { subgroups: [101] })]);
+  const b = group(2, [lesson('shared', { subgroups: [201] })]);
+  a.snapshot!.data.subgroups = [{ id: 101, label: 'Г-1/1' }];
+  b.snapshot!.data.subgroups = [{ id: 201, label: 'Г-2/2' }];
+  const original = structuredClone([a, b]);
+  const blocks = lessonBlocks([a, b], date);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].common, true);
+  assert.deepEqual(blocks[0].memberLessons, {
+    1: a.snapshot!.data.lessons,
+    2: b.snapshot!.data.lessons,
+  });
+  assert.deepEqual(
+    blocks[0].members.map((member) =>
+      lessonGroupLabel(
+        member,
+        blocks[0].memberLessons[member.id],
+        [a, b].find((g) => g.selection.id === member.id)!.snapshot!.data
+          .subgroups,
+      ),
+    ),
+    ['Г-1/1', 'Г-2/2'],
+  );
+  assert.deepEqual(lessonBlocks([b, a], date), blocks);
+  assert.deepEqual([a, b], original);
+});
+test('a selected subgroup does not relabel shared whole-group membership', () => {
+  const a = group(1, [lesson('shared')], 101);
+  const b = group(2, [lesson('shared', { subgroups: [201] })], 201);
+  const catalogs = {
+    1: [{ id: 101, label: 'Г-1/1' }],
+    2: [{ id: 201, label: 'Г-2/2' }],
+  };
+  const blocks = lessonBlocks([a, b], date);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].common, true);
+  assert.deepEqual(
+    blocks[0].members.map((member) =>
+      lessonGroupLabel(
+        member,
+        blocks[0].memberLessons[member.id],
+        catalogs[member.id as keyof typeof catalogs],
+      ),
+    ),
+    ['Г-1', 'Г-2/2'],
+  );
+  assert.deepEqual(lessonBlocks([b, a], date), blocks);
+});
+test('merging a source event retains multiple subgroup copies for one participant', () => {
+  const a = group(1, [
+    lesson('shared', { subgroups: [101] }),
+    lesson('shared', { subgroups: [102] }),
+  ]);
+  const b = group(2, [lesson('shared', { subgroups: [201] })]);
+  const blocks = lessonBlocks([a, b], date);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].members.length, 2);
+  assert.deepEqual(blocks[0].memberLessons[1], a.snapshot!.data.lessons);
+  assert.equal(
+    lessonGroupLabel(a.selection, blocks[0].memberLessons[1], [
+      { id: 101, label: 'Г-1/1' },
+      { id: 102, label: 'Г-1/2' },
+    ]),
+    'Г-1/1,2',
+  );
+  assert.deepEqual(lessonBlocks([b, a], date), blocks);
+});
+test('shared blocks identify stale and failed-refresh participants without inventing missing members', () => {
+  const a = group(1, [lesson('shared')]);
+  const b = group(2, [lesson('shared')]);
+  const c = group(3, [lesson('shared')]);
+  a.error = 'Обновление не удалось';
+  c.snapshot!.stale = true;
+  const missing = { selection: { id: 4, label: 'Г-4' }, error: 'Нет данных' };
+  const blocks = lessonBlocks([c, missing, b, a], date);
+  assert.deepEqual(blocks[0].staleMembers, [1, 3]);
+  assert.deepEqual(
+    blocks[0].members.map((member) => member.id),
+    [1, 2, 3],
+  );
+  assert.equal(blocks[0].memberLessons[4], undefined);
+  assert.equal(blocks[0].common, false);
+  assert.deepEqual(lessonBlocks([a, b, missing, c], date), blocks);
 });
 test('a concurrent shared lesson and subgroup bundle use separate event lanes', () => {
   const blocks = lessonBlocks(
@@ -144,6 +230,8 @@ test('simultaneous distinct lessons of one group form a visual bundle without in
     bundle.parallel?.map((l) => l.id),
     ['lab1', 'lab2'],
   );
+  assert.deepEqual(bundle.memberLessons[1], bundle.parallel);
+  assert.deepEqual(bundle.staleMembers, []);
   assert.equal(bundle.common, false);
   assert.equal(bundle.members.length, 1);
   assert.equal(bundle.width, 0.5);
@@ -158,12 +246,63 @@ test('simultaneous distinct lessons of one group form a visual bundle without in
   assert.equal(chosen.length, 1);
   assert.equal(chosen[0].parallel, undefined);
   assert.equal(chosen[0].lesson.id, 'lab2');
+  assert.deepEqual(
+    chosen[0].memberLessons[1].map((l) => l.id),
+    ['lab2'],
+  );
+  const staleBundle = lessonBlocks(
+    [{ ...a, error: 'Обновление не удалось' }],
+    date,
+  )[0];
+  assert.deepEqual(staleBundle.staleMembers, [1]);
+  assert.deepEqual(staleBundle.memberLessons[1], bundle.parallel);
   const differentTime = lessonBlocks(
     [group(1, [lesson('a'), lesson('b', { end: 600 })])],
     date,
   );
   assert.equal(differentTime.length, 2);
   assert.ok(differentTime.every((b) => !b.parallel));
+});
+
+test('source membership remains distinct from subgroup filtering', () => {
+  const a = group(1, [
+    lesson('whole'),
+    lesson('first', { subgroups: [101] }),
+    lesson('second', { subgroups: [102] }),
+  ]);
+  a.snapshot!.data.subgroups = [
+    { id: 101, label: 'Г-1/1' },
+    { id: 102, label: 'Г-1/2' },
+  ];
+  const all = lessonBlocks([a], date)[0];
+  assert.deepEqual(
+    all.memberLessons[1].map((l) => l.id),
+    ['first', 'second', 'whole'],
+  );
+  const selected = lessonBlocks(
+    [{ ...a, selection: { ...a.selection, subgroupNumber: 2 } }],
+    date,
+  )[0];
+  assert.deepEqual(
+    selected.memberLessons[1].map((l) => l.id),
+    ['second', 'whole'],
+  );
+  assert.equal(
+    lessonGroupLabel(
+      selected.members[0],
+      selected.memberLessons[1],
+      a.snapshot!.data.subgroups,
+    ),
+    'Г-1',
+  );
+  assert.equal(
+    lessonGroupLabel(
+      selected.members[0],
+      selected.memberLessons[1].filter((event) => event.id === 'second'),
+      a.snapshot!.data.subgroups,
+    ),
+    'Г-1/2',
+  );
 });
 
 test('empty groups do not reserve lanes, and a long shared event stays one lane', () => {

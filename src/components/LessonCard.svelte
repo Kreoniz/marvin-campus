@@ -5,7 +5,8 @@
   import { colorStyle, type GroupColors } from '../lib/colors.ts';
   import { lessonKind } from '../lib/lesson-kind.ts';
   import { lessonGroupLabel } from '../lib/subgroups.ts';
-  import type { Selection, Subgroup } from '../lib/types.ts';
+  import { lessonKey } from '../lib/domain.ts';
+  import type { Lesson, Selection, Subgroup } from '../lib/types.ts';
   import { timeLabel } from '../lib/dates.ts';
   import { track } from '../lib/analytics.ts';
   import Hint from './Hint.svelte';
@@ -41,9 +42,28 @@
   const room = (event: typeof lesson) =>
     event.remote ? 'Онлайн' : event.room.trim() || 'Аудитория не указана';
   let place = $derived([...new Set(events.map(room))].join(' / '));
-  const groupLabel = (group: Selection, lessons = events) =>
-    lessonGroupLabel(group, lessons, subgroupCatalog[group.id] ?? []);
-  let labels = $derived(block.members.map((g) => groupLabel(g)).join(', '));
+  function groupLabel(group: Selection, event?: Lesson) {
+    const own = block.memberLessons[group.id] ?? [];
+    return lessonGroupLabel(
+      group,
+      event
+        ? own.filter((source) => lessonKey(source) === lessonKey(event))
+        : own,
+      subgroupCatalog[group.id] ?? [],
+    );
+  }
+  const savedMember = (group: Selection) =>
+    block.staleMembers.includes(group.id);
+  let labels = $derived(
+    block.members
+      .map(
+        (g) =>
+          `${groupLabel(g)}${savedMember(g) ? ' (сохранённые данные)' : ''}`,
+      )
+      .join(', '),
+  );
+  let saved = $derived(block.staleMembers.length > 0);
+  let allSaved = $derived(block.staleMembers.length === block.members.length);
   let visibleMembers = $derived(
     block.members.length > 3 ? block.members.slice(0, 2) : block.members,
   );
@@ -81,7 +101,7 @@
   <Popover.Root bind:open>
     <Popover.Trigger
       style={colorStyle(colors[block.members[0].id] ?? 0)}
-      class={`lesson-card ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${events.every((event) => event.remote) ? 'remote-lesson' : ''}`}
+      class={`lesson-card ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${events.every((event) => event.remote) ? 'remote-lesson' : ''} ${allSaved ? 'saved-card' : ''}`}
       aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`}
       onpointerenter={enter}
       onpointerleave={leave}
@@ -92,6 +112,7 @@
     >
       {#if shared && long}<span class="participant-stripe" aria-hidden="true"
           >{#each block.members as group (group.id)}<span
+              class:saved-participant={savedMember(group)}
               style={colorStyle(colors[group.id] ?? 0)}
             ></span>{/each}</span
         >{/if}
@@ -110,16 +131,27 @@
             {@const parts = groupParts(group)}
             <span
               class="participant-sector"
+              class:saved-participant={savedMember(group)}
               style={colorStyle(colors[group.id] ?? 0)}
-              title={groupLabel(group)}
+              title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
             >
               {#if horizontal && long}<span class="group-name"
-                  >{groupLabel(group)}</span
+                  >{groupLabel(group)}{#if savedMember(group)}<Icon
+                      name="clock"
+                      size={10}
+                    />{/if}</span
                 >
               {:else}<span class="group-prefix">{parts.name}</span>
                 {#if parts.number}<span class="group-number"
-                    >{parts.number}</span
+                    >{parts.number}{#if savedMember(group)}<Icon
+                        name="clock"
+                        size={10}
+                      />{/if}</span
                   >{/if}
+                {#if !parts.number && savedMember(group)}<Icon
+                    name="clock"
+                    size={10}
+                  />{/if}
               {/if}
             </span>
           {/each}
@@ -129,7 +161,11 @@
               >+{block.members.length - visibleMembers.length}</span
             >{/if}
         </span>
-      {:else}<span class="single-group">{groupLabel(block.members[0])}</span
+      {:else}<span class="single-group"
+          ><span>{groupLabel(block.members[0])}</span>{#if saved}<Icon
+              name="clock"
+              size={12}
+            />{/if}</span
         >{/if}
       <span class="card-meta"
         ><span class="card-room">{place}</span>
@@ -171,8 +207,14 @@
             {#if block.parallel}<div class="popover-participants">
                 {#each block.members as group (group.id)}<span
                     class="participant-chip"
+                    class:saved-participant={savedMember(group)}
                     style={colorStyle(colors[group.id] ?? 0)}
-                    >{groupLabel(group, [event])}</span
+                    >{groupLabel(group, event)}{#if savedMember(group)}<Icon
+                        name="clock"
+                        size={12}
+                      /><span class="sr-only">
+                        — сохранённые данные</span
+                      >{/if}</span
                   >{/each}
               </div>{/if}
             <p>{event.kind || 'Тип занятия не указан'} · {room(event)}</p>
@@ -181,10 +223,22 @@
         {#if !block.parallel}<div class="popover-participants">
             {#each block.members as group (group.id)}<span
                 class="participant-chip"
+                class:saved-participant={savedMember(group)}
                 style={colorStyle(colors[group.id] ?? 0)}
-                >{groupLabel(group)}</span
+                >{groupLabel(group)}{#if savedMember(group)}<Icon
+                    name="clock"
+                    size={12}
+                  /><span class="sr-only">
+                    — сохранённые данные</span
+                  >{/if}</span
               >{/each}
           </div>{/if}
+        {#if saved}<p class="saved-lesson-note">
+            <Icon name="clock" size={13} />По сохранённым данным: {block.members
+              .filter(savedMember)
+              .map((group) => group.label)
+              .join(', ')}.
+          </p>{/if}
         {#if block.parallel}<p class="common-label">
             {events.length} отдельных занятий одной группы идут одновременно. Подробности
             каждого занятия указаны выше.
@@ -245,6 +299,27 @@
   :global(.lesson-card.remote-lesson) {
     border-style: dashed;
   }
+  :global(.lesson-card.saved-card:not(.shared-card)) {
+    background: color-mix(in srgb, var(--chip) 25%, var(--saved-card));
+    color: var(--saved-card-ink);
+    border-color: var(--saved-card-line);
+  }
+  :global(.lesson-card.saved-card.parallel-card) {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--chip) 25%, var(--saved-card)) 0 9px,
+      var(--saved-card) 9px 18px
+    );
+  }
+  :global(.lesson-card.saved-card.shared-card) {
+    border-color: color-mix(in srgb, var(--line) 55%, var(--grid));
+  }
+  .participant-sector.saved-participant,
+  .participant-chip.saved-participant,
+  .participant-stripe > .saved-participant {
+    background: color-mix(in srgb, var(--chip) 25%, var(--saved-card));
+    color: var(--saved-card-ink);
+  }
   .participant-stripe {
     position: absolute;
     top: 0;
@@ -281,11 +356,18 @@
     opacity: 0.8;
   }
   .single-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
     font-size: 13px;
     font-weight: 650;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .single-group > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .participant-sectors {
     display: flex;
@@ -322,6 +404,13 @@
   }
   .group-number {
     font-size: 11px;
+  }
+  .group-number,
+  .group-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
   }
   .more-participants {
     background: var(--grid);
@@ -381,6 +470,9 @@
     align-items: center;
   }
   .participant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     background: var(--chip);
     color: #142016;
     font-size: 12px;
@@ -389,6 +481,14 @@
     padding: 1px 3px;
     border-radius: 3px;
     white-space: nowrap;
+  }
+  .saved-lesson-note {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 8px;
   }
   .card-meta {
     display: flex;

@@ -22,15 +22,19 @@ test('lesson labels show public subgroup numbers without exposing source IDs', (
   assert.equal(lessonGroupLabel(group, [event([9999])], catalog), 'ИВТ-233');
   assert.equal(
     lessonGroupLabel({ ...group, subgroup: 591 }, [event([])], catalog),
-    'ИВТ-233/2',
+    'ИВТ-233',
   );
   assert.equal(
     lessonGroupLabel({ ...group, subgroupNumber: 2 }, [event([])], []),
-    'ИВТ-233/2',
+    'ИВТ-233',
   );
   assert.equal(
     lessonGroupLabel({ ...group, subgroup: 591 }, [event([])], []),
     'ИВТ-233',
+  );
+  assert.equal(
+    lessonGroupLabel({ ...group, subgroupNumber: 2 }, [event([590])], catalog),
+    'ИВТ-233/1',
   );
 });
 

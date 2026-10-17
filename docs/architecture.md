@@ -4,7 +4,8 @@
 - `internal/httpapi`: routes, validation, response policies and client limits.
 - `internal/cache`: SQLite snapshots, freshness, same-key load coalescing and
   admission of at most 32 distinct refreshes. Fresh hits and existing-flight
-  joins do not consume another refresh slot.
+  joins do not consume another refresh slot. Eviction recency writes have minute
+  precision; snapshot check and expiry times are independent of recency.
 - `internal/upstream`: one active source request, at most 32 admitted requests,
   cancellable queue waiting (25 seconds), 500 ms spacing and source cooldowns.
 - `internal/schedule`: normalization and source cache lifetimes.
@@ -14,7 +15,12 @@
   selection state, link synchronization, PWA integration and analytics policy.
 - `src/components`: Svelte components own their scoped CSS. Global CSS contains
   the shared theme and base rules. TanStack Query owns browser request state;
-  the service worker owns persistent offline responses.
+  the service worker owns persistent offline responses. The active view reads
+  exact group/week saved responses through `saved-schedules.ts` while normal
+  requests run. This transient fallback never overwrites Query data or errors.
+  Deadline timers update stale/expired state in an idle tab and on Omsk Monday.
+  Unknown groups in readable links resolve through a pool of three catalog
+  lookups; URL order and ambiguity rejection are preserved.
 
 The API returns 429 plus Retry-After for a client limit, and 503 plus Retry-After
 for local refresh saturation. Source failure is separate; saved data remains

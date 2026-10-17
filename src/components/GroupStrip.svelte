@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick } from 'svelte';
   import { flip } from 'svelte/animate';
-  import { mergeProps } from 'bits-ui';
+  import { mergeProps, Popover } from 'bits-ui';
   import type { GroupSchedule, Selection, Subgroup } from '../lib/types.ts';
   import { mergeSubgroups } from '../lib/subgroups.ts';
   import { colorStyle, type GroupColors } from '../lib/colors.ts';
@@ -9,6 +9,7 @@
   import SubgroupPicker from './SubgroupPicker.svelte';
   import IconButton from './IconButton.svelte';
   import Hint from './Hint.svelte';
+  import Icon from './Icon.svelte';
   let {
     groups,
     schedules,
@@ -29,6 +30,8 @@
     onorder: (id: number) => void;
   } = $props();
   let scroller: HTMLDivElement;
+  let viewportWidth = $state(innerWidth);
+  let mobile = $derived(viewportWidth <= 700);
   let preview = $state<Selection[] | undefined>();
   let shown = $derived(preview ?? groups);
   let drag = $state<{
@@ -174,6 +177,7 @@
 </script>
 
 <svelte:window
+  bind:innerWidth={viewportWidth}
   onpointermove={move}
   onpointerup={end}
   onpointercancel={end}
@@ -189,6 +193,16 @@
 >
   {#each shown as group (group.id)}
     {@const loaded = schedules.find((g) => g.selection.id === group.id)}
+    {@const subgroups = mergeSubgroups(
+      subgroupCatalog[group.id] ?? [],
+      loaded?.snapshot?.data.subgroups ?? [],
+    )}
+    {@const subgroupLabel = group.subgroupNumber
+      ? `Подгруппа ${group.subgroupNumber}`
+      : group.subgroup
+        ? (subgroups.find((item) => item.id === group.subgroup)?.label ??
+          'Подгруппа')
+        : 'Вся группа'}
     <div
       class="group-chip"
       class:drag-source={drag?.id === group.id}
@@ -196,51 +210,93 @@
       style={colorStyle(colors[group.id] ?? 0)}
       animate:flip={{ duration: motionDuration(drag ? 100 : 160) }}
     >
-      <div class="chip-heading">
-        <Hint
-          label={groups.length > 1
-            ? 'Перетащи для перестановки. Нажми — порядок кнопками.'
-            : group.label}
-        >
-          {#snippet children(props)}
-            <button
-              {...mergeProps(props, {
-                onpointerdown: (event: PointerEvent) => start(event, group),
-                onkeydown: (event: KeyboardEvent) => keyboard(event, group),
-                onclick: (event: MouseEvent) => {
-                  if (suppressClick && event.detail !== 0) {
-                    event.preventDefault();
-                    suppressClick = false;
-                    return;
-                  }
-                  if (groups.length > 1) onorder(group.id);
-                },
-              })}
-              class="group-drag"
-              data-drag-id={group.id}
-              aria-label={`Порядок группы ${group.label}`}
-              aria-describedby="group-drag-help">{group.label}</button
+      {#if mobile}
+        <Popover.Root>
+          <Popover.Trigger
+            class="mobile-group-trigger"
+            data-drag-id={group.id}
+            aria-label={`Настройки группы ${group.label}: ${subgroupLabel}`}
+          >
+            <strong>{group.label}</strong><span
+              >{subgroupLabel}<Icon name="down" size={10} /></span
             >
-          {/snippet}
-        </Hint>
-        <IconButton
-          class="chip-remove"
-          label={`Убрать ${group.label}`}
-          name="close"
-          size={13}
-          onclick={() => onremove(group.id)}
+          </Popover.Trigger>
+          <Popover.Portal
+            ><Popover.Content class="group-settings" sideOffset={6}>
+              <div class="group-settings-heading">
+                <strong>{group.label}</strong><Popover.Close
+                  class="icon-button"
+                  aria-label={`Закрыть настройки ${group.label}`}
+                  ><Icon name="close" size={16} /></Popover.Close
+                >
+              </div>
+              <SubgroupPicker
+                label={group.label}
+                {subgroups}
+                value={group.subgroup}
+                subgroupNumber={group.subgroupNumber}
+                onchange={(value) => onsubgroup(group.id, value)}
+              />
+              {#if groups.length > 1}<Popover.Close
+                  class="button group-setting-action"
+                  onclick={() => onorder(group.id)}
+                  ><Icon name="order" size={16} />Изменить порядок</Popover.Close
+                >{/if}
+              <Popover.Close
+                class="button group-setting-action"
+                onclick={() => onremove(group.id)}
+                ><Icon name="close" size={16} />Убрать группу</Popover.Close
+              >
+            </Popover.Content></Popover.Portal
+          >
+        </Popover.Root>
+      {:else}
+        <div class="chip-heading">
+          <Hint
+            label={groups.length > 1
+              ? 'Перетащи для перестановки. Нажми — порядок кнопками.'
+              : group.label}
+          >
+            {#snippet children(props)}
+              <button
+                {...mergeProps(props, {
+                  onpointerdown: (event: PointerEvent) => start(event, group),
+                  onkeydown: (event: KeyboardEvent) => keyboard(event, group),
+                  onclick: (event: MouseEvent) => {
+                    if (suppressClick && event.detail !== 0) {
+                      event.preventDefault();
+                      suppressClick = false;
+                      return;
+                    }
+                    if (groups.length > 1) onorder(group.id);
+                  },
+                })}
+                class="group-drag"
+                data-drag-id={group.id}
+                aria-label={`Порядок группы ${group.label}`}
+                aria-describedby="group-drag-help">{group.label}</button
+              >
+            {/snippet}
+          </Hint>
+          <IconButton
+            class="chip-remove"
+            label={`Убрать ${group.label}`}
+            name="close"
+            size={13}
+            onclick={() => onremove(group.id)}
+          />
+        </div>
+        <SubgroupPicker
+          label={group.label}
+          subgroups={mergeSubgroups(
+            subgroupCatalog[group.id] ?? [],
+            loaded?.snapshot?.data.subgroups ?? [],
+          )}
+          value={group.subgroup}
+          subgroupNumber={group.subgroupNumber}
+          onchange={(value) => onsubgroup(group.id, value)}
         />
-      </div>
-      <SubgroupPicker
-        label={group.label}
-        subgroups={mergeSubgroups(
-          subgroupCatalog[group.id] ?? [],
-          loaded?.snapshot?.data.subgroups ?? [],
-        )}
-        value={group.subgroup}
-        subgroupNumber={group.subgroupNumber}
-        onchange={(value) => onsubgroup(group.id, value)}
-      />
+      {/if}
     </div>
   {/each}
 </div>
@@ -353,10 +409,12 @@
   @media (max-width: 700px) {
     .group-controls {
       gap: 8px;
+      height: 52px;
     }
     .group-chip {
-      min-width: 116px;
-      padding: 2px 5px;
+      width: 104px;
+      min-width: 104px;
+      padding: 0;
     }
     .chip-heading {
       gap: 5px;
@@ -365,6 +423,63 @@
       width: 28px;
       height: 28px;
     }
+  }
+  :global(.mobile-group-trigger) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font-size: 12px;
+  }
+  :global(.mobile-group-trigger > span) {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    max-width: 100%;
+  }
+  :global(.mobile-group-trigger > strong) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(.group-settings) {
+    width: 240px;
+    max-width: calc(100vw - 32px);
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 3px 4px 0 var(--shadow);
+    z-index: 45;
+  }
+  .group-settings-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  :global(.group-settings .subgroup-trigger) {
+    min-height: 44px;
+    max-width: 100%;
+  }
+  :global(.group-setting-action) {
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+    border-color: var(--grid);
+    font-weight: 500;
   }
   @media (max-width: 700px) {
     .group-controls {

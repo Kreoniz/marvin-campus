@@ -142,15 +142,16 @@
   }
   @media (max-width: 700px) {
     .site-header {
-      padding: 12px 1px;
+      padding: 4px 1px;
       gap: 7px;
+      margin-bottom: 8px;
     }
     .brand {
       gap: 2px;
     }
     .brand-avatar {
-      width: 52px;
-      height: 52px;
+      width: 40px;
+      height: 40px;
     }
     .brand-copy {
       flex-direction: column;
@@ -158,7 +159,7 @@
       gap: 3px;
     }
     .brand-name {
-      font-size: 20px;
+      font-size: 18px;
       letter-spacing: -0.9px;
     }
     .brand-description,
@@ -173,9 +174,7 @@
       height: 44px;
     }
     .eyebrow {
-      font-size: 8px;
-      padding: 2px 6px;
-      letter-spacing: 1px;
+      display: none;
     }
   }
   @media (max-width: 1100px) {

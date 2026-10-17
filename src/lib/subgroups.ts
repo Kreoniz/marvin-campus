@@ -18,19 +18,13 @@ export function selectedSubgroup(
   );
 }
 
+// Labels describe source membership, independently of the selected filter.
 // Public numbers come from the group's catalog, never from source IDs.
-// A selected subgroup is also the viewing context for whole-group lessons.
 export function lessonGroupLabel(
   selection: Selection,
   lessons: Lesson[],
   catalog: Subgroup[],
 ): string {
-  const selected =
-    selection.subgroupNumber ??
-    publicSubgroup(
-      catalog.find((s) => s.id === selection.subgroup)?.label ?? '',
-    );
-  if (selected !== undefined) return `${selection.label}/${selected}`;
   if (lessons.some((lesson) => !lesson.subgroups.length))
     return selection.label;
   const ids = new Set(lessons.flatMap((lesson) => lesson.subgroups));

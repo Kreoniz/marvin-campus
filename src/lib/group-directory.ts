@@ -1,7 +1,8 @@
 import type { QueryClient } from '@tanstack/svelte-query';
-import type { Group, Selection } from './types.ts';
+import type { Group } from './types.ts';
 import { groupOptions } from './queries.ts';
-import { groupSlug, parseView, readableGroups } from './url.ts';
+import { parseView, readableGroups } from './url.ts';
+import { resolveGroupRequests } from './group-resolution.ts';
 
 export function knownGroups(): Group[] {
   try {
@@ -56,46 +57,13 @@ export async function resolveReadable(
 ) {
   const requests = readableGroups(url);
   if (!requests?.length) throw new Error('Некорректная ссылка на сравнение.');
-  const known = knownGroups();
-  const groups: Selection[] = [];
-  for (const request of requests) {
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    const local = known.filter((g) => groupSlug(g) === request.slug);
-    if (!request.id && local.length > 1)
-      throw new Error(
-        `Код ${request.slug} неоднозначен. Выбери группу через поиск.`,
-      );
-    let group = request.id
-      ? (known.find((g) => g.id === request.id) ?? {
-          id: request.id,
-          label: request.label,
-        })
-      : local[0];
-    if (!group) {
-      if (!navigator.onLine)
-        throw new Error('Нет сети. Эта группа ещё не сохранена на устройстве.');
-      const matches = (
-        await client.fetchQuery(groupOptions(request.label))
-      ).data.filter((g) => groupSlug(g) === request.slug);
-      if (matches.length !== 1)
-        throw new Error(
-          matches.length
-            ? `Код ${request.slug} неоднозначен. Выбери группу через поиск.`
-            : `Группа ${request.label} не найдена.`,
-        );
-      group = matches[0];
-    }
-    if (!groups.some((g) => g.id === group.id))
-      groups.push({
-        id: group.id,
-        label: group.label,
-        ...(request.subgroup ? { subgroup: request.subgroup } : {}),
-        ...(request.subgroupNumber
-          ? { subgroupNumber: request.subgroupNumber }
-          : {}),
-      });
-  }
-  if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+  const groups = await resolveGroupRequests(
+    requests,
+    knownGroups(),
+    async (term) => (await client.fetchQuery(groupOptions(term))).data,
+    signal,
+    navigator.onLine,
+  );
   rememberGroups(groups);
   return { ...parseView(url), groups };
 }

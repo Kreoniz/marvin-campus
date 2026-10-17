@@ -28,8 +28,8 @@
   } = $props();
   let weekOpen = $state(false);
   const modes: { value: Mode; label: string }[] = [
-    { value: 'presence', label: 'Вместе в вузе' },
-    { value: 'free', label: 'Свободные окна' },
+    { value: 'presence', label: 'В вузе' },
+    { value: 'free', label: 'Без занятий' },
   ];
   function selectWeek(value: string) {
     view.selectWeek(value);
@@ -66,7 +66,7 @@
     <GroupPicker selected={view.groups} onadd={view.add} {onerror} />
   </div>
   <div class="view-controls">
-    <div class="week-controls">
+    <div class="week-controls" data-schedule-week>
       <IconButton
         label="Предыдущая неделя"
         name="left"
@@ -90,13 +90,17 @@
         onclick={() => selectWeek(addDays(view.week, 7))}
       />
     </div>
-    <div class="mode-controls" role="group" aria-label="Режим сравнения">
-      {#each modes as item}<button
-          class:active={!opening && view.mode === item.value}
-          aria-pressed={!opening && view.mode === item.value}
-          onclick={() => selectMode(item.value)}>{item.label}</button
-        >{/each}
-    </div>
+    {#if view.groups.length >= 2}<div
+        class="mode-controls"
+        role="group"
+        aria-label="Режим сравнения"
+      >
+        {#each modes as item}<button
+            class:active={!opening && view.mode === item.value}
+            aria-pressed={!opening && view.mode === item.value}
+            onclick={() => selectMode(item.value)}>{item.label}</button
+          >{/each}
+      </div>{/if}
   </div>
 </div>
 
@@ -192,16 +196,15 @@
   }
   @media (max-width: 700px) {
     .toolbar {
-      padding: 11px 9px;
-      gap: 13px;
+      padding: 4px 8px;
+      gap: 0;
     }
     .group-strip {
       width: 100%;
       flex-basis: 100%;
     }
     .view-controls {
-      width: 100%;
-      gap: 12px;
+      display: none;
     }
     .week-controls {
       width: 100%;
@@ -242,9 +245,9 @@
   }
   @media (max-width: 700px) {
     .group-strip > :global(.add-group) {
-      width: 40px;
-      height: 40px;
-      min-height: 40px;
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
       padding: 0;
     }
     .group-strip > :global(.add-group) :global(.add-group-label) {
