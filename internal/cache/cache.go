@@ -162,8 +162,8 @@ func failureWarning(err error) string {
 
 func (c *Cache) read(key string) (Snapshot, bool, error) {
 	var s Snapshot
-	var checked, expires int64
-	err := c.db.QueryRow("SELECT payload, checked, expires FROM snapshots WHERE key=?", key).Scan(&s.Data, &checked, &expires)
+	var checked, expires, touched int64
+	err := c.db.QueryRow("SELECT payload, checked, expires, touched FROM snapshots WHERE key=?", key).Scan(&s.Data, &checked, &expires, &touched)
 	if errors.Is(err, sql.ErrNoRows) {
 		return s, false, nil
 	}
@@ -172,7 +172,11 @@ func (c *Cache) read(key string) (Snapshot, bool, error) {
 	}
 	s.CheckedAt = time.Unix(checked, 0).UTC()
 	s.ExpiresAt = time.Unix(expires, 0).UTC()
-	_, err = c.db.Exec("UPDATE snapshots SET touched=? WHERE key=?", c.Now().Unix(), key)
+	// Recency is only used for 30-day/row-count eviction. Minute precision avoids
+	// a SQLite write on every fresh hit without extending snapshot freshness.
+	if now := c.Now().Unix(); now-touched >= 60 {
+		_, err = c.db.Exec("UPDATE snapshots SET touched=? WHERE key=?", now, key)
+	}
 	return s, true, err
 }
 

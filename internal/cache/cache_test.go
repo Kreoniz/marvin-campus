@@ -198,3 +198,56 @@ func TestFailedRequestsAreThrottledAndTTLCanShrink(t *testing.T) {
 		t.Fatalf("old future-week TTL survived: %+v, %v, %d calls", s, err, calls)
 	}
 }
+
+func TestFreshReadsCoarsenRecencyWritesWithoutRenewingFreshness(t *testing.T) {
+	c, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	checked := time.Date(2026, 10, 12, 8, 0, 0, 0, time.UTC)
+	now := checked
+	c.Now = func() time.Time { return now }
+	load := func(context.Context) ([]byte, error) { return []byte(`[]`), nil }
+	first, err := c.Get(context.Background(), "fresh", 10*time.Minute, load)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, elapsed := range []time.Duration{time.Second, 59 * time.Second, time.Minute, 61 * time.Second} {
+		now = checked.Add(elapsed)
+		snapshot, err := c.Get(context.Background(), "fresh", 10*time.Minute, load)
+		if err != nil || !snapshot.CheckedAt.Equal(first.CheckedAt) || !snapshot.ExpiresAt.Equal(first.ExpiresAt) {
+			t.Fatalf("read changed freshness: %+v, %v", snapshot, err)
+		}
+		var touched int64
+		if err := c.db.QueryRow("SELECT touched FROM snapshots WHERE key='fresh'").Scan(&touched); err != nil {
+			t.Fatal(err)
+		}
+		want := checked.Unix()
+		if elapsed >= time.Minute {
+			want += 60
+		}
+		if touched != want {
+			t.Fatalf("recency at %s: got %d, want %d", elapsed, touched, want)
+		}
+	}
+}
+
+func BenchmarkFreshCacheHit(b *testing.B) {
+	c, err := Open(filepath.Join(b.TempDir(), "cache.sqlite"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer c.Close()
+	load := func(context.Context) ([]byte, error) { return []byte(`[]`), nil }
+	if _, err := c.Get(context.Background(), "fresh", time.Hour, load); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := c.Get(context.Background(), "fresh", time.Hour, load); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
