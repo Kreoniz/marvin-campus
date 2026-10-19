@@ -443,6 +443,12 @@
     text-underline-offset: 4px;
   }
   @media (max-width: 700px) {
+    .comparison {
+      margin-inline: calc(-1 * var(--page-inset));
+      border-inline: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
     .welcome {
       min-height: 380px;
       flex-direction: column;

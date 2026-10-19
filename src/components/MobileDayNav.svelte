@@ -17,48 +17,60 @@
     Array.from({ length: 7 }, (_, i) => addDays(view.week, i)),
   );
   let dateOpen = $state(false);
+  let lastDay = $derived(addDays(view.week, 6));
+  let shortWeek = $derived(
+    view.week.slice(0, 7) === lastDay.slice(0, 7)
+      ? `${Number(view.week.slice(8))}–${formatDay(lastDay, { day: 'numeric', month: 'short' })}`
+      : `${formatDay(view.week, { day: 'numeric', month: 'short' })}–${formatDay(lastDay, { day: 'numeric', month: 'short' })}`,
+  );
   function selectDate(value: string) {
     view.selectDate(value);
     dateOpen = false;
   }
 </script>
 
-<div class="mobile-view-controls" data-schedule-week inert={opening}>
-  <button
-    class="week-arrow"
-    aria-label="Предыдущая неделя"
-    onclick={() => view.selectWeek(addDays(view.week, -7))}
-    ><Icon name="left" size={17} /></button
-  >
-  <Popover.Root bind:open={dateOpen}>
-    <Popover.Trigger
-      class="mobile-date"
-      aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
+<div class="mobile-view-controls" inert={opening}>
+  <div class="mobile-week-controls" data-schedule-week>
+    <button
+      class="week-arrow"
+      aria-label="Предыдущая неделя"
+      onclick={() => view.selectWeek(addDays(view.week, -7))}
+      ><Icon name="left" size={17} /></button
     >
-      {formatDay(view.week, { day: 'numeric', month: 'short' })}—{formatDay(
-        addDays(view.week, 6),
-        { day: 'numeric', month: 'short' },
-      )}<Icon name="down" size={12} />
-    </Popover.Trigger>
-    <Popover.Portal
-      ><Popover.Content class="week-popover" sideOffset={6}
-        ><DatePicker day={view.day} onselect={selectDate} /></Popover.Content
-      ></Popover.Portal
+    <Popover.Root bind:open={dateOpen}>
+      <Popover.Trigger
+        class="mobile-date"
+        aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
+      >
+        <span>{shortWeek}</span><Icon name="down" size={12} />
+      </Popover.Trigger>
+      <Popover.Portal
+        ><Popover.Content class="week-popover" sideOffset={6}
+          ><DatePicker day={view.day} onselect={selectDate} /></Popover.Content
+        ></Popover.Portal
+      >
+    </Popover.Root>
+    <button
+      class="week-arrow"
+      aria-label="Следующая неделя"
+      onclick={() => view.selectWeek(addDays(view.week, 7))}
+      ><Icon name="right" size={17} /></button
     >
-  </Popover.Root>
-  <button
-    class="week-arrow"
-    aria-label="Следующая неделя"
-    onclick={() => view.selectWeek(addDays(view.week, 7))}
-    ><Icon name="right" size={17} /></button
-  >
-  <button class="today-button" onclick={() => view.selectDate(omskToday())}
-    >Сегодня</button
-  >
-  <select aria-label="Представление расписания" bind:value={mobileView}
-    ><option value="day">День</option><option value="week">Неделя</option
-    ></select
-  >
+    <button class="today-button" onclick={() => view.selectDate(omskToday())}
+      >Сегодня</button
+    >
+  </div>
+  <div class="view-toggle" role="group" aria-label="Представление расписания">
+    <button
+      class:active={mobileView === 'day'}
+      aria-pressed={mobileView === 'day'}
+      onclick={() => (mobileView = 'day')}>День</button
+    ><button
+      class:active={mobileView === 'week'}
+      aria-pressed={mobileView === 'week'}
+      onclick={() => (mobileView = 'week')}>Неделя</button
+    >
+  </div>
 </div>
 <nav
   class="agenda-days"
@@ -107,12 +119,17 @@
   .mobile-view-controls {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     padding: 0 6px;
   }
+  .mobile-week-controls {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
   .mobile-view-controls button,
-  .mobile-view-controls :global(.mobile-date),
-  .mobile-view-controls select {
+  .mobile-view-controls :global(.mobile-date) {
     min-height: 44px;
     min-width: 0;
     border: 0;
@@ -135,10 +152,29 @@
     white-space: nowrap;
     font-weight: 650;
   }
-  .mobile-view-controls select {
-    width: 65px;
-    border-left: 1px solid var(--grid);
-    border-radius: 0;
+  :global(.mobile-date > span) {
+    white-space: normal;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  :global(.mobile-date > svg) {
+    flex: none;
+  }
+  .view-toggle {
+    display: flex;
+    flex: none;
+    border: 1px solid var(--grid);
+    border-radius: 5px;
+    background: var(--page);
+  }
+  .view-toggle button {
+    padding-inline: 7px;
+    border-radius: 4px;
+  }
+  .view-toggle button.active {
+    background: var(--sage);
+    color: #172214;
+    box-shadow: inset 0 0 0 1px var(--line);
   }
   .today-button {
     text-decoration: underline;

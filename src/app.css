@@ -122,9 +122,10 @@ input {
   color: inherit;
 }
 .app-shell {
+  --page-inset: 20px;
   max-width: 1440px;
   margin: 6px auto 0;
-  padding: 0 20px;
+  padding: 0 var(--page-inset);
 }
 .icon-button {
   display: inline-flex;
@@ -324,7 +325,7 @@ footer a:hover {
 }
 @media (max-width: 700px) {
   .app-shell {
-    padding-inline: 12px;
+    --page-inset: 12px;
     margin-top: 4px;
   }
   .add-group {
@@ -679,7 +680,7 @@ a {
 }
 @media (max-width: 360px) {
   .app-shell {
-    padding-inline: 10px;
+    --page-inset: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

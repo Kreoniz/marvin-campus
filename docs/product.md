@@ -19,6 +19,9 @@ events retain each participant's own subgroup membership.
 Desktop uses a week grid and a detailed selected day. Mobile starts with a
 compact day grid; its summary precedes the grid. Mobile group chips open subgroup,
 order and removal controls. Group search starts empty, without suggested groups.
+The mobile calendar spans the available screen width, while controls and card
+content keep their internal spacing. Day/week views use a two-button toggle.
+Online lessons use a contrasting two-pixel dashed outline.
 Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
 Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
@@ -47,6 +50,9 @@ The installable PWA keeps a complete application build and recently opened
 schedules for offline restart. It does not invent schedules for unopened groups
 or extend snapshot freshness. HTTP errors and cancelled requests remain errors.
 App updates are offered separately from schedule updates.
+The installation icons use a dark background and a bold character outline;
+the manifest launch background is also dark. The saved or system page theme
+still controls the opened application.
 
 Keyboard day selectors support Left/Right and Home/End. Page Up/Page Down change
 weeks while preserving the selected weekday; week controls also support

@@ -298,6 +298,11 @@
   }
   :global(.lesson-card.remote-lesson) {
     border-style: dashed;
+    border-width: 2px;
+    border-color: #405637;
+  }
+  :global(.lesson-card.remote-lesson.shared-card) {
+    border-color: var(--line);
   }
   :global(.lesson-card.saved-card:not(.shared-card)) {
     background: color-mix(in srgb, var(--chip) 25%, var(--saved-card));
@@ -313,6 +318,13 @@
   }
   :global(.lesson-card.saved-card.shared-card) {
     border-color: color-mix(in srgb, var(--line) 55%, var(--grid));
+  }
+  :global(.lesson-card.remote-lesson.saved-card) {
+    border-color: color-mix(
+      in srgb,
+      var(--saved-card-ink) 70%,
+      var(--saved-card)
+    );
   }
   .participant-sector.saved-participant,
   .participant-chip.saved-participant,
