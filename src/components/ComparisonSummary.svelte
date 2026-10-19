@@ -26,6 +26,11 @@
     schedules.some((g) => g.snapshot && (g.snapshot.stale || g.error)),
   );
   let hasSnapshot = $derived(schedules.some((g) => g.snapshot));
+  let withoutOnsite = $derived(
+    schedules
+      .filter((g) => !lessonsFor(g).some((l) => l.date === day && !l.remote))
+      .map((g) => g.selection.label),
+  );
 </script>
 
 <aside
@@ -101,6 +106,15 @@
           >Общих пар: {result.lessons.length}</span
         >{/if}
     {/if}
+    {#if result.complete && hasLessons && !result.presence.length}
+      <p class="presence-reason">
+        {withoutOnsite.length === 1
+          ? `У ${withoutOnsite[0]} в этот день нет очных занятий.`
+          : withoutOnsite.length
+            ? `В этот день нет очных занятий у ${withoutOnsite.length} выбранных групп.`
+            : 'Время присутствия выбранных групп в вузе не пересекается.'}
+      </p>
+    {/if}
     <p class="saved-qualification">
       {saved
         ? 'По сохранённым данным'
@@ -143,7 +157,7 @@
     display: none;
   }
   .marvin-result .saved-qualification {
-    color: var(--muted);
+    color: inherit;
     font-size: 11px;
     margin: 5px 0 0;
   }

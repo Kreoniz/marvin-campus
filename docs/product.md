@@ -4,6 +4,9 @@ Marvin Campus compares public university schedules. Presence means the interval
 between a group's first and last in-person lessons, including breaks; it does
 not establish a person's actual location. Free windows subtract all lessons,
 including online lessons, from every selected group's shared presence.
+When a complete comparison has no shared presence, its summary explains whether
+a selected group has no onsite lessons or the groups' presence does not overlap.
+A group without onsite lessons is not silently excluded from the comparison.
 
 Shared lessons require matching source identity and event details. Matching
 subject text and time alone do not establish a shared lesson. Unavailable data

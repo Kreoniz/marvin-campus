@@ -90,6 +90,22 @@ test('touching intervals have no duration; absence differs from a source error',
     false,
   );
 });
+test('a group without onsite lessons prevents common presence for all selected groups', () => {
+  const first = group(1, [lesson(580, 885)]);
+  const second = group(2, [lesson(480, 1000)]);
+  assert.deepEqual(compareDay([first, second], date).presence, [
+    { start: 580, end: 885 },
+  ]);
+  for (const third of [
+    group(3, []),
+    group(3, [lesson(600, 660, { remote: true })]),
+  ]) {
+    const result = compareDay([first, second, third], date);
+    assert.equal(result.complete, true);
+    assert.deepEqual(result.presence, []);
+    assert.deepEqual(result.free, []);
+  }
+});
 test('a subgroup preserves group/stream lessons and excludes other subgroups', () => {
   const lessons = [
     lesson(480, 540),
