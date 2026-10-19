@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Popover } from 'bits-ui';
+  import { track } from '../lib/analytics.ts';
   import type { ComparisonView } from '../lib/comparison-view.svelte.ts';
   import { addDays, formatDay, omskToday, weekLabel } from '../lib/dates.ts';
   import DatePicker from './DatePicker.svelte';
@@ -26,6 +27,11 @@
   function selectDate(value: string) {
     view.selectDate(value);
     dateOpen = false;
+  }
+  function selectView(value: 'day' | 'week') {
+    if (mobileView === value) return;
+    mobileView = value;
+    track('mobile_view_changed', { view: value });
   }
 </script>
 
@@ -64,11 +70,11 @@
     <button
       class:active={mobileView === 'day'}
       aria-pressed={mobileView === 'day'}
-      onclick={() => (mobileView = 'day')}>День</button
+      onclick={() => selectView('day')}>День</button
     ><button
       class:active={mobileView === 'week'}
       aria-pressed={mobileView === 'week'}
-      onclick={() => (mobileView = 'week')}>Неделя</button
+      onclick={() => selectView('week')}>Неделя</button
     >
   </div>
 </div>

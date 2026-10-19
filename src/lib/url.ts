@@ -174,15 +174,6 @@ export function viewURL(state: ViewState, base: URL): URL {
   url.searchParams.set('v', state.mode === 'presence' ? 'presence' : 'free');
   return url;
 }
-export function comparisonID(view: ViewState): string {
-  const url = viewURL(view, new URL('https://campus.example'));
-  let hash = 0xcbf29ce484222325n;
-  for (const character of url.pathname + url.search) {
-    hash ^= BigInt(character.charCodeAt(0));
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return `r1-${hash.toString(16).padStart(16, '0')}`;
-}
 export function shareID(url: URL): string | undefined {
   return /^\/s\/([A-Za-z0-9_-]{12})\/?$/.exec(url.pathname)?.[1];
 }

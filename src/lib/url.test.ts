@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  comparisonID,
   groupSlug,
   normalizeView,
   parseView,
@@ -52,19 +51,6 @@ test('readable links preserve order, public subgroup number, day and mode withou
     ],
   );
   assert.equal(shareID(url), undefined);
-  const id = comparisonID(view);
-  assert.match(id, /^r1-[0-9a-f]{16}$/);
-  assert.equal(
-    comparisonID({ ...view, groups: view.groups.map((g) => ({ ...g })) }),
-    id,
-  );
-  for (const changed of [
-    { ...view, groups: view.groups.slice().reverse() },
-    { ...view, mode: 'presence' as const },
-    { ...view, day: '2026-10-17' },
-    { ...view, groups },
-  ])
-    assert.notEqual(comparisonID(changed), id);
 });
 test('legacy URLs and short payloads retain source IDs and migrate the removed mode', () => {
   const url = new URL(

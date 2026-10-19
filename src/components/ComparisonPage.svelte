@@ -226,14 +226,7 @@
       if (group.snapshot) {
         next.set(group.selection.id, signature);
         if (reportedSelections.get(group.selection.id) !== signature)
-          track(
-            'group_selected',
-            selectionData(
-              group.selection,
-              subgroupCatalog[group.selection.id] ??
-                group.snapshot.data.subgroups,
-            ),
-          );
+          track('group_selected', selectionData(group.selection));
       }
     }
     reportedSelections = next;

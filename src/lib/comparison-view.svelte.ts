@@ -102,8 +102,7 @@ export function createComparisonView(
       const group = groups.find((g) => g.id === id);
       if (group)
         track('subgroup_changed', {
-          ...selectionData(group, catalog()[id]),
-          selected: value !== undefined,
+          ...selectionData(group),
         });
     },
     resolveSubgroups(known: Record<number, Subgroup[]>) {

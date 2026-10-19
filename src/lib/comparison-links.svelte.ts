@@ -2,7 +2,6 @@ import { onMount } from 'svelte';
 import { useQueryClient } from '@tanstack/svelte-query';
 import { readShare } from './api.ts';
 import {
-  comparisonID,
   normalizeView,
   parseView,
   readableGroups,
@@ -10,7 +9,7 @@ import {
   viewURL,
 } from './url.ts';
 import { rememberGroups, resolveReadable } from './group-directory.ts';
-import { setShareSource, track } from './analytics.ts';
+import { track } from './analytics.ts';
 import type { ComparisonView, Notify } from './comparison-view.svelte.ts';
 
 export function createComparisonLinks(
@@ -64,16 +63,13 @@ export function createComparisonLinks(
       if (signal.aborted) return;
       view.apply(value);
       if (id || readable !== undefined) {
-        const source = id ?? comparisonID(value);
-        setShareSource(source);
         opened();
         track('share_opened', {
-          share_id: source,
           link_format: id ? 'legacy' : 'readable',
           group_count: value.groups.length,
           mode: value.mode,
         });
-      } else setShareSource(undefined);
+      }
       opening = false;
       canonicalize();
     } catch (e) {
@@ -96,7 +92,6 @@ export function createComparisonLinks(
       await navigator.clipboard.writeText(url);
       notify('Ссылка скопирована. Можно отправлять другу.');
       track('share_link_copied', {
-        share_id: comparisonID(value),
         link_format: 'readable',
         group_count: value.groups.length,
         mode: value.mode,
@@ -120,7 +115,6 @@ export function createComparisonLinks(
           view.apply(normalizeView({ ...view.current(), groups }));
         } catch {}
       }
-      setShareSource(undefined);
       if (view.groups.length) canonicalize();
       else
         history.replaceState({ campusView: view.current() }, '', location.href);
@@ -164,7 +158,6 @@ export function createComparisonLinks(
         await navigator.clipboard.writeText(manual);
         const value = view.current();
         track('share_link_copied', {
-          share_id: comparisonID(value),
           link_format: 'readable',
           group_count: value.groups.length,
           mode: value.mode,

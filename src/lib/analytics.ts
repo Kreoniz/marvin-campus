@@ -23,11 +23,6 @@ declare global {
 }
 let state: 'pending' | 'ready' | 'disabled' = 'pending';
 const pending: { name: string; data: EventData }[] = [];
-let sourceShareID: string | undefined;
-
-export function setShareSource(id: string | undefined) {
-  sourceShareID = id;
-}
 function enabled() {
   return (
     location.hostname === 'campus.kreoniz.ru' && navigator.doNotTrack !== '1'
@@ -97,7 +92,7 @@ export async function initAnalytics() {
 export function track(name: string, data: EventData = {}) {
   if (!enabled() || state === 'disabled') return;
   try {
-    const filtered = analyticsData(name, data, sourceShareID);
+    const filtered = analyticsData(name, data);
     if (!filtered) return;
     data = filtered;
     if (state === 'ready') window.umami?.track(name, data);
