@@ -17,9 +17,9 @@ export function campusPwa(): Plugin {
           '/assets/marvin.webp',
           '/assets/planet.webp',
           '/favicon-v3.png',
-          '/icons/icon-192.png',
-          '/icons/icon-512.png',
-          '/icons/apple-touch-icon.png',
+          '/icons/icon-dark-v2-192.png',
+          '/icons/icon-dark-v2-512.png',
+          '/icons/apple-touch-icon-dark-v2.png',
         ];
         const assets = [
           '/',

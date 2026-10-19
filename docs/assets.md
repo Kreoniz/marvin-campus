@@ -19,3 +19,23 @@ metadata during the repository cleanup. No author, GPS or private infrastructure
 metadata was found. Technical PNG creation timestamps were removed without
 changing pixels. Operational screenshots and original reference materials are
 kept outside the source repository.
+
+## Dark installation icon — 2026-10-19
+
+The built-in image generation tool edited the existing
+`public/icons/icon-512.png` with a dark background, thicker dark character
+outline and a thin ivory keyline. The exact [edit prompt](assets/pwa-icon-v2-prompt.txt)
+is retained for provenance. The generated result was resized with ImageMagick
+to opaque RGB PNGs with metadata stripped:
+
+- `public/icons/icon-dark-v2-192.png`: 192×192 install icon.
+- `public/icons/icon-dark-v2-512.png`: 512×512 install and maskable icon.
+- `public/icons/apple-touch-icon-dark-v2.png`: 180×180 Apple touch icon.
+
+The head stays inside the central safe circle described by the
+[Web Application Manifest specification](https://www.w3.org/TR/appmanifest/#icon-masks).
+The manifest and Apple touch link use the new filenames, and the PWA build
+includes them in its required offline assets and content hash. The previous
+files remain available to older application shells. Updating an existing
+installed icon is controlled by the browser/OS; an application-shell update
+does not itself guarantee immediate replacement of the launcher icon.
