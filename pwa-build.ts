@@ -14,7 +14,7 @@ export function campusPwa(): Plugin {
           '/fonts/InterVariable.woff2',
           '/fonts/Inter-LICENSE.txt',
           '/assets/mascot-mint-head-v1.webp',
-          '/assets/mascot-mint-thinking-v1.webp',
+          '/assets/mascot-m2-thinking-v1.webp',
           '/assets/planet.webp',
           '/favicon-mint-v1.png',
           '/icons/icon-mint-v1-192.png',

@@ -1,0 +1,34 @@
+Selected M2 mascot — 2026-10-20
+Generator: built-in image_gen.imagegen.
+Input roles: existing thinking illustration and owner-supplied crop showing both arms; social edit uses the preceding social preview and selected M2.
+
+SELECTED M2
+Use case: precise-object-edit.
+Asset type: moderately revised body for an existing round-headed robot mascot.
+Image 1 is the full-character EDIT TARGET. Image 2 is a close crop showing the ORIGINAL TWO-ARM ANATOMY; use it to preserve the pose correctly.
+
+CRITICAL ANATOMY: this pose has TWO ARMS AND TWO HANDS.
+Arm A, on the viewer's right, bends UP vertically, and its mitten hand supports the cheek.
+Arm B comes from the viewer's left shoulder, bends across the LOWER FRONT OF THE BODY, and its broad ivory forearm runs horizontally toward the elbow of Arm A. The second mitten hand is low down, supporting or lightly wrapping under the raised elbow, NOT near the cheek.
+The broad ivory curved shape crossing the bottom/front of the original is the SECOND FOREARM, NOT a chest plate. Do not erase it, flatten it into torso, or replace it with an empty chest.
+Show a coherent connection from each shoulder to its forearm and hand. Exactly two arms, exactly two hands. No extra limb. The second hand may be partly occluded by the raised elbow, but its supporting action and the horizontal forearm MUST remain obvious.
+Keep both forearms inside the canvas; allow enough space below the elbow so the supporting arm remains visible.
+
+LOCK THE HEAD: retain the exact round ivory head, large empty forehead, mint #87F19D sleepy eyes, existing eyelid, highlights, expression, angle and bold charcoal outline from image 1. Do not redesign the face.
+Retain the same oversized-head/small-bust proportions, calm bored personality, and thinking pose. This is a body revision, not a new species or a full-body standing character.
+Change the body construction enough to be noticeable at thumbnail size, beyond just moving a seam or adding a tiny cuff. The exact changes are below.
+Keep warm ivory #F7F4EA, mint #87F19D and dark charcoal #242926, thick clean outlines, nearly flat simple illustration and only minimal edge shading. No complex mechanics or small decorative details. No nose or mouth, no accessories, logos, writing, full legs, wheels, saucers, robes, floating head, clutter, watermark or collage.
+One complete upper-body character on a genuinely transparent background. Preserve the full head and outer shoulder/forearm silhouette with a little margin.
+BODY REVISION M2: Give the robot a compact simple charcoal torso core, visibly darker than the original ivory torso, with a small soft mint-green yoke around its top. Keep the shoulders ivory but turn them into low horizontal rounded caps instead of tall oval armor plates. Their joints are narrow dark seams, not big black oval holes. The neck is a narrow ivory stem without the thick black collar. Both forearms and both mitten hands remain warm ivory with bold dark outlines; they must stand out clearly against the charcoal core. One forearm crosses the front horizontally with its small hand holding under the opposite raised elbow, and the other forearm rises to support the cheek. No chest screen or badge. Preserve this complete two-arm composition.
+
+SOCIAL PREVIEW
+Use case: precise-object-edit.
+Asset type: social-sharing preview for an existing university timetable website.
+Image 1 is the edit target: the current horizontal social card, with Russian text on the left and the round mascot head on the right.
+Image 2 is the SELECTED M2 mascot. The user has explicitly selected this exact version.
+
+Change ONLY the right-side mascot illustration in image 1: replace the isolated head with the complete M2 upper-body thinking illustration from image 2. Fit the whole M2 bust neatly inside the right-hand region, with clear margin. Preserve its connected diagonal brow, mint sleepy eyes, perfectly round ivory head, compact charcoal torso, mint yoke, low ivory shoulder caps and short ivory neck.
+CRITICAL: preserve both arms and both hands. One mitten hand supports the cheek on viewer's right; the second arm crosses the lower front horizontally with its second small hand supporting the raised elbow. The broad ivory lower foreground shape is the second forearm, not a chest panel. Show the entire bust, both shoulders, hands and lower contour without clipping. Do not redesign the character or change its expression.
+Keep the illustration to the right of the existing text, without overlap. Keep the yellow 42 sticker in its existing top-right position.
+
+Preserve ALL other content, exact wording, layout, pale warm background, typography and graphical details of image 1. Main title must stay exactly "Марвин Campus", subtitle exactly "Найдём время пересечься", badge exactly "Don't Panic", sticker exactly "42". Keep all text legible and in its existing place. Do not rename the website, add new words, introduce another character or add a watermark. The only desired change is the full selected M2 illustration replacing the head-only illustration. Horizontal 1200:630 composition.

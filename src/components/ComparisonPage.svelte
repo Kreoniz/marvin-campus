@@ -338,7 +338,7 @@
             />
           {:else}<div class="welcome">
               <img
-                src="/assets/mascot-mint-thinking-v1.webp"
+                src="/assets/mascot-m2-thinking-v1.webp"
                 width="190"
                 height="190"
                 alt="Марвин ждёт расписание"
@@ -418,6 +418,9 @@
   .welcome h2 {
     font-size: 30px;
     letter-spacing: -1px;
+  }
+  .welcome > img {
+    object-fit: contain;
   }
   .welcome p {
     color: var(--muted);

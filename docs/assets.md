@@ -51,7 +51,7 @@ record the input roles and preserved features. The existing provenance and
 licensing limitations above still apply.
 
 ImageMagick trimmed transparent margins, resized and encoded the generated
-results, and stripped embedded metadata. The current application uses:
+results, and stripped embedded metadata. The initial mint asset set contains:
 
 - `public/assets/mascot-mint-head-v1.webp`: transparent 192×192 header avatar.
 - `public/assets/mascot-mint-thinking-v1.webp`: transparent thinking illustration
@@ -68,3 +68,26 @@ launch colors use the same background. The header, favicon and thinking pose
 keep genuine transparency for both page themes and the yellow summary card.
 New asset filenames are included in the PWA's required offline assets and build
 hash. Older assets remain available for older application shells.
+
+## Selected M2 illustration — 2026-10-20
+
+The owner selected M2 with its original connected diagonal brow, compact
+charcoal torso, mint yoke, low ivory shoulder caps and short ivory neck.
+Both arms and both hands are retained: one hand supports the cheek while the
+other forearm crosses the front and its hand supports the raised elbow.
+
+`public/assets/mascot-m2-thinking-v1.webp` is an export of the selected M2
+generation, with transparent margins trimmed and a small safety border added
+before resizing. The drawing was not regenerated for the application export.
+It replaces the thinking illustration on the welcome screen and comparison
+summary. The existing mint head avatar, favicon and installation icons use the
+same selected connected-brow face.
+
+`public/social/og-m2-v1.jpg` is a 1200×630 imagegen edit of the preceding social
+preview, using the full selected M2 illustration and retaining the existing
+wording. The exact [selection and edit prompts](assets/m2-selection-prompts.txt)
+record the provenance. Raster exports have embedded metadata stripped.
+
+The new filenames are referenced by the app shell, social metadata and PWA
+asset list; older image files remain available to older shells. The earlier
+licensing notes and dated design-risk reviews remain applicable.
