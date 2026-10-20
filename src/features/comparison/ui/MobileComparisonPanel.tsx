@@ -14,6 +14,8 @@ interface Props {
   fetching: boolean;
   loading: boolean;
   opening: boolean;
+  subgroupShades: boolean;
+  onSubgroupShadesChange: (value: boolean) => void;
 }
 
 export default function MobileComparisonPanel({
@@ -23,6 +25,8 @@ export default function MobileComparisonPanel({
   fetching,
   loading,
   opening,
+  subgroupShades,
+  onSubgroupShadesChange,
 }: Props) {
   const comparing = view.groups.length >= 2 || opening;
   return (
@@ -55,6 +59,8 @@ export default function MobileComparisonPanel({
         </div>
       )}
       <ComparisonStatus
+        subgroupShades={subgroupShades}
+        onSubgroupShadesChange={onSubgroupShadesChange}
         schedules={schedules}
         fetching={fetching}
         links={links}

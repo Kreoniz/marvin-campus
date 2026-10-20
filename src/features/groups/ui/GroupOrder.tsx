@@ -2,7 +2,7 @@ import { useRef, useState, type CSSProperties } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Dialog } from 'unlikely-ui/dialog';
 import type { Selection } from '../../../lib/types.ts';
-import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
+import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 
@@ -75,8 +75,8 @@ export default function GroupOrder({
           </Dialog.Close>
         </div>
         <Dialog.Description>
-          Поменяй порядок групп в списке. Цвета и расположение пар в календаре
-          останутся прежними.
+          Поменяй порядок групп и их колонок в режиме дня. Цвета групп останутся
+          прежними.
         </Dialog.Description>
         <ol
           className="mt-5 flex max-h-[min(60dvh,440px)] list-none flex-col gap-2 overflow-y-auto p-0.5"
@@ -89,7 +89,7 @@ export default function GroupOrder({
               className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
               style={
                 {
-                  '--chip': colorStyle(colors[group.id] ?? 0).slice(7),
+                  '--chip': chipColor(colors[group.id] ?? 0),
                 } as CSSProperties
               }
             >

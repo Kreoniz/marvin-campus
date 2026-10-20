@@ -29,6 +29,7 @@ interface LessonCardProps {
   subgroupShades?: boolean;
   style: CSSProperties;
   horizontal?: boolean;
+  displayGroupId?: number;
 }
 
 const relativeColorsSupported = CSS.supports(
@@ -43,6 +44,7 @@ export default function LessonCard({
   subgroupShades = false,
   style,
   horizontal = false,
+  displayGroupId,
 }: LessonCardProps) {
   const { lesson } = block;
   const shared = block.members.length > 1;
@@ -100,6 +102,8 @@ export default function LessonCard({
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
   const remote = events.every((event) => event.remote);
+  const laneGroup = block.members.find((group) => group.id === displayGroupId);
+  const accessibleLabel = `${laneGroup ? `Колонка ${laneGroup.label}. ` : ''}${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
   const background = block.parallel
     ? allSaved
       ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
@@ -176,13 +180,13 @@ export default function LessonCard({
     <div
       className={`lesson-position absolute z-[2] [container-type:size] ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
+      data-group-id={displayGroupId}
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
-          render={<button type="button" />}
+          render={<button type="button" aria-label={accessibleLabel} />}
           style={chipStyle(block.members[0], undefined, !block.parallel)}
           className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-muted' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
-          aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
           onClick={() => {

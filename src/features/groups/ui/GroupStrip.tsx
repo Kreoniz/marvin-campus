@@ -10,7 +10,7 @@ import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
 import type { GroupSchedule, Selection, Subgroup } from '../../../lib/types.ts';
 import { mergeSubgroups } from '../../../lib/subgroups.ts';
-import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
+import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
@@ -41,7 +41,7 @@ interface Pointer {
   rect: DOMRect;
 }
 const chipStyle = (color: number) =>
-  ({ '--chip': colorStyle(color).slice(7) }) as CSSProperties;
+  ({ '--chip': chipColor(color) }) as CSSProperties;
 const chipClassName =
   'group-chip w-32 min-w-32 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.25 py-0.5 [color:var(--u-category-ink)] compact:w-26 compact:min-w-26 compact:p-0';
 const settingActionClassName =

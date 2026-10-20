@@ -34,8 +34,8 @@ export function assignColors(
   return result;
 }
 
-export function colorStyle(color: number): string {
-  if (color < base.length) return `--chip:var(--u-category-${base[color]})`;
+export function chipColor(color: number): string {
+  if (color < base.length) return `var(--u-category-${base[color]})`;
   const hue = Math.round((color - base.length) * 137.508) % 360;
-  return `--chip:light-dark(hsl(${hue} 55% 82%),hsl(${hue} 38% 69%))`;
+  return `light-dark(hsl(${hue} 55% 82%),hsl(${hue} 38% 69%))`;
 }

@@ -1,4 +1,4 @@
-import { colorStyle } from './colors.ts';
+import { chipColor } from './colors.ts';
 import { publicSubgroup } from './subgroups.ts';
 import type { Lesson, Subgroup } from './types.ts';
 
@@ -24,7 +24,7 @@ export function subgroupChipStyle(
   subgroupNumber: number | undefined,
   enabled = false,
 ): Record<'--chip-base' | '--chip', string> {
-  const base = colorStyle(color).slice('--chip:'.length);
+  const base = chipColor(color);
   // Keep the current palette readable with its dark ink in both themes.
   const lightness =
     subgroupNumber === 1

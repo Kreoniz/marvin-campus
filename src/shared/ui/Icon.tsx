@@ -16,7 +16,7 @@ import {
   Moon,
   Plus,
   Search,
-  SlidersHorizontal,
+  Split,
   Sun,
   X,
   type LucideIcon,
@@ -42,7 +42,7 @@ const icons: Record<string, LucideIcon> = {
   order: GripVertical,
   up: ChevronUp,
   clock: Clock3,
-  settings: SlidersHorizontal,
+  subgroups: Split,
 };
 export default function Icon({
   name,

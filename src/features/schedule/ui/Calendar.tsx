@@ -9,8 +9,9 @@ import { Skeleton } from 'unlikely-ui/skeleton';
 import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import { compareDay } from '../../../lib/domain.ts';
-import type { GroupColors } from '../../../lib/colors.ts';
+import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
+import { groupLanes } from '../../../lib/group-lanes.ts';
 import LessonCard from './LessonCard.tsx';
 
 interface CalendarProps {
@@ -25,7 +26,6 @@ interface CalendarProps {
   onDay: (day: string) => void;
   singleDay?: boolean;
   placeholder?: boolean;
-  compactHeader?: boolean;
 }
 
 export default function Calendar({
@@ -40,7 +40,6 @@ export default function Calendar({
   onDay,
   singleDay = false,
   placeholder = false,
-  compactHeader = false,
 }: CalendarProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
@@ -83,18 +82,39 @@ export default function Calendar({
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
-  const hideHeader = compactHeader && singleDay;
-  const layout = dates.map((date) => ({
-    date,
-    result: compareDay(schedules, date),
-    placed: lessonBlocks(schedules, date),
-  }));
-  const overlapWidth = Math.max(
-    160,
+  const groupCount = Math.max(schedules.length, 1);
+  const layout = dates.map((date) => {
+    const placed = lessonBlocks(schedules, date);
+    return {
+      date,
+      result: compareDay(schedules, date),
+      placed,
+      groupPositions: singleDay
+        ? groupLanes(
+            placed,
+            schedules.map((group) => group.selection.id),
+          )
+        : [],
+    };
+  });
+  // A group's concurrent events may split its slot, but never cover a neighbour.
+  const groupMinWidth = Math.max(
+    112,
     ...layout.flatMap((column) =>
-      column.placed.map((block) => 112 * block.columns),
+      column.groupPositions.map(
+        (position) => 112 / (position.width * groupCount),
+      ),
     ),
   );
+  const groupMaxWidth = Math.max(166, groupMinWidth);
+  const overlapWidth = singleDay
+    ? Math.max(160, groupMinWidth * groupCount)
+    : Math.max(
+        160,
+        ...layout.flatMap((column) =>
+          column.placed.map((block) => 112 * block.columns),
+        ),
+      );
   useLayoutEffect(() => {
     const element = scroller.current;
     if (!element) return;
@@ -122,24 +142,24 @@ export default function Calendar({
     <>
       <div
         ref={scroller}
-        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}${hideHeader ? ' no-day-header' : ''}`}
+        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
         tabIndex={0}
         role="region"
         style={
           {
             '--calendar-viewport': `${660 * scale}px`,
-            '--calendar-header': `${hideHeader ? 0 : singleDay ? 36 : 44}px`,
+            '--calendar-header': `${singleDay ? 28 : 44}px`,
           } as CSSProperties
         }
         aria-label={
           singleDay
-            ? `Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}. Время слева, одновременно идущие пары рядом.`
+            ? `Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}. Время слева, у каждой группы своя колонка. Общие пары повторяются в колонках участников.`
             : 'Недельное расписание. На узком экране прокручивается горизонтально.'
         }
         aria-busy={loading}
       >
         <div
-          className={`week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] [--day-min:max(var(--day-base),var(--overlap-min))] ${hideHeader ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
+          className="week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] grid-rows-[var(--calendar-header)_var(--calendar-height)] [--day-min:max(var(--day-base),var(--overlap-min))]"
           data-schedule-days
           style={
             {
@@ -150,7 +170,28 @@ export default function Calendar({
             } as CSSProperties
           }
         >
-          {!hideHeader && (
+          {singleDay ? (
+            <>
+              <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
+              <div className="group-headings relative border-b border-(--u-line-soft)">
+                {schedules.map(({ selection }, index) => (
+                  <span
+                    key={selection.id}
+                    className="absolute inset-y-0 flex items-center truncate border-l-2 border-(--chip) px-1.5 text-[11px] font-bold"
+                    style={
+                      {
+                        '--chip': chipColor(colors[selection.id] ?? 0),
+                        left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px) + 3px)`,
+                        width: `calc(min(${100 / groupCount}%, ${groupMaxWidth}px) - 6px)`,
+                      } as CSSProperties
+                    }
+                  >
+                    {selection.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
             <>
               <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
               {dates.map((date) => (
@@ -203,7 +244,7 @@ export default function Calendar({
             return (
               <div
                 key={column.date}
-                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && column.date === day ? 'chosen' : ''}`}
+                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-[color-mix(in_oklch,var(--u-selection)_50%,transparent)]' : ''}`}
               >
                 {loading && !hasSnapshot ? (
                   <div
@@ -225,6 +266,23 @@ export default function Calendar({
                   </div>
                 ) : (
                   <>
+                    {singleDay &&
+                      schedules.map(({ selection, snapshot, error }, index) => (
+                        <div
+                          key={selection.id}
+                          className="group-lane pointer-events-none absolute inset-y-0 border-l border-(--u-line-soft)"
+                          style={{
+                            left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px))`,
+                            width: `min(${100 / groupCount}%, ${groupMaxWidth}px)`,
+                          }}
+                        >
+                          {!snapshot && column.placed.length > 0 && (
+                            <span className="absolute inset-0 flex items-center justify-center p-2 text-center text-xs text-u-muted">
+                              {error ? 'Данные недоступны' : 'Ждём данные'}
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     {highlights.map((range) => (
                       <div
                         key={`${range.start}:${range.end}`}
@@ -236,10 +294,19 @@ export default function Calendar({
                         }}
                       />
                     ))}
-                    {column.placed.map((block) => (
+                    {(singleDay
+                      ? column.groupPositions
+                      : column.placed.map((block) => ({
+                          block,
+                          groupId: undefined,
+                          left: block.column / block.columns,
+                          width: 1 / block.columns,
+                        }))
+                    ).map(({ block, groupId, left, width }) => (
                       <LessonCard
-                        key={block.identity}
+                        key={`${block.identity}:${groupId ?? 'event'}`}
                         block={block}
+                        displayGroupId={groupId}
                         colors={colors}
                         subgroupCatalog={subgroupCatalog}
                         subgroupShades={subgroupShades}
@@ -249,8 +316,12 @@ export default function Calendar({
                             (block.lesson.end - block.lesson.start) * scale - 3,
                             18,
                           ),
-                          left: `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
-                          width: `calc(min(${100 / block.columns}%, 166px) - 6px)`,
+                          left: singleDay
+                            ? `calc(${left * groupCount} * min(${100 / groupCount}%, ${groupMaxWidth}px) + 3px)`
+                            : `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
+                          width: singleDay
+                            ? `calc(min(${width * groupCount} * min(${100 / groupCount}%, ${groupMaxWidth}px), 166px) - 6px)`
+                            : `calc(min(${100 / block.columns}%, 166px) - 6px)`,
                         }}
                       />
                     ))}

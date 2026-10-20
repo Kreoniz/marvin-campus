@@ -17,7 +17,6 @@ import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
 import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
-import ScheduleDisplayOptions from '../schedule/ui/ScheduleDisplayOptions.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
 
@@ -163,16 +162,7 @@ export default function ComparisonPage() {
         returnFocus={orderFocus}
       />
       <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
-        <SiteHeader
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          displayOptions={
-            <ScheduleDisplayOptions
-              subgroupShades={subgroupShades}
-              onSubgroupShadesChange={changeSubgroupShades}
-            />
-          }
-        />
+        <SiteHeader theme={theme} onToggleTheme={toggleTheme} />
         <main>
           {pwa.offline && (
             <p className="my-2 text-xs text-u-muted" role="status">
@@ -190,7 +180,11 @@ export default function ComparisonPage() {
                 <Alert.Title>Не удалось открыть сравнение</Alert.Title>
                 <Alert.Description>{links.error}</Alert.Description>
               </Alert.Root>
-              <Button render={<a href="/" />}>Открыть своё расписание</Button>
+              <Button
+                render={<a href="/" aria-label="Открыть своё расписание" />}
+              >
+                Открыть своё расписание
+              </Button>
             </Card.Root>
           ) : (
             <>
@@ -225,6 +219,8 @@ export default function ComparisonPage() {
                     )}
                     {mobile ? (
                       <MobileComparisonPanel
+                        subgroupShades={subgroupShades}
+                        onSubgroupShadesChange={changeSubgroupShades}
                         view={view}
                         schedules={source.schedules}
                         links={links}
@@ -234,6 +230,8 @@ export default function ComparisonPage() {
                       />
                     ) : (
                       <ComparisonStatus
+                        subgroupShades={subgroupShades}
+                        onSubgroupShadesChange={changeSubgroupShades}
                         schedules={source.schedules}
                         fetching={links.opening || source.fetching}
                         links={links}
@@ -251,7 +249,6 @@ export default function ComparisonPage() {
                       placeholder={links.opening}
                       onDay={view.selectDay}
                       singleDay={mobile && mobileView === 'day'}
-                      compactHeader={mobile}
                     />
                   </>
                 ) : (

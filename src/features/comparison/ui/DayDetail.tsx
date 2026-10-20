@@ -69,7 +69,7 @@ export default function DayDetail({
       <div className="min-w-0 flex-1">
         <h2
           id="day-title"
-          className="h-6 truncate text-sm leading-6 font-semibold first-letter:uppercase"
+          className="h-6 truncate text-sm leading-6 font-bold first-letter:uppercase"
         >
           {placeholder ? (
             <>

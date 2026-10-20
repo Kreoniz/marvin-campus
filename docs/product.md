@@ -36,12 +36,18 @@ Online lessons use a contrasting two-pixel dashed outline.
 Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
 Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
-Ordinary cards use the group color. Each shared event appears once with a common
+Ordinary cards use the group color. In the week grid, each shared event appears once with a common
 subject and room, and colored participant sections in stable group-ID order.
 Group names and subgroup numbers occupy two lines; more than three participants
 show the first two and a count, with the full list in the popover. Lesson-kind
-badges sit beside the room. Lanes belong to overlapping events, so empty groups
-reserve no space. Cards in the vertical calendar are at most 160 pixels wide in
+badges sit beside the room. Week-grid lanes belong to overlapping events, so empty groups
+reserve no space there. The mobile day grid uses fixed columns in selection order:
+each group keeps its column, including empty or unavailable groups. Unavailable
+columns show their unknown state. Shared events repeat in their participants'
+columns, retaining the same source block, participants and details; they never
+span unrelated groups. Overlapping distinct events divide only their own group's
+column. Reordering groups also reorders these day columns, while colors stay stable.
+Cards in the vertical calendar are at most 160 pixels wide in
 both day and week views; an isolated lesson does not stretch across the day.
 Their horizontal pitch is capped too, keeping a six-pixel gap instead of
 spreading narrow cards across a wide day. Pressing a card highlights it without
@@ -55,8 +61,8 @@ Presence uses amber highlights and free windows use green, including their
 legends. Saved ranges retain the mode color with a weaker fill and dashed edge
 in both views.
 
-The header's “Вид расписания” menu offers subgroup shades, off by default and
-remembered locally. Subgroups 1 and 2 use lighter/darker OKLCH variants of their
+The subgroup icon beside data status and link copying toggles subgroup shades,
+off by default and remembered locally. Subgroups 1 and 2 use lighter/darker OKLCH variants of their
 group's existing color; visible subgroup numbers remain unchanged. Membership
 comes from source lessons, not the selected filter. Whole-group, unknown or
 multiple membership, and other subgroup numbers retain the base color. Saved

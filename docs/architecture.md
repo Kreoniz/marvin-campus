@@ -18,7 +18,9 @@
   results and data status. It composes the independent groups and schedule UI.
 - `src/features/groups`: group search, subgroup selection and ordering.
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
-  from the pure calculations in `src/lib`.
+  from the pure calculations in `src/lib`. `group-lanes.ts` projects source blocks
+  into fixed group columns in the compact day view without changing comparison
+  calculations or event identity. The week grid retains overlap-based event lanes.
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
   through its public subpaths and style app layout with Tailwind utilities.
   `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
