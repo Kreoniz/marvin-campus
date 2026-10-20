@@ -10,7 +10,7 @@ export async function resolveGroupRequests(
   signal: AbortSignal,
   online: boolean,
 ): Promise<Selection[]> {
-  const groups: Selection[] = new Array(requests.length);
+  const groups: Selection[] = [];
   let next = 0;
   let failed = false;
   async function worker() {

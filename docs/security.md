@@ -12,6 +12,8 @@ python3 scripts/check-private-files.py --history
 gitleaks git . --log-opts=--all --redact
 gitleaks dir . --redact
 pnpm check
+pnpm lint
+pnpm format:check
 pnpm test
 pnpm build
 go test -race ./...
