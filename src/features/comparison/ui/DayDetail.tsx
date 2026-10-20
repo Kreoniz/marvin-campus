@@ -8,7 +8,6 @@ import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import LessonCard from '../../schedule/ui/LessonCard.tsx';
 import ComparisonSummary from './ComparisonSummary.tsx';
-import '../../../components/schedule.css';
 
 interface DayDetailProps {
   schedules: GroupSchedule[];
@@ -59,17 +58,20 @@ export default function DayDetail({
   const highlights = mode === 'presence' ? result.presence : result.free;
   return (
     <Card.Root
-      className="day-detail"
+      className="day-detail mt-[17px] flex h-[var(--detail-height)] gap-3.5 p-3 [overflow-anchor:none] [&>.marvin-card]:min-h-0 [&>.marvin-card]:overflow-y-auto [&>.marvin-card]:[scrollbar-gutter:stable]"
       role="region"
       aria-busy={loading}
       aria-labelledby="day-title"
       style={{ '--detail-height': `${panelHeight}px` } as CSSProperties}
     >
-      <div className="day-main">
-        <h2 id="day-title">
+      <div className="min-w-0 flex-1">
+        <h2
+          id="day-title"
+          className="h-6 truncate text-sm leading-6 font-semibold first-letter:uppercase"
+        >
           {placeholder ? (
             <>
-              <Skeleton className="detail-title-placeholder" />
+              <Skeleton className="inline-block h-5 w-[min(220px,100%)] align-middle" />
               <span className="sr-only">Загружаем выбранный день</span>
             </>
           ) : (
@@ -77,13 +79,13 @@ export default function DayDetail({
           )}
         </h2>
         <div
-          className="day-scroll"
+          className="day-scroll h-[calc(var(--detail-height)-64px)] overflow-auto px-4 [scrollbar-gutter:stable] [scrollbar-width:thin]"
           tabIndex={0}
           role="region"
           aria-label="Подробное расписание выбранного дня"
         >
           <div
-            className="day-timeline"
+            className="day-timeline relative min-w-[740px] max-w-[1080px] bg-[repeating-linear-gradient(to_right,transparent,transparent_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)))]"
             style={
               {
                 height: rows * rowHeight + 40,
@@ -94,14 +96,17 @@ export default function DayDetail({
             {hours.map((hour) => (
               <span
                 key={hour}
-                className="day-hour"
+                className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
                 style={{ left: `${((hour - start) * 100) / (end - start)}%` }}
               >
                 {timeLabel(hour)}
               </span>
             ))}
             {loading && !schedules.some((group) => group.snapshot) ? (
-              <div className="day-skeleton" aria-hidden="true">
+              <div
+                className="absolute inset-0 [&>div]:absolute"
+                aria-hidden="true"
+              >
                 {Array.from({ length: rows }, (_, index) => (
                   <Skeleton
                     key={index}
@@ -119,7 +124,7 @@ export default function DayDetail({
                 {highlights.map((range) => (
                   <div
                     key={`${range.start}:${range.end}`}
-                    className={`day-highlight${mode === 'free' ? ' free-highlight' : ''}${saved ? ' saved-highlight' : ''}`}
+                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border bg-[color-mix(in_srgb,var(--u-accent-soft)_45%,transparent)]' : 'border-u-line bg-[color-mix(in_srgb,var(--u-muted)_8%,transparent)]'} ${saved ? 'saved-highlight border-dashed' : ''}`}
                     aria-hidden="true"
                     style={{
                       left: `${((range.start - start) * 100) / (end - start)}%`,
@@ -143,7 +148,7 @@ export default function DayDetail({
                   />
                 ))}
                 {!placed.length && (
-                  <p className="day-empty">
+                  <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
                     {schedules.some((group) => group.error && !group.snapshot)
                       ? 'Часть расписаний недоступна.'
                       : schedules.some((group) => !group.snapshot)

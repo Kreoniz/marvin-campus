@@ -24,7 +24,7 @@ export default function DatePicker({
   const [previewWeek, setPreviewWeek] = useState('');
   const today = omskToday();
   return (
-    <div className="campus-date-picker">
+    <div className="campus-date-picker [&_.u-calendar]:w-full">
       <Calendar
         selected={localDate(day)}
         defaultMonth={localDate(day)}
@@ -55,12 +55,12 @@ export default function DatePicker({
         onDayFocus={(date) => setPreviewWeek(monday(dateString(date)))}
         onDayBlur={() => setPreviewWeek('')}
       />
-      <p className="date-picker-week-label" aria-live="polite">
+      <p className="my-3 text-xs text-u-muted" aria-live="polite">
         Неделя: {weekLabel(previewWeek || monday(day))}
       </p>
       <Button
         variant="secondary"
-        className="date-picker-today"
+        className="w-full"
         onClick={() => onSelect(today)}
       >
         Сегодня

@@ -30,6 +30,17 @@ export default function ComparisonStatus({
     (g) => g.snapshot && (g.snapshot.stale || g.error),
   );
   const missing = schedules.some((g) => !g.snapshot && !g.loading);
+  const commonCheck =
+    checked &&
+    schedules.every(
+      (group) =>
+        group.snapshot &&
+        !group.loading &&
+        !group.error &&
+        !group.snapshot.warning &&
+        !group.snapshot.stale &&
+        checkedLabel(group.snapshot.checkedAt) === checkedLabel(checked),
+    );
   const message = fetching
     ? saved
       ? 'Проверяем… · сохранённые данные'
@@ -45,10 +56,15 @@ export default function ComparisonStatus({
           : 'Расписание недоступно';
   return (
     <>
-      <div className="data-status">
-        <span className="status-message" role="status" aria-atomic="true">
+      <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 max-[700px]:pl-[9px]">
+        <span
+          className="status-message flex min-w-0 items-center gap-[5px] text-[11px] text-u-muted"
+          role="status"
+          aria-atomic="true"
+        >
           {saved && <Icon name="clock" size={13} />}
           <span
+            className="truncate"
             title={
               checked
                 ? `${message}. Проверено ${checkedLabel(checked)}. Омск, UTC+6.`
@@ -56,10 +72,10 @@ export default function ComparisonStatus({
             }
           >
             {message}
-            <span className="timezone"> · Омск, UTC+6</span>
+            <span className="timezone max-[700px]:hidden"> · Омск, UTC+6</span>
           </span>
         </span>
-        <div className="status-actions">
+        <div className="status-actions flex shrink-0 gap-0.5">
           <Popover.Root>
             <Popover.Trigger
               render={
@@ -71,11 +87,13 @@ export default function ComparisonStatus({
               }
             />
             <Popover.Content
-              className="data-details"
+              className="data-details max-h-[min(420px,calc(100dvh-32px))] w-[min(380px,calc(100vw-24px))] overflow-auto p-4 text-sm"
               positionerProps={{ sideOffset: 6 }}
             >
-              <div className="data-details-heading">
-                <Popover.Title>Данные расписания</Popover.Title>
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <Popover.Title className="m-0 pt-2 text-lg leading-6">
+                  Данные расписания
+                </Popover.Title>
                 <Popover.Close
                   render={
                     <IconButton
@@ -86,29 +104,65 @@ export default function ComparisonStatus({
                   }
                 />
               </div>
-              <p>
-                Время по Омску, UTC+6. Сохранённые данные могут отличаться от
-                текущего расписания.
+              <p className="mb-3 text-xs leading-[18px] text-u-muted">
+                {commonCheck ? `Проверено ${checkedLabel(checked)}. ` : ''}Омск,
+                UTC+6.
+                {saved &&
+                  ' Сохранённые данные могут отличаться от текущего расписания.'}
               </p>
-              {schedules.map((group) => (
-                <div key={group.selection.id} className="group-data-status">
-                  <strong>{group.selection.label}</strong>
-                  <p>
-                    {group.error ??
-                      group.snapshot?.warning ??
-                      (group.loading
-                        ? 'Загружаем расписание…'
-                        : group.snapshot?.stale
-                          ? 'Показаны сохранённые данные.'
-                          : group.snapshot
-                            ? 'Данные актуальны.'
-                            : 'Нет сохранённых данных.')}
-                  </p>
-                  {group.snapshot && (
-                    <p>Проверено {checkedLabel(group.snapshot.checkedAt)}.</p>
-                  )}
-                </div>
-              ))}
+              <ul className="m-0 list-none divide-y divide-[var(--u-line-soft)] p-0">
+                {schedules.map((group) => {
+                  const snapshot = group.snapshot;
+                  const warning = group.error ?? snapshot?.warning;
+                  const state = group.loading
+                    ? 'Загружаем…'
+                    : snapshot
+                      ? snapshot.stale || warning
+                        ? 'Сохранено'
+                        : 'Актуально'
+                      : 'Недоступно';
+                  return (
+                    <li
+                      key={group.selection.id}
+                      className="group-data-status py-2.5"
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <strong className="text-sm font-semibold">
+                          {group.selection.label}
+                        </strong>
+                        <span className="text-xs text-u-muted">{state}</span>
+                      </div>
+                      {warning && (
+                        <p className="mt-1 text-xs leading-[18px] text-u-muted">
+                          {warning}
+                        </p>
+                      )}
+                      {!snapshot && !group.loading && !warning && (
+                        <p className="mt-1 text-xs text-u-muted">
+                          Нет сохранённых данных.
+                        </p>
+                      )}
+                      {snapshot && (
+                        <time
+                          dateTime={snapshot.checkedAt}
+                          title={new Intl.DateTimeFormat('ru-RU', {
+                            timeZone: 'Asia/Omsk',
+                            dateStyle: 'short',
+                            timeStyle: 'medium',
+                          }).format(new Date(snapshot.checkedAt))}
+                          className={
+                            commonCheck
+                              ? 'sr-only'
+                              : 'mt-1 block text-xs text-u-muted'
+                          }
+                        >
+                          Проверено {checkedLabel(snapshot.checkedAt)}.
+                        </time>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </Popover.Content>
           </Popover.Root>
           <IconButton
@@ -125,10 +179,11 @@ export default function ComparisonStatus({
         </div>
       </div>
       {links.manual && (
-        <div className="manual-share">
+        <div className="manual-share flex flex-wrap items-center gap-2 border-t border-[var(--u-line-soft)] px-4 py-3 text-xs">
           <label htmlFor="share-link">Ссылка на сравнение</label>
           <Input
             id="share-link"
+            className="min-w-0 flex-[1_1_220px]"
             readOnly
             value={links.manual}
             onFocus={(event) => event.currentTarget.select()}

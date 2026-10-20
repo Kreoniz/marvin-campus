@@ -41,12 +41,18 @@ export default function MobileDayNav({
   }
   return (
     <>
-      <div className="mobile-view-controls" inert={opening}>
-        <div className="mobile-week-controls" data-schedule-week>
+      <div
+        className="mobile-view-controls flex items-center gap-1.5 px-1.5"
+        inert={opening}
+      >
+        <div
+          className="mobile-week-controls flex min-w-0 flex-1 items-center"
+          data-schedule-week
+        >
           <Button
             variant="ghost"
             size="icon-sm"
-            className="week-arrow"
+            className="week-arrow h-11 min-h-11 w-7 min-w-7 shrink-0 p-1"
             aria-label="Предыдущая неделя"
             onClick={() => view.selectWeek(addDays(view.week, -7))}
           >
@@ -58,7 +64,7 @@ export default function MobileDayNav({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mobile-date"
+                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[11px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:text-balance [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }
@@ -67,7 +73,7 @@ export default function MobileDayNav({
               <Icon name="down" size={12} />
             </Popover.Trigger>
             <Popover.Content
-              className="week-popover"
+              className="week-popover w-[min(340px,calc(100vw-24px))] p-3"
               positionerProps={{ sideOffset: 6 }}
             >
               <DatePicker
@@ -82,7 +88,7 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="week-arrow"
+            className="week-arrow h-11 min-h-11 w-7 min-w-7 shrink-0 p-1"
             aria-label="Следующая неделя"
             onClick={() => view.selectWeek(addDays(view.week, 7))}
           >
@@ -91,14 +97,14 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="sm"
-            className="today-button"
+            className="today-button min-w-0 px-1 text-[11px] underline underline-offset-[3px]"
             onClick={() => view.selectDate(omskToday())}
           >
             Сегодня
           </Button>
         </div>
         <RadioGroup.Root
-          className="view-toggle"
+          className="view-toggle shrink-0 gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:px-[7px] [&_.u-segmented-item]:text-[11px]"
           variant="segmented"
           aria-label="Представление расписания"
           value={mobileView}
@@ -109,7 +115,7 @@ export default function MobileDayNav({
         </RadioGroup.Root>
       </div>
       <nav
-        className="agenda-days"
+        className="agenda-days grid grid-cols-7 gap-0.5 px-2 pb-1"
         data-schedule-days
         aria-label="Дни недели"
         inert={opening}
@@ -118,7 +124,7 @@ export default function MobileDayNav({
           <Button
             key={date}
             variant="ghost"
-            className={view.day === date && !opening ? 'selected' : ''}
+            className={`flex h-11 min-h-11 min-w-0 flex-col items-center justify-center gap-px border px-0 py-[3px] text-[11px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:flex-col [&>.u-button-label]:gap-px [&>.u-button-label>span]:leading-[14px] ${view.day === date && !opening ? 'selected border-u-selection-border bg-u-selection text-u-selection-ink' : 'border-transparent'}`}
             data-schedule-day={date}
             aria-pressed={view.day === date && !opening}
             aria-label={formatDay(date, {
@@ -130,13 +136,15 @@ export default function MobileDayNav({
           >
             {opening ? (
               <span
-                className="skeleton day-label-placeholder"
+                className="inline-block h-6 w-[26px] animate-pulse rounded-u-control bg-u-well align-middle motion-reduce:animate-none"
                 aria-hidden="true"
               />
             ) : (
               <>
                 <span>{formatDay(date, { weekday: 'short' })}</span>
-                <strong>{Number(date.slice(8))}</strong>
+                <strong className="text-[15px] leading-[18px]">
+                  {Number(date.slice(8))}
+                </strong>
               </>
             )}
           </Button>
@@ -145,7 +153,7 @@ export default function MobileDayNav({
       {view.groups.length >= 2 && (
         <div className="mobile-modes-wrap" inert={opening}>
           <RadioGroup.Root
-            className="mobile-modes"
+            className="mobile-modes mx-[9px] mt-1 flex [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:text-xs"
             variant="segmented"
             aria-label="Режим сравнения"
             value={view.mode}

@@ -12,7 +12,6 @@ import { compareDay } from '../../../lib/domain.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import LessonCard from './LessonCard.tsx';
-import '../../../components/schedule.css';
 
 interface CalendarProps {
   schedules: GroupSchedule[];
@@ -121,7 +120,7 @@ export default function Calendar({
     <>
       <div
         ref={scroller}
-        className={`week-scroll${singleDay ? ' day-view' : ''}${hideHeader ? ' no-day-header' : ''}`}
+        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] max-[700px]:[--rail-width:46px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] max-[700px]:[--day-base:calc((100vw-74px)/2)]'}${hideHeader ? ' no-day-header' : ''}`}
         tabIndex={0}
         role="region"
         style={
@@ -138,7 +137,7 @@ export default function Calendar({
         aria-busy={loading}
       >
         <div
-          className="week-grid"
+          className={`week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] [--day-min:max(var(--day-base),var(--overlap-min))] ${hideHeader ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
           data-schedule-days
           style={
             {
@@ -151,12 +150,12 @@ export default function Calendar({
         >
           {!hideHeader && (
             <>
-              <div className="time-header" />
+              <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
               {dates.map((date) => (
                 <button
                   type="button"
                   key={date}
-                  className={`day-heading${!placeholder && day === date ? ' selected' : ''}`}
+                  className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize max-[700px]:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
                   data-schedule-day={date}
                   disabled={placeholder}
                   aria-pressed={!placeholder && day === date}
@@ -168,7 +167,7 @@ export default function Calendar({
                   onClick={() => onDay(date)}
                 >
                   {placeholder ? (
-                    <Skeleton className="day-label-placeholder" />
+                    <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
                   ) : (
                     <>
                       <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
@@ -179,9 +178,13 @@ export default function Calendar({
               ))}
             </>
           )}
-          <div className="time-rail">
+          <div className="time-rail sticky left-0 z-[4] bg-u-surface">
             {hours.map((hour) => (
-              <span key={hour} style={{ top: (hour - start) * scale }}>
+              <span
+                key={hour}
+                className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
+                style={{ top: (hour - start) * scale }}
+              >
                 {timeLabel(hour)}
               </span>
             ))}
@@ -192,13 +195,17 @@ export default function Calendar({
             return (
               <div
                 key={column.date}
-                className={`day-column${!placeholder && column.date === day ? ' chosen' : ''}`}
+                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && column.date === day ? 'chosen' : ''}`}
               >
                 {loading && !hasSnapshot ? (
-                  <div className="calendar-skeleton" aria-hidden="true">
+                  <div
+                    className="calendar-skeleton absolute inset-0"
+                    aria-hidden="true"
+                  >
                     {(placeholder ? [] : [0, 1, 2]).map((index) => (
                       <Skeleton
                         key={index}
+                        className="absolute"
                         style={{
                           top: (45 + index * 180) * scale,
                           height: (index === 1 ? 150 : 95) * scale,
@@ -213,7 +220,7 @@ export default function Calendar({
                     {highlights.map((range) => (
                       <div
                         key={`${range.start}:${range.end}`}
-                        className={`shared-highlight${mode === 'free' ? ' free-highlight' : ''}${saved ? ' saved-highlight' : ''}`}
+                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-u-line'} ${saved ? 'saved-highlight bg-[color-mix(in_srgb,var(--u-muted)_5%,transparent)] [border-left-style:dashed]' : mode === 'free' ? 'bg-[color-mix(in_srgb,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_srgb,var(--u-muted)_8%,transparent)]'}`}
                         aria-hidden="true"
                         style={{
                           top: (range.start - start) * scale,
@@ -235,12 +242,12 @@ export default function Calendar({
                           ),
                           left: `calc(${block.left * 100}% + 3px)`,
                           width: `calc(${block.width * 100}% - 6px)`,
-                          maxWidth: 160,
+                          maxWidth: singleDay ? undefined : 160,
                         }}
                       />
                     ))}
                     {!column.placed.length && (
-                      <div className="empty-column">
+                      <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                         <span>
                           {!complete
                             ? schedules.some(
@@ -251,7 +258,7 @@ export default function Calendar({
                             : 'Нет занятий'}
                         </span>
                         {complete && saved && (
-                          <span className="empty-saved">
+                          <span className="empty-saved text-[11px]">
                             По сохранённым данным
                           </span>
                         )}
@@ -261,6 +268,7 @@ export default function Calendar({
                             alt=""
                             width="52"
                             height="52"
+                            className="opacity-55 in-[[data-appearance=dark]]:invert"
                           />
                         )}
                       </div>
@@ -272,10 +280,10 @@ export default function Calendar({
           })}
         </div>
       </div>
-      <p className="calendar-hint">
+      <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted max-[700px]:p-[9px] max-[700px]:leading-normal">
         {schedules.length >= 2 && (
           <span
-            className={`mode-legend${mode === 'free' ? ' free-legend' : ''}`}
+            className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-u-line before:bg-(--u-well)'}`}
           >
             {mode === 'presence'
               ? 'Полоса — общее время в вузе'
@@ -283,10 +291,10 @@ export default function Calendar({
             {saved && ' · по сохранённым данным'}
           </span>
         )}
-        <span className="lesson-hint">
+        <span className="lesson-hint inline">
           Нажми на занятие — подробности.
           {(!singleDay || overlapWidth + 46 > viewportWidth - 40) && (
-            <span className="mobile-hint">
+            <span className="mobile-hint hidden max-[700px]:inline">
               {' '}
               {singleDay
                 ? 'Пары можно прокручивать →'

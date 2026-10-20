@@ -42,6 +42,10 @@ interface Pointer {
 }
 const chipStyle = (color: number) =>
   ({ '--chip': colorStyle(color).slice(7) }) as CSSProperties;
+const chipClassName =
+  'group-chip w-32 min-w-32 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.25 py-0.5 [color:var(--u-category-ink)] max-[700px]:w-26 max-[700px]:min-w-26 max-[700px]:p-0';
+const settingActionClassName =
+  'mt-2 min-h-11 w-full justify-start font-medium [&>.u-button-label]:justify-start';
 
 export default function GroupStrip(props: Props) {
   const {
@@ -217,7 +221,8 @@ export default function GroupStrip(props: Props) {
   return (
     <>
       <div
-        className={`group-controls ${drag ? 'dragging' : ''}`}
+        className="group-controls group/groups relative flex h-19.25 min-w-0 items-center gap-2.25 overflow-x-auto overflow-y-hidden p-1 [scrollbar-width:thin] [&>*]:shrink-0 max-[700px]:h-13 max-[700px]:flex-1 max-[700px]:gap-2 max-[700px]:py-0.75 pointer-coarse:min-[701px]:h-25.25"
+        data-dragging={drag ? '' : undefined}
         ref={scroller}
         role="group"
         aria-label="Выбранные группы"
@@ -236,15 +241,15 @@ export default function GroupStrip(props: Props) {
               : 'Вся группа';
           return (
             <div
-              className={`group-chip ${drag?.id === group.id ? 'drag-source' : ''}`}
+              className={`${chipClassName} ${drag?.id === group.id ? 'opacity-35' : ''}`}
               key={group.id}
               data-group-id={group.id}
               style={chipStyle(colors[group.id] ?? 0)}
             >
-              <div className="desktop-group-content">
-                <div className="chip-heading">
+              <div className="max-[700px]:hidden">
+                <div className="flex items-center justify-between gap-0.5">
                   <button
-                    className="group-drag"
+                    className="min-h-7 min-w-0 touch-none cursor-grab truncate border-0 bg-transparent px-0 py-0.5 text-[13px] font-bold text-inherit group-data-dragging/groups:cursor-grabbing pointer-coarse:min-h-11"
                     type="button"
                     data-drag-id={group.id}
                     aria-label={`Порядок группы ${group.label}`}
@@ -263,13 +268,14 @@ export default function GroupStrip(props: Props) {
                     {group.label}
                   </button>
                   <IconButton
-                    className="chip-remove"
+                    className="size-7 min-h-7 min-w-7 border-0 bg-transparent p-0 text-inherit hover:bg-black/7 pointer-coarse:size-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
                     label={`Убрать ${group.label}`}
                     name="close"
                     onClick={() => onRemove(group.id)}
                   />
                 </div>
                 <SubgroupPicker
+                  compact
                   label={group.label}
                   subgroups={subgroups}
                   value={group.subgroup}
@@ -277,30 +283,35 @@ export default function GroupStrip(props: Props) {
                   onChange={(value) => onSubgroup(group.id, value)}
                 />
               </div>
-              <div className="mobile-group-content">
+              <div className="hidden max-[700px]:block">
                 <Popover.Root>
                   <Popover.Trigger
-                    className="mobile-group-trigger"
+                    className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-[5px] border-0 bg-transparent p-1 text-xs leading-[1.2] text-inherit"
                     data-drag-id={group.id}
                     aria-label={`Настройки группы ${group.label}: ${subgroupLabel}`}
                   >
-                    <strong>{group.label}</strong>
-                    <span>
+                    <strong className="max-w-full truncate leading-[1.2]">
+                      {group.label}
+                    </strong>
+                    <span className="flex max-w-full items-center gap-0.75 text-[11px] leading-[1.2]">
                       {subgroupLabel}
                       <Icon name="down" size={10} />
                     </span>
                   </Popover.Trigger>
                   <Popover.Content
-                    className="group-settings"
+                    className="w-62.5 max-w-[calc(100vw-32px)] p-3.5"
                     positionerProps={{ sideOffset: 6 }}
                   >
-                    <div className="group-settings-heading">
-                      <Popover.Title>{group.label}</Popover.Title>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <Popover.Title className="m-0 text-xl leading-6">
+                        {group.label}
+                      </Popover.Title>
                       <Popover.Close
                         render={
                           <Button
                             variant="ghost"
                             size="icon-sm"
+                            className="min-h-11 min-w-11 shrink-0"
                             aria-label={`Закрыть настройки ${group.label}`}
                           />
                         }
@@ -320,7 +331,7 @@ export default function GroupStrip(props: Props) {
                         render={
                           <Button
                             variant="secondary"
-                            className="group-setting-action"
+                            className={settingActionClassName}
                           />
                         }
                         onClick={() => onOrder(group.id)}
@@ -333,7 +344,7 @@ export default function GroupStrip(props: Props) {
                       render={
                         <Button
                           variant="secondary"
-                          className="group-setting-action"
+                          className={settingActionClassName}
                         />
                       }
                       onClick={() => onRemove(group.id)}
@@ -350,7 +361,7 @@ export default function GroupStrip(props: Props) {
       </div>
       {drag && (
         <div
-          className="group-chip drag-ghost"
+          className={`${chipClassName} pointer-events-none fixed z-120 flex flex-col justify-center gap-1.5 text-xs shadow-[3px_5px_16px_#0003] select-none`}
           aria-hidden="true"
           style={{
             ...chipStyle(colors[drag.id] ?? 0),
@@ -361,7 +372,7 @@ export default function GroupStrip(props: Props) {
           }}
         >
           <strong>{groups.find((g) => g.id === drag.id)?.label}</strong>
-          <span>Переместить группу</span>
+          <span className="text-[11px]">Переместить группу</span>
         </div>
       )}
       <span id="group-drag-help" className="sr-only">

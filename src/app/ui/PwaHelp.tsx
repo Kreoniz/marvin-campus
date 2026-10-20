@@ -4,8 +4,8 @@ import { usePwa, installPwa } from '../../lib/pwa.ts';
 export default function PwaHelp() {
   const pwa = usePwa();
   return (
-    <div className="pwa-help">
-      <p className="help-note">
+    <div className="mt-4 border-t border-[var(--u-line-soft)]">
+      <p className="my-3 text-xs leading-relaxed text-u-muted">
         <strong>Приложение (PWA).</strong>{' '}
         {pwa.installed
           ? 'Установлено.'

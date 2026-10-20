@@ -17,7 +17,6 @@ import type { Lesson, Selection, Subgroup } from '../../../lib/types.ts';
 import { timeLabel } from '../../../lib/dates.ts';
 import { track } from '../../../lib/analytics.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
-import '../../../components/schedule.css';
 
 interface LessonCardProps {
   block: LessonBlock;
@@ -27,23 +26,8 @@ interface LessonCardProps {
   horizontal?: boolean;
 }
 
-const chipStyle = (color: number): CSSProperties => {
-  const categories: Record<string, number> = {
-    blue: 1,
-    coral: 6,
-    sage: 3,
-    lilac: 2,
-    peach: 4,
-    aqua: 5,
-  };
-  const value = colorStyle(color)
-    .slice(7)
-    .replace(
-      /var\(--(blue|coral|sage|lilac|peach|aqua)\)/g,
-      (_, name: string) => `var(--u-category-${categories[name]})`,
-    );
-  return { '--chip': value } as CSSProperties;
-};
+const chipStyle = (color: number): CSSProperties =>
+  ({ '--chip': colorStyle(color).slice(7) }) as CSSProperties;
 
 export default function LessonCard({
   block,
@@ -93,6 +77,33 @@ export default function LessonCard({
   const visibleMembers =
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
+  const remote = events.every((event) => event.remote);
+  const background = block.parallel
+    ? allSaved
+      ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
+      : 'bg-[repeating-linear-gradient(135deg,var(--chip)_0_9px,color-mix(in_srgb,var(--chip)_78%,white)_9px_18px)]'
+    : shared
+      ? 'bg-u-surface'
+      : allSaved
+        ? 'bg-[color-mix(in_srgb,var(--chip)_25%,var(--u-well))]'
+        : 'bg-(--chip)';
+  const border = remote
+    ? allSaved
+      ? 'border-[color-mix(in_srgb,var(--u-muted)_70%,var(--u-well))]'
+      : shared
+        ? 'border-u-line'
+        : 'border-[#405637]'
+    : allSaved
+      ? shared
+        ? 'border-[color-mix(in_srgb,var(--u-line)_55%,var(--u-line-soft))]'
+        : 'border-(--u-line-soft)'
+      : shared
+        ? 'border-u-line'
+        : 'border-[color-mix(in_srgb,var(--chip)_65%,#384333)]';
+  const participantBackground = (isSaved: boolean) =>
+    isSaved
+      ? 'saved-participant bg-[color-mix(in_srgb,var(--chip)_25%,var(--u-well))] text-u-muted'
+      : 'bg-(--chip) text-[#142016]';
   function groupParts(group: Selection) {
     const label = groupLabel(group),
       split = label.lastIndexOf('-');
@@ -120,11 +131,11 @@ export default function LessonCard({
   useEffect(() => () => clearTimeout(timer.current), []);
   function participants(event?: Lesson) {
     return (
-      <div className="popover-participants">
+      <div className="popover-participants my-2 flex flex-wrap items-center gap-[3px]">
         {block.members.map((group) => (
           <span
             key={group.id}
-            className={`participant-chip${savedMember(group) ? ' saved-participant' : ''}`}
+            className={`participant-chip inline-flex items-center gap-[3px] rounded-[3px] px-[3px] py-px text-xs leading-[1.2] font-[650] whitespace-nowrap ${participantBackground(savedMember(group))}`}
             style={chipStyle(colors[group.id] ?? 0)}
           >
             {groupLabel(group, event)}
@@ -141,14 +152,14 @@ export default function LessonCard({
   }
   return (
     <div
-      className={`lesson-position${horizontal ? ' horizontal' : ''}${long ? ' long' : ''}`}
+      className={`lesson-position absolute z-[2] [container-type:size] ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
           render={<button type="button" />}
           style={chipStyle(colors[block.members[0].id] ?? 0)}
-          className={`lesson-card${shared ? ' shared-card' : ''}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${events.every((event) => event.remote) ? ' remote-lesson' : ''}${allSaved ? ' saved-card' : ''}`}
+          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) active:translate-y-px ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-muted' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
           aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
@@ -158,51 +169,60 @@ export default function LessonCard({
           }}
         >
           {shared && long && (
-            <span className="participant-stripe" aria-hidden="true">
+            <span
+              className="participant-stripe absolute inset-x-0 top-0 flex h-[5px]"
+              aria-hidden="true"
+            >
               {block.members.map((group) => (
                 <span
                   key={group.id}
-                  className={
-                    savedMember(group) ? 'saved-participant' : undefined
-                  }
+                  className={`flex-1 ${participantBackground(savedMember(group))}`}
                   style={chipStyle(colors[group.id] ?? 0)}
                 />
               ))}
             </span>
           )}
-          <span className="card-heading">
-            <span className="card-subject">
+          <span
+            className={`card-heading flex min-w-0 items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px' : ''}`}
+          >
+            <span
+              className={`card-subject min-w-0 flex-1 truncate font-bold [@container(width<95px)]:text-[10px] [@container(height<58px)]:text-[10px] ${horizontal && long ? 'text-xs' : 'text-[11px]'}`}
+            >
               {block.parallel
                 ? `${events.length} занятия`
                 : lesson.subject || 'Занятие'}
             </span>
           </span>
           {long && !horizontal && (
-            <span className="card-time">
+            <span className="card-time px-1 pb-[3px] text-[10px] opacity-80">
               {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
             </span>
           )}
           {shared ? (
-            <span className="participant-sectors">
+            <span
+              className={`participant-sectors flex min-w-0 flex-none gap-px ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
+            >
               {visibleMembers.map((group) => {
                 const parts = groupParts(group);
                 return (
                   <span
                     key={group.id}
-                    className={`participant-sector${savedMember(group) ? ' saved-participant' : ''}`}
+                    className={`participant-sector flex min-w-0 flex-1 flex-col justify-center text-center leading-[1.05] font-[650] ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[11px]'} ${participantBackground(savedMember(group))}`}
                     style={chipStyle(colors[group.id] ?? 0)}
                     title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
                   >
                     {horizontal && long ? (
-                      <span className="group-name">
+                      <span className="group-name flex items-center justify-center gap-0.5 truncate">
                         {groupLabel(group)}
                         {savedMember(group) && <Icon name="clock" size={10} />}
                       </span>
                     ) : (
                       <>
-                        <span className="group-prefix">{parts.name}</span>
+                        <span className="group-prefix truncate text-[10px]">
+                          {parts.name}
+                        </span>
                         {parts.number && (
-                          <span className="group-number">
+                          <span className="group-number flex items-center justify-center gap-0.5 truncate text-[11px] [@container(width<120px)]:text-[10px]">
                             {parts.number}
                             {savedMember(group) && (
                               <Icon name="clock" size={10} />
@@ -218,25 +238,30 @@ export default function LessonCard({
                 );
               })}
               {visibleMembers.length < block.members.length && (
-                <span className="more-participants" title={labels}>
+                <span
+                  className={`more-participants flex min-w-0 flex-1 flex-col justify-center bg-(--u-line-soft) text-center leading-[1.05] font-[650] text-u-ink ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[13px]'}`}
+                  title={labels}
+                >
                   +{block.members.length - visibleMembers.length}
                 </span>
               )}
             </span>
           ) : (
-            <span className="single-group">
-              <span>{groupLabel(block.members[0])}</span>
+            <span className="single-group flex items-center gap-[3px] truncate text-[13px] font-[650]">
+              <span className="truncate">{groupLabel(block.members[0])}</span>
               {saved && <Icon name="clock" size={12} />}
             </span>
           )}
-          <span className="card-meta">
-            <span className="card-room">{place}</span>
-            <span className="kind-badges">
+          <span
+            className={`card-meta flex min-w-0 items-center gap-[3px] font-medium [@container(width<95px)]:text-[10px] ${shared ? 'px-1 py-px text-[10px]' : 'text-[11px]'} ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
+          >
+            <span className="card-room min-w-0 flex-1 truncate">{place}</span>
+            <span className="kind-badges flex flex-none gap-0.5">
               {badges.map((kind) => (
                 <Badge
                   key={kind.label}
-                  className="kind-badge"
-                  data-tone={kind.tone}
+                  className={`kind-badge min-h-0 flex-none rounded-[3px] border text-[9px] leading-none font-semibold text-[#142016] [@container(height<58px)]:px-0.5 [@container(height<58px)]:py-px ${shared ? 'px-0.5 py-px' : 'px-[3px] py-0.5'} border-[#14201640] bg-[#f7f5ebc9]`}
+                  data-kind={kind.tone}
                   title={kind.title}
                 >
                   {kind.label}
@@ -246,14 +271,14 @@ export default function LessonCard({
           </span>
         </Popover.Trigger>
         <Popover.Content
-          className="lesson-popover"
+          className="lesson-popover w-[min(340px,calc(100vw-28px))] text-xs leading-[1.4]"
           positionerProps={{ sideOffset: 7 }}
           initialFocus={hovering.current ? false : undefined}
           onPointerEnter={cancel}
           onPointerLeave={leave}
         >
-          <div className="popover-heading">
-            <Popover.Title>
+          <div className="popover-heading mb-[5px] flex items-center justify-between gap-2.5">
+            <Popover.Title className="m-0 text-sm">
               {shared ? 'Общая пара' : groupLabel(block.members[0])}
             </Popover.Title>
             <Popover.Close
@@ -268,25 +293,27 @@ export default function LessonCard({
               <Icon name="close" size={16} />
             </Popover.Close>
           </div>
-          <p className="lesson-time">
+          <p className="lesson-time my-1 text-base font-bold">
             {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
           </p>
           {events.map((event, index) => (
             <div
               key={`${lessonKey(event)}:${index}`}
-              className="lesson-description"
+              className={`lesson-description ${index > 0 ? 'mt-2 border-t border-(--u-line-soft) pt-2' : ''}`}
             >
-              <h3>{event.subject}</h3>
+              <h3 className="mt-0 mb-[5px] text-[15px] font-[750]">
+                {event.subject}
+              </h3>
               {block.parallel && participants(event)}
-              <p>
+              <p className="my-1">
                 {event.kind || 'Тип занятия не указан'} · {room(event)}
               </p>
-              {event.teacher && <p>{event.teacher}</p>}
+              {event.teacher && <p className="my-1">{event.teacher}</p>}
             </div>
           ))}
           {!block.parallel && participants()}
           {saved && (
-            <p className="saved-lesson-note">
+            <p className="saved-lesson-note mt-2 mb-1 flex items-baseline gap-1 text-[11px] text-u-muted">
               <Icon name="clock" size={13} />
               По сохранённым данным:{' '}
               {block.members
@@ -297,16 +324,18 @@ export default function LessonCard({
             </p>
           )}
           {block.parallel && (
-            <p className="common-label">
+            <p className="common-label my-1 border-t border-(--u-line-soft) pt-2 text-[11px] text-u-muted">
               {events.length} отдельных занятий одной группы идут одновременно.
               Подробности каждого занятия указаны выше.
             </p>
           )}
           {block.common ? (
-            <p className="common-label">Общая пара всех выбранных групп</p>
+            <p className="common-label my-1 border-t border-(--u-line-soft) pt-2 text-[11px] text-u-muted">
+              Общая пара всех выбранных групп
+            </p>
           ) : (
             shared && (
-              <p className="common-label">
+              <p className="common-label my-1 border-t border-(--u-line-soft) pt-2 text-[11px] text-u-muted">
                 Общая пара {block.members.length} групп.
               </p>
             )

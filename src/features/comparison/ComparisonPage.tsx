@@ -127,10 +127,13 @@ export default function ComparisonPage() {
   return (
     <Theme
       appearance={theme}
-      className="campus-theme"
+      className="campus-theme min-h-svh bg-u-canvas text-u-ink"
       tokens={{ '--u-accent': '#87f19d' }}
     >
-      <a className="skip-link" href="#comparison">
+      <a
+        className="fixed top-2 left-2 z-[200] -translate-y-[160%] rounded-u-control bg-u-accent p-2.5 text-u-accent-ink focus:translate-y-0"
+        href="#comparison"
+      >
         Перейти к расписанию
       </a>
       <GroupOrder
@@ -141,11 +144,11 @@ export default function ComparisonPage() {
         onMove={view.move}
         returnFocus={orderFocus}
       />
-      <div className="app-shell">
+      <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 max-[700px]:px-3 max-[700px]:pt-1">
         <SiteHeader theme={theme} onToggleTheme={toggleTheme} />
         <main>
           {pwa.offline && (
-            <p className="offline-note" role="status">
+            <p className="my-2 text-xs text-u-muted" role="status">
               Нет сети. Доступны сохранённые расписания.
             </p>
           )}
@@ -153,7 +156,7 @@ export default function ComparisonPage() {
           {links.error ? (
             <Card.Root
               id="comparison"
-              className="share-state"
+              className="grid min-h-[200px] justify-items-start gap-5 p-7"
               aria-live="polite"
             >
               <Alert.Root tone="danger">
@@ -166,7 +169,7 @@ export default function ComparisonPage() {
             <>
               <Card.Root
                 id="comparison"
-                className="comparison"
+                className="comparison overflow-hidden max-[700px]:-mx-3 max-[700px]:rounded-none max-[700px]:border-x-0"
                 role="region"
                 aria-label="Сравнение расписаний"
                 aria-busy={busy}
@@ -199,7 +202,7 @@ export default function ComparisonPage() {
                       links={links}
                     />
                     {mobile && (
-                      <div className="mobile-result">
+                      <div className="mobile-result px-[9px] pb-[9px]">
                         <ComparisonSummary
                           schedules={source.schedules}
                           day={day}
@@ -225,16 +228,19 @@ export default function ComparisonPage() {
                     />
                   </>
                 ) : (
-                  <div className="welcome">
+                  <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 max-[700px]:min-h-[380px] max-[700px]:flex-col max-[700px]:gap-4 max-[700px]:px-[15px] max-[700px]:py-6 max-[700px]:text-center">
                     <img
+                      className="h-[210px] w-[190px] shrink-0 object-contain max-[700px]:h-[145px] max-[700px]:w-[135px]"
                       src="/assets/mascot-m2-thinking-v1.webp"
                       width="190"
                       height="210"
                       alt="Робот ждёт расписание"
                     />
                     <div>
-                      <h2>С кем пересечёмся?</h2>
-                      <p>
+                      <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] max-[700px]:text-2xl">
+                        С кем пересечёмся?
+                      </h2>
+                      <p className="mb-5 text-[15px] leading-relaxed text-u-muted max-[700px]:mb-[15px] max-[700px]:text-[13px]">
                         Добавь свою группу и группу друга.
                         <br />С одной группой можно посмотреть своё расписание.
                       </p>
@@ -243,7 +249,10 @@ export default function ComparisonPage() {
                         onAdd={view.add}
                         onError={(message) => notify(message, 'error')}
                       />
-                      <button className="example-button" onClick={view.example}>
+                      <button
+                        className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 max-[700px]:mx-auto"
+                        onClick={view.example}
+                      >
                         Посмотреть ИВТ-241 и ИВТ-242{' '}
                         <span aria-hidden="true">→</span>
                       </button>
@@ -265,14 +274,22 @@ export default function ComparisonPage() {
             </>
           )}
         </main>
-        <footer className="app-footer">
-          <a href="https://rasp.omgtu.ru" target="_blank" rel="noreferrer">
+        <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted max-[700px]:text-[10px]">
+          <a
+            className="inline-flex items-center gap-[5px] no-underline hover:underline"
+            href="https://rasp.omgtu.ru"
+            target="_blank"
+            rel="noreferrer"
+          >
             Источник расписания <Icon name="external" size={13} />
           </a>
         </footer>
       </div>
       {pwa.waiting && (
-        <aside className="pwa-update" role="status">
+        <aside
+          className="pwa-update fixed bottom-[18px] left-1/2 z-[80] flex w-max max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised p-3 text-[13px] shadow-[var(--u-shadow-md)]"
+          role="status"
+        >
           <span>Доступно обновление приложения.</span>
           <Button disabled={pwa.updating} onClick={updatePwa}>
             Обновить

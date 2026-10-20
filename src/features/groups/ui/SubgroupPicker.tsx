@@ -6,6 +6,7 @@ interface Props {
   subgroups: Subgroup[];
   value?: number;
   subgroupNumber?: number;
+  compact?: boolean;
   onChange: (value?: number) => void;
 }
 
@@ -14,6 +15,7 @@ export default function SubgroupPicker({
   subgroups,
   value,
   subgroupNumber,
+  compact = false,
   onChange,
 }: Props) {
   const currentLabel = value
@@ -42,13 +44,17 @@ export default function SubgroupPicker({
       }}
     >
       <Select.Trigger
-        className="subgroup-trigger"
+        className={
+          compact
+            ? 'h-auto min-h-6 w-full max-w-45 gap-0.75 border-0 bg-transparent px-0 py-0.5 text-xs text-inherit shadow-none pointer-coarse:min-h-11 [&>.u-select-icon]:w-3 [&>.u-select-icon]:shrink-0 [&>span:first-child]:min-w-0 [&>span:first-child]:truncate'
+            : 'min-h-11 w-full text-sm'
+        }
         size="sm"
         aria-label={`Подгруппа ${label}: ${currentLabel}`}
       >
         <Select.Value />
       </Select.Trigger>
-      <Select.Content className="campus-subgroup-options">
+      <Select.Content>
         {items.map((item) => (
           <Select.Item
             key={item.value}

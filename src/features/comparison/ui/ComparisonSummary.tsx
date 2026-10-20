@@ -3,7 +3,6 @@ import { Skeleton } from 'unlikely-ui/skeleton';
 import type { GroupSchedule, Mode } from '../../../lib/types.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { compareDay, lessonsFor } from '../../../lib/domain.ts';
-import '../../../components/schedule.css';
 
 interface ComparisonSummaryProps {
   schedules: GroupSchedule[];
@@ -47,30 +46,36 @@ export default function ComparisonSummary({
       .join(', ');
   return (
     <Card.Root
-      className={`marvin-card${compact ? ' compact-summary' : ''}`}
+      className={`marvin-card grid gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-[var(--u-line-soft)] bg-u-surface text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 px-3 py-[9px]' : 'min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
       role="complementary"
       aria-label="Результат сравнения"
       aria-busy={loading}
     >
       {!compact && (
         <img
+          className="size-28 object-contain max-[1100px]:size-24"
           src="/assets/mascot-m2-thinking-v1.webp"
           width="150"
           height="150"
           alt="Робот задумался над расписанием"
         />
       )}
-      <div className="marvin-result">
-        <div className="summary-date">
+      <div className="marvin-result relative self-start text-xs leading-snug [&>strong]:text-[13px] [&>strong]:font-bold [&>p]:my-1">
+        <div
+          className={`summary-date mb-2 text-[10px] font-semibold capitalize ${compact ? 'hidden' : ''}`}
+        >
           {placeholder ? (
-            <Skeleton className="summary-date-placeholder" />
+            <Skeleton className="inline-block h-3 w-[75px] align-middle" />
           ) : (
             formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })
           )}
         </div>
         {loading && !hasSnapshot ? (
           <>
-            <div className="summary-skeleton" aria-hidden="true">
+            <div
+              className="grid gap-3 [&>div]:h-4 [&>div:last-child]:w-[65%]"
+              aria-hidden="true"
+            >
               <Skeleton />
               <Skeleton />
             </div>
@@ -96,7 +101,7 @@ export default function ComparisonSummary({
             <strong>
               {mode === 'free' ? 'Все без занятий' : 'Общее время в вузе'}
             </strong>
-            <p className="result-time">
+            <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
               {ranges.length
                 ? times(ranges)
                 : mode === 'free'
@@ -110,13 +115,13 @@ export default function ComparisonSummary({
         ) : (
           <>
             <strong>Общее время в вузе:</strong>
-            <p className="result-time">
+            <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
               {result.presence.length
                 ? times(result.presence)
                 : 'Нет общего времени'}
             </p>
             <strong>Все без занятий:</strong>
-            <p className="result-time">
+            <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
               {result.free.length
                 ? times(result.free)
                 : 'Нет общего времени без занятий'}
@@ -129,7 +134,7 @@ export default function ComparisonSummary({
           </>
         )}
         {result.complete && hasLessons && !result.presence.length && (
-          <p className="presence-reason">
+          <p className="presence-reason text-xs leading-snug text-u-muted">
             {withoutOnsite.length === 1
               ? `У ${withoutOnsite[0]} в этот день нет очных занятий.`
               : withoutOnsite.length
@@ -137,7 +142,7 @@ export default function ComparisonSummary({
                 : 'Время присутствия выбранных групп в вузе не пересекается.'}
           </p>
         )}
-        <p className="saved-qualification">
+        <p className="saved-qualification mt-[5px] text-[11px] text-u-muted">
           {saved
             ? 'По сохранённым данным'
             : result.complete
@@ -146,7 +151,7 @@ export default function ComparisonSummary({
         </p>
       </div>
       {!compact && (
-        <p className="marvin-caption">
+        <p className="col-span-full m-0 h-8 border-t border-[var(--u-line-soft)] pt-1.5 text-right text-[10px] leading-3 text-u-muted">
           {result.free.length
             ? 'Даже у вселенной бывают окна.'
             : 'Время — иллюзия. Расписание — чуть сложнее.'}

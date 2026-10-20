@@ -11,7 +11,6 @@ import GroupPicker from '../../groups/ui/GroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
 import DatePicker from './LazyDatePicker.tsx';
-import '../../../components/controls.css';
 
 interface Props {
   view: ComparisonView;
@@ -37,12 +36,18 @@ export default function ComparisonToolbar({
     setWeekOpen(false);
   }
   return (
-    <div className="toolbar" inert={opening}>
-      <div className="group-strip">
+    <div
+      className="toolbar flex flex-wrap items-center justify-between gap-[15px] border-b border-[var(--u-line-soft)] p-3.5 min-[1100px]:flex-nowrap max-[1100px]:gap-3 max-[700px]:gap-0 max-[700px]:px-2 max-[700px]:py-1"
+      inert={opening}
+    >
+      <div className="group-strip flex min-w-0 flex-[1_1_320px] items-center gap-1 min-[1100px]:flex-1 max-[700px]:w-full max-[700px]:basis-full max-[700px]:[&>.add-group]:size-11 max-[700px]:[&>.add-group]:min-h-11 max-[700px]:[&>.add-group]:min-w-11 max-[700px]:[&>.add-group]:p-0 max-[700px]:[&_.add-group-label]:hidden">
         {opening ? (
-          <div className="group-placeholders" aria-hidden="true">
-            <span className="skeleton group-placeholder" />
-            <span className="skeleton group-placeholder" />
+          <div
+            className="flex h-[77px] w-[249px] flex-[0_1_auto] items-center gap-[9px] overflow-hidden p-1 max-[700px]:h-[52px] max-[700px]:w-[220px]"
+            aria-hidden="true"
+          >
+            <span className="h-[57px] w-[116px] shrink-0 animate-pulse rounded-u-control bg-[var(--u-well)] motion-reduce:animate-none max-[700px]:h-11 max-[700px]:w-[104px]" />
+            <span className="h-[57px] w-[116px] shrink-0 animate-pulse rounded-u-control bg-[var(--u-well)] motion-reduce:animate-none max-[700px]:h-11 max-[700px]:w-[104px]" />
           </div>
         ) : (
           <GroupStrip
@@ -62,8 +67,8 @@ export default function ComparisonToolbar({
           onError={onError}
         />
       </div>
-      <div className="view-controls">
-        <div className="week-controls" data-schedule-week>
+      <div className="flex flex-wrap items-center gap-[11px] min-[1100px]:shrink-0 max-[1100px]:w-full max-[1100px]:justify-between max-[700px]:hidden">
+        <div className="flex items-center gap-px" data-schedule-week>
           <IconButton
             label="Предыдущая неделя"
             name="left"
@@ -74,7 +79,7 @@ export default function ComparisonToolbar({
               render={
                 <Button
                   variant="secondary"
-                  className="week-button"
+                  className="week-button w-[218px] [&>.u-button-label]:grid [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:grid-cols-[20px_minmax(0,1fr)_16px] [&>.u-button-label]:gap-2.5 [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:truncate"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }
@@ -83,7 +88,7 @@ export default function ComparisonToolbar({
               <span>
                 {opening ? (
                   <span
-                    className="skeleton week-label-placeholder"
+                    className="inline-block h-3.5 w-32 animate-pulse rounded-u-control bg-[var(--u-well)] align-middle motion-reduce:animate-none"
                     aria-hidden="true"
                   />
                 ) : (
@@ -93,7 +98,7 @@ export default function ComparisonToolbar({
               <Icon name="down" size={16} />
             </Popover.Trigger>
             <Popover.Content
-              className="week-popover"
+              className="week-popover w-[min(340px,calc(100vw-24px))] p-3"
               positionerProps={{ sideOffset: 8 }}
             >
               <DatePicker day={view.day} onSelect={selectDate} />
@@ -107,7 +112,7 @@ export default function ComparisonToolbar({
         </div>
         {view.groups.length >= 2 && (
           <RadioGroup.Root
-            className="mode-controls"
+            className="mode-controls w-[260px] max-w-full [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:whitespace-nowrap [&_.u-segmented-item]:text-xs"
             variant="segmented"
             aria-label="Режим сравнения"
             value={view.mode}

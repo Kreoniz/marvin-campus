@@ -10,7 +10,7 @@ export default function LazyDatePicker(
     <Suspense
       fallback={
         <Skeleton
-          style={{ width: 308, maxWidth: '100%', height: 340 }}
+          className="h-[340px] w-[308px] max-w-full"
           aria-label="Загружаем календарь"
         />
       }

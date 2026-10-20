@@ -20,7 +20,11 @@
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
   from the pure calculations in `src/lib`.
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
-  through its public subpaths. TanStack React Query owns browser request state;
+  through its public subpaths and style app layout with Tailwind utilities.
+  `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
+  the local font and semantic Tailwind theme aliases. Dynamic schedule geometry
+  and categorical colors use computed styles; there are no app component
+  stylesheets or parallel control resets. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
   exact group/week saved responses with `saved-schedules.ts`, orchestrated by
   `use-comparison.ts`, while normal requests run. This transient fallback never overwrites Query data or errors.

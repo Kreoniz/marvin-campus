@@ -1,4 +1,4 @@
-const base = ['blue', 'coral', 'sage', 'lilac', 'peach', 'aqua'];
+const base = [1, 6, 3, 2, 4, 5];
 const count = 30;
 export type GroupColors = Record<number, number>;
 
@@ -35,7 +35,7 @@ export function assignColors(
 }
 
 export function colorStyle(color: number): string {
-  if (color < base.length) return `--chip:var(--${base[color]})`;
+  if (color < base.length) return `--chip:var(--u-category-${base[color]})`;
   const hue = Math.round((color - base.length) * 137.508) % 360;
   return `--chip:light-dark(hsl(${hue} 55% 82%),hsl(${hue} 38% 69%))`;
 }

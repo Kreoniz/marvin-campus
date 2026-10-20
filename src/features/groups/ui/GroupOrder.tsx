@@ -45,7 +45,7 @@ export default function GroupOrder({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content
-        className="campus-order-dialog"
+        className="w-[min(480px,calc(100vw-32px))]"
         finalFocus={() =>
           Array.from(
             document.querySelectorAll<HTMLButtonElement>(
@@ -54,13 +54,16 @@ export default function GroupOrder({
           ).find((button) => button.offsetParent !== null) ?? true
         }
       >
-        <div className="control-dialog-heading">
-          <Dialog.Title>Порядок групп</Dialog.Title>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <Dialog.Title className="m-0 text-xl leading-6">
+            Порядок групп
+          </Dialog.Title>
           <Dialog.Close
             render={
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="min-h-11 min-w-11 shrink-0"
                 aria-label="Закрыть порядок групп"
               />
             }
@@ -72,28 +75,34 @@ export default function GroupOrder({
           Поменяй порядок групп в списке. Цвета и расположение пар в календаре
           останутся прежними.
         </Dialog.Description>
-        <ol className="order-list" ref={list}>
+        <ol
+          className="mt-5 flex max-h-[min(60dvh,440px)] list-none flex-col gap-2 overflow-y-auto p-0.5"
+          ref={list}
+        >
           {groups.map((group, index) => (
             <li
               key={group.id}
               data-group-id={group.id}
+              className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
               style={
                 {
                   '--chip': colorStyle(colors[group.id] ?? 0).slice(7),
                 } as CSSProperties
               }
             >
-              <span className="order-number">{index + 1}</span>
-              <strong>{group.label}</strong>
+              <span className="min-w-6 text-xs">{index + 1}</span>
+              <strong className="min-w-0 flex-1 text-sm">{group.label}</strong>
               <IconButton
                 label={`Переместить ${group.label} выше`}
                 name="up"
+                className="text-inherit"
                 disabled={index === 0}
                 onClick={() => move(group, index, -1)}
               />
               <IconButton
                 label={`Переместить ${group.label} ниже`}
                 name="down"
+                className="text-inherit"
                 disabled={index === groups.length - 1}
                 onClick={() => move(group, index, 1)}
               />
