@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/svelte-query';
+import type { QueryClient } from '@tanstack/react-query';
 import type { Group } from './types.ts';
 import { groupOptions } from './queries.ts';
 import { parseView, readableGroups } from './url.ts';

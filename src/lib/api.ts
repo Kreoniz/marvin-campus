@@ -1,6 +1,6 @@
 import type { Group, Snapshot, Week } from './types.ts';
 import type { ViewState } from './url.ts';
-import { cachePwaResponse } from './pwa.svelte.ts';
+import { cachePwaResponse } from './pwa.ts';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, options);

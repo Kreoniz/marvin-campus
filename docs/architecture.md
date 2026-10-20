@@ -13,11 +13,12 @@
   disabled; the existing database and links are retained.
 - `src/lib`: pure schedule calculations, reversible URL encoding, query options,
   selection state, link synchronization, PWA integration and analytics policy.
-- `src/components`: Svelte components own their scoped CSS. Global CSS contains
-  the shared theme and base rules. TanStack Query owns browser request state;
+- `src/components`: React components use unlikely-ui controls and semantic theme tokens.
+  The app owns schedule geometry in schedule.css, control layout in controls.css
+  and shared page layout in app.css. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
-  exact group/week saved responses through `saved-schedules.ts` while normal
-  requests run. This transient fallback never overwrites Query data or errors.
+  exact group/week saved responses with `saved-schedules.ts`, orchestrated by
+  `use-comparison.ts`, while normal requests run. This transient fallback never overwrites Query data or errors.
   Deadline timers update stale/expired state in an idle tab and on Omsk Monday.
   Unknown groups in readable links resolve through a pool of three catalog
   lookups; URL order and ambiguity rejection are preserved.

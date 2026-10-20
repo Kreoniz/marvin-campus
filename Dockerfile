@@ -1,9 +1,9 @@
 FROM node:24-alpine AS frontend
 WORKDIR /build
 RUN npm install --global pnpm@12.5.1
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
-COPY index.html vite.config.ts pwa-build.ts svelte.config.js tsconfig.json ./
+COPY index.html vite.config.ts pwa-build.ts tsconfig.json ./
 COPY src ./src
 COPY public ./public
 RUN pnpm check && pnpm test && pnpm build

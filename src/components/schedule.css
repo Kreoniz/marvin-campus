@@ -1,0 +1,810 @@
+/* Calendar: application-owned schedule geometry and presentation. */
+.week-scroll button:active:not(:disabled):not(.day-heading) {
+  transform: translateY(1px);
+}
+[data-appearance='dark'] .empty-column img {
+  filter: invert(1);
+}
+.week-scroll {
+  overflow-anchor: none;
+  overflow: auto;
+  height: calc(var(--calendar-viewport) + var(--calendar-header) + 8px);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  --day-base: 80px;
+  --rail-width: 48px;
+}
+.week-grid {
+  --day-min: max(var(--day-base), var(--overlap-min));
+  display: grid;
+  grid-template-columns: var(--rail-width) repeat(
+      var(--day-count, 7),
+      minmax(var(--day-min), 1fr)
+    );
+  grid-template-rows: 44px var(--calendar-height);
+  min-width: calc(var(--rail-width) + var(--day-count, 7) * var(--day-min));
+}
+.week-scroll.day-view {
+  --day-base: 0px;
+}
+.day-view .week-grid {
+  grid-template-rows: 36px var(--calendar-height);
+}
+.no-day-header .week-grid {
+  grid-template-rows: var(--calendar-height);
+}
+.time-header {
+  position: sticky;
+  left: 0;
+  background: var(--u-surface);
+  z-index: 5;
+  border-bottom: 1px solid var(--u-line-soft);
+}
+.day-heading {
+  font-size: 14px;
+  font-weight: 700;
+  border: 0;
+  border-bottom: 1px solid var(--u-line-soft);
+  border-right: 1px solid var(--u-line-soft);
+  background: transparent;
+  text-transform: capitalize;
+}
+.day-heading.selected {
+  background: var(--u-selection);
+  color: var(--u-selection-ink);
+  box-shadow: inset 0 0 0 1.5px var(--u-selection-border);
+}
+.time-rail {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--u-surface);
+}
+.time-rail span {
+  position: absolute;
+  right: 6px;
+  font-size: 10px;
+  transform: translateY(-50%);
+}
+.time-rail span:first-child {
+  transform: translateY(2px);
+}
+.time-rail span:last-child {
+  transform: translateY(-100%);
+}
+.day-column {
+  position: relative;
+  border-right: 1px solid var(--u-line-soft);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--hour-height) - 1px),
+    var(--u-line-soft) calc(var(--hour-height) - 1px),
+    var(--u-line-soft) var(--hour-height)
+  );
+}
+.day-column.chosen {
+  background-color: color-mix(in srgb, var(--u-selection) 35%, transparent);
+}
+.shared-highlight {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  border-left: 2px solid var(--u-warning-border);
+  background: color-mix(in srgb, var(--u-category-4) 18%, transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+.week-grid .free-highlight {
+  border-block: 1px solid var(--u-accent-border);
+  background: color-mix(in srgb, var(--u-accent-soft) 75%, transparent);
+  border-color: var(--u-accent-border);
+}
+.week-grid .saved-highlight {
+  border-left-style: dashed;
+  background: color-mix(in srgb, var(--u-accent-soft) 40%, transparent);
+}
+.empty-saved {
+  font-size: 11px;
+}
+.empty-column {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--u-muted);
+  font-size: 12px;
+  padding: 10px;
+}
+.empty-column img {
+  opacity: 0.55;
+}
+.calendar-hint svg {
+  display: inline-block;
+  vertical-align: -2px;
+}
+.calendar-hint {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--u-line-soft);
+  font-size: 11px;
+  color: var(--u-muted);
+}
+.mobile-hint {
+  display: none;
+}
+@media (max-width: 700px) {
+  .week-scroll {
+    --day-base: calc((100vw - 74px) / 2);
+    --rail-width: 46px;
+  }
+  .day-heading {
+    font-size: 13px;
+  }
+  .calendar-hint {
+    font-size: 11px;
+    padding: 9px;
+    line-height: 1.5;
+  }
+  .mobile-hint {
+    display: inline;
+  }
+}
+.shared-highlight {
+  transition: background-color 160ms ease;
+}
+.mode-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 12px;
+}
+.mode-legend::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-left: 2px solid var(--u-warning-border);
+  background: var(--u-category-4);
+}
+.free-legend::before {
+  background: var(--u-accent-soft);
+  border-color: var(--u-accent-border);
+}
+.lesson-hint {
+  display: inline;
+}
+.calendar-skeleton {
+  position: absolute;
+  inset: 0;
+}
+.calendar-skeleton > div {
+  position: absolute;
+}
+
+/* LessonCard: application-owned schedule geometry and presentation. */
+.lesson-position {
+  position: absolute;
+  z-index: 2;
+  container-type: size;
+}
+.lesson-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid color-mix(in srgb, var(--chip) 65%, #384333);
+  border-radius: var(--u-radius);
+  background: var(--chip);
+  color: #142016;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 2px;
+  padding: 5px;
+  font-size: 11px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-align: left;
+}
+.lesson-card.shared-card {
+  background: var(--u-surface);
+  color: var(--u-ink);
+  border-color: var(--u-line);
+  padding: 0;
+  gap: 0;
+}
+.lesson-card:hover,
+.lesson-card:focus-visible {
+  box-shadow: 0 0 0 1px var(--u-ink);
+}
+.lesson-card.parallel-card {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--chip) 0 9px,
+    color-mix(in srgb, var(--chip) 78%, white) 9px 18px
+  );
+}
+.lesson-card.remote-lesson {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: #405637;
+}
+.lesson-card.remote-lesson.shared-card {
+  border-color: var(--u-line);
+}
+.lesson-card.saved-card:not(.shared-card) {
+  background: color-mix(in srgb, var(--chip) 25%, var(--u-well));
+  color: var(--u-muted);
+  border-color: var(--u-line-soft);
+}
+.lesson-card.saved-card.parallel-card {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--chip) 25%, var(--u-well)) 0 9px,
+    var(--u-well) 9px 18px
+  );
+}
+.lesson-card.saved-card.shared-card {
+  border-color: color-mix(in srgb, var(--u-line) 55%, var(--u-line-soft));
+}
+.lesson-card.remote-lesson.saved-card {
+  border-color: color-mix(in srgb, var(--u-muted) 70%, var(--u-well));
+}
+.participant-sector.saved-participant,
+.participant-chip.saved-participant,
+.participant-stripe > .saved-participant {
+  background: color-mix(in srgb, var(--chip) 25%, var(--u-well));
+  color: var(--u-muted);
+}
+.participant-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  display: flex;
+}
+.participant-stripe > span {
+  flex: 1;
+  background: var(--chip);
+}
+.card-heading {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  min-width: 0;
+}
+.card-subject {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shared-card .card-heading {
+  padding: 1px 4px;
+}
+.card-time {
+  font-size: 10px;
+  padding: 0 4px 3px;
+  opacity: 0.8;
+}
+.single-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.single-group > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.participant-sectors {
+  display: flex;
+  gap: 1px;
+  flex: none;
+  min-width: 0;
+}
+.participant-sector,
+.more-participants {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1px 2px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.05;
+  text-align: center;
+}
+.participant-sector {
+  background: var(--chip);
+  color: #142016;
+}
+.group-prefix,
+.group-number,
+.group-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.group-prefix {
+  font-size: 10px;
+}
+.group-number {
+  font-size: 11px;
+}
+.group-number,
+.group-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.more-participants {
+  background: var(--u-line-soft);
+  color: var(--u-ink);
+  font-size: 13px;
+}
+.lesson-position.horizontal.long .participant-sectors,
+.lesson-position.horizontal.long .card-meta {
+  width: min(260px, 100%);
+}
+.lesson-position.horizontal.long .card-heading {
+  padding: 3px 5px;
+}
+.lesson-position.horizontal.long .card-subject {
+  font-size: 12px;
+}
+.lesson-position.horizontal.long .participant-sector,
+.lesson-position.horizontal.long .more-participants {
+  padding: 3px;
+  font-size: 12px;
+}
+.kind-badge {
+  flex: none;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 3px;
+  border: 1px solid #14201640;
+  border-radius: 3px;
+  background: #f7f5ebc9;
+  color: #142016;
+}
+.kind-badge[data-tone='lecture'] {
+  background: #e0ecfc;
+  border-color: #7194b9;
+}
+.kind-badge[data-tone='practice'] {
+  background: #e1eed6;
+  border-color: #789666;
+}
+.kind-badge[data-tone='lab'] {
+  background: #e9def4;
+  border-color: #9a7cad;
+}
+.kind-badge[data-tone='exam'],
+.kind-badge[data-tone='resit'] {
+  background: #f5dbd3;
+  border-color: #bc7a68;
+}
+.kind-badge[data-tone='credit'] {
+  background: #f3e7bd;
+  border-color: #ad934c;
+}
+.popover-participants {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.participant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--chip);
+  color: #142016;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  padding: 1px 3px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.saved-lesson-note {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--u-muted);
+  font-size: 11px;
+  margin-top: 8px;
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 0;
+}
+.shared-card .card-meta {
+  padding: 1px 4px;
+  font-size: 10px;
+}
+.shared-card .kind-badge {
+  padding: 1px 2px;
+  line-height: 1;
+}
+.card-room {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kind-badges {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.lesson-description + .lesson-description {
+  border-top: 1px solid var(--u-line-soft);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.lesson-popover {
+  width: min(340px, calc(100vw - 28px));
+  font-size: 12px;
+  line-height: 1.4;
+}
+.popover-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.lesson-popover h3 {
+  font-weight: 750;
+  font-size: 15px;
+  margin: 0 0 5px;
+}
+.lesson-popover p {
+  margin: 4px 0;
+}
+.lesson-time {
+  font-size: 16px;
+  font-weight: 700;
+}
+.common-label {
+  border-top: 1px solid var(--u-line-soft);
+  padding-top: 8px;
+  color: var(--u-muted);
+  font-size: 11px;
+}
+.popover-participants {
+  margin: 8px 0;
+}
+@container (width < 95px) {
+  .card-heading {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .card-subject {
+    font-size: 10px;
+  }
+  .participant-chip {
+    padding: 1px 2px;
+    font-size: 11px;
+  }
+  .lesson-card {
+    padding-inline: 3px;
+    gap: 2px;
+  }
+  .card-meta {
+    font-size: 10px;
+  }
+}
+@container (width < 120px) {
+  .group-number {
+    font-size: 10px;
+  }
+}
+@container (height < 58px) {
+  .lesson-card {
+    padding: 3px;
+    gap: 2px;
+  }
+  .lesson-card.shared-card {
+    padding: 0;
+    gap: 0;
+  }
+  .card-subject {
+    font-size: 10px;
+  }
+  .participant-chip {
+    padding: 1px 3px;
+    font-size: 11px;
+  }
+  .kind-badge {
+    padding: 1px 2px;
+  }
+}
+
+/* DayDetail: application-owned schedule geometry and presentation. */
+.day-detail {
+  overflow-anchor: none;
+  display: flex;
+  gap: 14px;
+  margin-top: 17px;
+  padding: 12px;
+  height: var(--detail-height);
+}
+.day-detail > .marvin-card {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.day-main {
+  flex: 1;
+  min-width: 0;
+}
+#day-title::first-letter {
+  text-transform: uppercase;
+}
+#day-title {
+  line-height: 24px;
+  height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.day-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-inline: 16px;
+  height: calc(var(--detail-height) - 64px);
+  scrollbar-gutter: stable;
+}
+.day-timeline {
+  min-width: 740px;
+  max-width: 1080px;
+  position: relative;
+  background: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent calc(100% / var(--day-divisions) - 1px),
+    var(--u-line-soft) calc(100% / var(--day-divisions) - 1px),
+    var(--u-line-soft) calc(100% / var(--day-divisions))
+  );
+}
+.day-hour {
+  position: absolute;
+  top: 1px;
+  font-size: 11px;
+  transform: translateX(-50%);
+  background: var(--u-surface);
+  z-index: 1;
+}
+.day-highlight {
+  position: absolute;
+  top: 29px;
+  bottom: 4px;
+  background: color-mix(in srgb, var(--u-category-4) 25%, transparent);
+  border-top: 2px solid var(--u-warning-border);
+}
+.day-highlight.free-highlight {
+  background: color-mix(in srgb, var(--u-accent-soft) 75%, transparent);
+  border-color: var(--u-accent-border);
+}
+.day-highlight.saved-highlight {
+  background: color-mix(in srgb, var(--u-accent-soft) 40%, transparent);
+  border-top-style: dashed;
+}
+.day-empty > span {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+}
+.day-empty {
+  position: absolute;
+  top: 45px;
+  left: 12px;
+  font-size: 13px;
+  color: var(--u-muted);
+}
+@media (max-width: 700px) {
+  .day-detail {
+    flex-direction: column;
+    padding: 10px;
+    gap: 13px;
+    margin-top: 15px;
+  }
+}
+.day-highlight {
+  transition: background-color 160ms ease;
+}
+.day-skeleton {
+  position: absolute;
+  inset: 0;
+}
+.day-skeleton > div {
+  position: absolute;
+}
+
+.detail-title-placeholder {
+  display: inline-block;
+  vertical-align: middle;
+}
+.detail-title-placeholder {
+  width: min(220px, 100%);
+  height: 20px;
+}
+
+/* ComparisonSummary: application-owned schedule geometry and presentation. */
+.marvin-card.compact-summary {
+  width: 100%;
+  min-height: 86px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding: 9px 12px;
+  gap: 0;
+  align-items: center;
+  background: color-mix(in srgb, var(--u-accent-soft) 65%, var(--u-surface));
+  color: var(--u-ink);
+  border: 1px solid var(--u-line-soft);
+}
+.compact-summary .marvin-result .result-time {
+  font-size: 16px;
+  margin: 4px 0;
+}
+.compact-summary .marvin-result > strong {
+  font-size: 13px;
+}
+.compact-summary .marvin-result > p {
+  font-size: 12px;
+}
+.compact-summary .summary-date {
+  display: none;
+}
+.marvin-result .saved-qualification {
+  color: inherit;
+  font-size: 11px;
+  margin: 5px 0 0;
+}
+.marvin-card {
+  flex: 0 0 340px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 32px;
+  align-content: stretch;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 182px;
+  background: var(--u-accent-soft);
+  border: 1px solid var(--u-accent-border);
+  border-radius: var(--u-panel-radius);
+  color: var(--u-ink);
+  padding: 16px;
+}
+.marvin-card > img {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+}
+.marvin-result {
+  position: relative;
+  font-size: 12px;
+  line-height: 1.25;
+  align-self: start;
+}
+.marvin-result strong {
+  font-size: 11px;
+  font-weight: 750;
+}
+.marvin-result p {
+  margin: 4px 0 11px;
+}
+.marvin-result .result-time {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+.marvin-result .summary-date {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+.marvin-caption {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--u-line-soft);
+  margin: 0;
+  padding-top: 6px;
+  text-align: right;
+  font-size: 9px;
+  height: 32px;
+  line-height: 12px;
+}
+@media (max-width: 1100px) {
+  .marvin-card {
+    flex-basis: 300px;
+    grid-template-columns: 96px 1fr;
+    padding: 14px;
+  }
+  .marvin-card > img {
+    width: 96px;
+    height: 96px;
+  }
+}
+@media (max-width: 700px) {
+  .marvin-card {
+    flex-basis: auto;
+    min-height: 172px;
+    grid-template-columns: 112px 1fr;
+    padding: 16px;
+  }
+  .marvin-card > img {
+    width: 112px;
+    height: 112px;
+  }
+  .marvin-result .result-time {
+    font-size: 16px;
+  }
+  .marvin-caption {
+    font-size: 9px;
+  }
+}
+.summary-skeleton {
+  display: grid;
+  gap: 12px;
+}
+.summary-skeleton > div {
+  height: 16px;
+  background: var(--u-line-soft);
+}
+.summary-skeleton > div:last-child {
+  width: 65%;
+}
+.summary-date-placeholder {
+  display: inline-block;
+  vertical-align: middle;
+}
+.summary-date-placeholder {
+  width: 75px;
+  height: 12px;
+}
+
+/* These dimensions belong to the app's calendar, not the library's Skeleton. */
+.day-label-placeholder {
+  width: 48px;
+  height: 14px;
+  margin-inline: auto;
+}
+.lesson-popover .popover-heading h2 {
+  margin: 0;
+  font-size: 14px;
+}
+.lesson-position .kind-badge {
+  min-height: 0;
+  line-height: 1;
+}
+.lesson-card {
+  cursor: pointer;
+}
+.lesson-card:focus-visible {
+  outline: 2px solid var(--u-focus);
+  outline-offset: 2px;
+}

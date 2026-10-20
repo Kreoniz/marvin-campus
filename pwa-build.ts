@@ -13,6 +13,7 @@ export function campusPwa(): Plugin {
           '/manifest.webmanifest',
           '/fonts/InterVariable.woff2',
           '/fonts/Inter-LICENSE.txt',
+          '/licenses/unlikely-ui-LICENSE.txt',
           '/assets/mascot-mint-head-v1.webp',
           '/assets/mascot-m2-thinking-v1.webp',
           '/assets/planet.webp',

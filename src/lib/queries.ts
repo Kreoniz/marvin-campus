@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/svelte-query';
+import { queryOptions } from '@tanstack/react-query';
 import { loadWeek, searchGroups } from './api.ts';
 import {
   CACHE_RETENTION,

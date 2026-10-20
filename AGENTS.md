@@ -2,8 +2,8 @@
 
 - Public name: Кампус (Campus); repository and Go module: marvin-campus.
 - Read README.md, docs/product.md and docs/architecture.md before implementation. Use the user's current design references.
-- Implement with Go, net/http and SQLite on the backend; Svelte 5, TypeScript, Vite, pnpm, Tailwind CSS v4 and Bits UI on the frontend. Match the supplied mockups; the original React component library is not a requirement.
-- Telegram integration and Telegram buttons are deferred. After implementation, teach the user Go and Svelte 5 through this project's code, building on their Python, Node and older Svelte experience.
+- Implement with Go, net/http and SQLite on the backend; React 19, TypeScript, Vite, pnpm, Tailwind CSS v4 and unlikely-ui on the frontend. Match the supplied mockups; the original React component library is not a requirement.
+- Telegram integration and Telegram buttons are deferred. After implementation, teach the user Go and React through this project's code, building on their Python, Node and older Svelte experience.
 - Keep the solution small; prioritize YAGNI, KISS and then DRY. Add only dependencies with clear value.
 - Use small atomic Conventional Commits. Run the narrowest relevant validation.
 - Read CONTEXT.md for domain terms. Keep schedule calculations pure. Never interpret an unavailable group's data as an empty schedule.

@@ -1,7 +1,7 @@
 # Кампус
 
 Сравнение расписаний ОмГТУ: свободные окна, общее присутствие и совместные занятия.
-Svelte 5, TypeScript, TanStack Query, Vite, Tailwind CSS и Bits UI; Go API с SQLite-кэшем.
+React 19, TypeScript, TanStack Query, Vite, Tailwind CSS и unlikely-ui; Go API с SQLite-кэшем.
 
 Сайт: [campus.kreoniz.ru](https://campus.kreoniz.ru).
 
@@ -19,6 +19,8 @@ go run ./cmd/campus
 Vite проксирует `/api` на Go (`:8080`). После `pnpm build` Go отдаёт готовый
 клиент из `dist`. Доступ к источнику зависит от его доступности; при необходимости
 Go поддерживает стандартный `HTTPS_PROXY`.
+Для отдельного API при разработке можно задать `CAMPUS_API_ORIGIN`, например
+`CAMPUS_API_ORIGIN=http://127.0.0.1:8086 pnpm dev --port 5175`.
 
 ```sh
 pnpm check

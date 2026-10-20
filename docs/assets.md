@@ -11,6 +11,9 @@ blanket license is granted for the illustrations or source code by this document
   This records their provenance; it does not establish rights to the reference
   character or grant third-party redistribution rights. Review those separately
   before licensing or redistributing the images.
+- unlikely-ui code and styles are MIT licensed; its complete license is shipped at
+  `public/licenses/unlikely-ui-LICENSE.txt` and retained in the offline shell. The application uses the published
+  `unlikely-ui@0.1.0-alpha.1` rather than copying its component source.
 - Lucide icons and other installed dependencies retain their own package
   licenses. Dependency licenses are independent of the owner's code decision.
 
