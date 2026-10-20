@@ -48,7 +48,7 @@ export default function ComparisonSummary({
       .join(', ');
   return (
     <Card.Root
-      className={`marvin-card grid text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0' : 'gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-[var(--u-line-soft)] bg-u-surface min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
+      className={`marvin-card grid text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0' : 'gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised shadow-[var(--u-shadow-md)] dark:bg-[color-mix(in_srgb,var(--u-surface-raised)_88%,var(--u-ink))] min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
       role="complementary"
       aria-label="Результат сравнения"
       aria-busy={loading}
@@ -140,7 +140,7 @@ export default function ComparisonSummary({
           </>
         )}
         {result.complete && hasLessons && !result.presence.length && (
-          <p className="presence-reason text-xs leading-snug text-u-muted">
+          <p className="presence-reason text-xs leading-snug text-u-ink">
             {withoutOnsite.length === 1
               ? `У ${withoutOnsite[0]} в этот день нет очных занятий.`
               : withoutOnsite.length
@@ -149,7 +149,7 @@ export default function ComparisonSummary({
           </p>
         )}
         {(!compact || saved) && (
-          <p className="saved-qualification mt-[5px] text-[11px] text-u-muted">
+          <p className="saved-qualification mt-[5px] text-[11px] text-u-ink">
             {saved
               ? 'По сохранённым данным'
               : result.complete
@@ -159,7 +159,7 @@ export default function ComparisonSummary({
         )}
       </div>
       {!compact && (
-        <p className="col-span-full m-0 h-8 border-t border-[var(--u-line-soft)] pt-1.5 text-right text-[10px] leading-3 text-u-muted">
+        <p className="col-span-full m-0 h-8 border-t border-u-line pt-1.5 text-right text-[10px] leading-3 text-u-ink">
           {result.free.length
             ? 'Даже у вселенной бывают окна.'
             : 'Время — иллюзия. Расписание — чуть сложнее.'}
