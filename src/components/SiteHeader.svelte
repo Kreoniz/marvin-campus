@@ -9,7 +9,7 @@
   <a class="brand" href="/" aria-label="Марвин Campus, главная"
     ><span class="brand-avatar"
       ><img
-        src="/assets/marvin-logo-v3.webp"
+        src="/assets/mascot-mint-head-v1.webp"
         width="60"
         height="60"
         alt=""

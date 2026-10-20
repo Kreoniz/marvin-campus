@@ -1,0 +1,50 @@
+Mint mascot assets — 2026-10-20
+Generator: built-in image_gen.imagegen (not the fallback CLI).
+
+Input roles:
+- Selected head: owner-supplied round mascot and owner-supplied design-token sheet.
+- Transparent head: selected generated mint head.
+- Thinking illustration: public/assets/marvin.webp as edit target; selected mint head as reference.
+- Social card: public/social/og-light-glasses-v2.jpg as edit target; selected mint head as reference.
+
+SELECTED MINT HEAD
+Use case: precise-object-edit.
+Asset type: polished square raster mascot / PWA icon concept.
+
+Image 1 is the edit target: the simple ivory circular face with a shared diagonal eyelid and sleepy green eyes.
+Image 2 is a color reference only: a design-token sheet. Do not copy its layout, labels, swatches, or typography into the final image.
+
+Primary request: gently regenerate the mascot from image 1 using the user's exact design-system mint accent for the eyes. Keep the same very simple, tired, mildly unimpressed expression and large empty forehead.
+
+Palette:
+- Eye iris fill: mint green #87F19D, the --u-accent swatch from image 2. This must read as fresh pale mint green, not olive, lime, teal or neon.
+- Head fill: warm milk/ivory #F7F4EA.
+- Thick outer contour and the thin diagonal eyelid: dark charcoal #242926.
+- Plain solid background: muted dark grey-green #2D312C.
+- Tiny warm-white eye highlights.
+
+Preserve: perfectly circular head; front-facing head only centered in square with generous margin; one thin gently diagonal shared eyelid crossing the lower face; two small half-open eyes underneath that line; restrained minimal crescent shading at one edge; smooth clean thick outside contour. Keep the eyes small and low as in the reference. Keep the existing diagonal tilt.
+No mouth, no nose, no eyebrows, no ears, no body, no seams, no helmet panel, no antenna, no additional accessories. No words, no watermark, no UI, no palette sheet, no collage. One mascot only. Almost flat cartoon illustration, no glow or dramatic rendering.
+
+HEAD
+Transparent background: true
+Use case: background-extraction.
+Edit target: the selected circular ivory mascot with mint eyes.
+Remove ONLY the dark square background, replacing it with genuinely transparent alpha. Keep the exact selected head, the same perfect circular silhouette, proportions, diagonal eyelid, small low-set mint #87F19D eyes, ivory #F7F4EA face, thick dark #242926 outline and subtle existing crescent edge shading. Do not reinterpret or redesign the face, do not change its tilt or expression. Preserve the full outer contour without cutting it off. Head only, no body, no text, no new objects, no shadow outside the head. Center the entire head with a small transparent safety margin. Deliver a clean transparent cutout.
+
+THINKING
+Transparent background: true
+Use case: precise-object-edit.
+Image 1 is the edit target: existing transparent illustration of a small round-headed robot resting its cheek in its hand.
+Image 2 is the selected updated head design and color reference.
+Primary request: update the robot in image 1 to use the selected head from image 2. Keep the existing thinking pose and simple compact torso, hand supporting cheek, rounded ivory arms, dark charcoal neck and joints, and the exact overall framing of image 1. Gently regenerate a coherent illustration in the same very simple clean cartoon style.
+The head MUST be round and closely match image 2: large empty warm ivory forehead #F7F4EA, one thin shared diagonal upper-eyelid line across the lower face, two tiny sleepy half-open mint-green #87F19D eyes with small pale highlights beneath the line, thick dark charcoal #242926 outline, minimal soft crescent shading. No mouth, no nose, no angry eyebrows, no ears or antenna.
+The torso and hand should have matching bold dark outlines and warm ivory fill. Keep the character calm, tired, mildly unimpressed. Do not add details or accessories. Do not add a colored background or a yellow square. Preserve genuine transparency outside the complete silhouette; do not clip the hand, head or shoulders. One character only, no text, no watermark. This asset sits on a yellow card and a light or dark page, so edges must be clean with no opaque rectangular backdrop.
+
+SOCIAL
+Transparent background: false
+Use case: precise-object-edit.
+Image 1 is the edit target: a wide social sharing card with Russian text on the left and a round character in sunglasses on the right.
+Image 2 is the new selected mascot reference.
+Change ONLY the character on the right: replace its sunglasses face with the selected sleepy mint-eyed circular ivory mascot from image 2. Keep it at the same position and approximate size. Its large empty forehead, shared diagonal eyelid, small mint #87F19D eyes, thick dark outline and warm ivory face should match image 2. No sunglasses. No body.
+Preserve all other content, typography, alignment, pale ivory background, layout and dimensions/aspect ratio of image 1. Preserve the exact main text "Марвин Campus", subtitle "Найдём время пересечься", the "Don't Panic" badge and yellow "42" sticker, at their existing positions. Do not rename the app or invent new wording. No additional words, logos or watermark. Horizontal social card around 1200:630 aspect ratio. Only one finished card.

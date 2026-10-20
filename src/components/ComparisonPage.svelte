@@ -338,7 +338,7 @@
             />
           {:else}<div class="welcome">
               <img
-                src="/assets/marvin.webp"
+                src="/assets/mascot-mint-thinking-v1.webp"
                 width="190"
                 height="190"
                 alt="Марвин ждёт расписание"

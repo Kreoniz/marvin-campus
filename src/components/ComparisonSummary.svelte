@@ -40,7 +40,7 @@
   aria-busy={loading}
 >
   {#if !compact}<img
-      src="/assets/marvin.webp"
+      src="/assets/mascot-mint-thinking-v1.webp"
       width="150"
       height="150"
       alt="Марвин задумался над расписанием"

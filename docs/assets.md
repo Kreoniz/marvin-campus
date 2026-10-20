@@ -39,3 +39,32 @@ includes them in its required offline assets and content hash. The previous
 files remain available to older application shells. Updating an existing
 installed icon is controlled by the browser/OS; an application-shell update
 does not itself guarantee immediate replacement of the launcher icon.
+
+## Mint mascot — 2026-10-20
+
+The owner selected a round ivory head with a sleepy diagonal eyelid and mint
+eyes. The requested eye color, `#87f19d`, was sampled from the owner's
+`--u-accent` design-token reference. The built-in image generation tool produced
+the selected head, its transparent cutout, a matching thinking pose and an
+updated social card. The exact [generation and edit prompts](assets/mint-mascot-v1-prompts.txt)
+record the input roles and preserved features. The existing provenance and
+licensing limitations above still apply.
+
+ImageMagick trimmed transparent margins, resized and encoded the generated
+results, and stripped embedded metadata. The current application uses:
+
+- `public/assets/mascot-mint-head-v1.webp`: transparent 192×192 header avatar.
+- `public/assets/mascot-mint-thinking-v1.webp`: transparent thinking illustration
+  for the welcome screen and comparison summary.
+- `public/favicon-mint-v1.png`: transparent 64×64 browser icon.
+- `public/icons/icon-mint-v1-192.png`: opaque 192×192 installation icon.
+- `public/icons/icon-mint-v1-512.png`: opaque 512×512 installation and maskable icon.
+- `public/icons/apple-touch-icon-mint-v1.png`: opaque 180×180 Apple touch icon.
+- `public/social/og-mint-v1.jpg`: 1200×630 social preview with the existing wording.
+
+Installation icons use a `#2d312c` background; the complete head fits within
+75% of the image width and height, inside the maskable safe circle. The manifest
+launch colors use the same background. The header, favicon and thinking pose
+keep genuine transparency for both page themes and the yellow summary card.
+New asset filenames are included in the PWA's required offline assets and build
+hash. Older assets remain available for older application shells.
