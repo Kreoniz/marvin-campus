@@ -49,3 +49,11 @@
 These checks do not establish full WCAG conformance. Physical mobile keyboards,
 screen readers, touch/coarse pointer and text zoom still need device validation.
 Production, backend and main were not changed.
+
+## Follow-up visual feedback
+
+The day-view width expansion was reverted: vertical day/week cards retain the
+160-pixel cap, so an isolated lesson stays compact. Disabled reorder arrows use
+a transparent background and reduced opacity on colored rows. Both themes and
+the restored card width were checked in the local React preview; TypeScript and
+the production build passed.

@@ -6,6 +6,9 @@ import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 
+const moveButtonClassName =
+  'min-h-11 min-w-11 shrink-0 text-inherit hover:bg-black/7 data-disabled:cursor-default data-disabled:bg-transparent data-disabled:text-inherit data-disabled:opacity-30';
+
 interface Props {
   groups: Selection[];
   colors: GroupColors;
@@ -95,14 +98,14 @@ export default function GroupOrder({
               <IconButton
                 label={`Переместить ${group.label} выше`}
                 name="up"
-                className="text-inherit"
+                className={moveButtonClassName}
                 disabled={index === 0}
                 onClick={() => move(group, index, -1)}
               />
               <IconButton
                 label={`Переместить ${group.label} ниже`}
                 name="down"
-                className="text-inherit"
+                className={moveButtonClassName}
                 disabled={index === groups.length - 1}
                 onClick={() => move(group, index, 1)}
               />

@@ -41,10 +41,10 @@ subject and room, and colored participant sections in stable group-ID order.
 Group names and subgroup numbers occupy two lines; more than three participants
 show the first two and a count, with the full list in the popover. Lesson-kind
 badges sit beside the room. Lanes belong to overlapping events, so empty groups
-reserve no space. Week-grid cards are at most 160 pixels wide; their height still
-represents duration, including long military classes. Day-view cards fill their
-allocated overlap lanes without the week cap. Simultaneous distinct lessons of
-one group use stripes. The selected-day timeline uses event rows and
+reserve no space. Cards in the vertical calendar are at most 160 pixels wide in
+both day and week views; an isolated lesson does not stretch across the day.
+Their height still represents duration, including long military classes.
+Simultaneous distinct lessons of one group use stripes. The selected-day timeline uses event rows and
 reserves the week's peak row count to keep its panel height stable.
 Long events in the horizontal day timeline keep their temporal length, but their
 participant labels stay compact; the time range is available in the popover.

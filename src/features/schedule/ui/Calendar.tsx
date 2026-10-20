@@ -248,7 +248,7 @@ export default function Calendar({
                           ),
                           left: `calc(${block.left * 100}% + 3px)`,
                           width: `calc(${block.width * 100}% - 6px)`,
-                          maxWidth: singleDay ? undefined : 160,
+                          maxWidth: 160,
                         }}
                       />
                     ))}
