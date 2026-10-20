@@ -6,7 +6,7 @@
 </script>
 
 <header class="site-header">
-  <a class="brand" href="/" aria-label="Марвин Campus, главная"
+  <a class="brand" href="/" aria-label="Кампус, главная"
     ><span class="brand-avatar"
       ><img
         src="/assets/mascot-mint-head-v1.webp"
@@ -16,7 +16,7 @@
       /></span
     >
     <span class="brand-copy"
-      ><span class="brand-name">Марвин Campus</span><span class="eyebrow"
+      ><span class="brand-name">Кампус</span><span class="eyebrow"
         >Don't Panic</span
       ></span
     ></a

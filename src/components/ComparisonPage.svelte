@@ -257,7 +257,7 @@
 
 <svelte:head
   ><title
-    >Марвин Campus — {groups.length
+    >Кампус — {groups.length
       ? groups.map((g) => g.label).join(' + ')
       : 'найдём время пересечься'}</title
   ></svelte:head
@@ -341,7 +341,7 @@
                 src="/assets/mascot-m2-thinking-v1.webp"
                 width="190"
                 height="190"
-                alt="Марвин ждёт расписание"
+                alt="Робот ждёт расписание"
               />
               <div>
                 <h2>С кем пересечёмся?</h2>

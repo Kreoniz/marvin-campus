@@ -1,0 +1,11 @@
+Generator: built-in image_gen.imagegen.
+Date: 2026-10-20.
+Input: public/social/og-m2-v1.jpg (edit target).
+Output: public/social/og-campus-v1.jpg (resized export).
+
+Use case: text-localization.
+Asset type: social-sharing preview for a Russian university timetable app.
+Image 1 is the EDIT TARGET: the selected M2 social card.
+Rename the application in the large headline ONLY: replace the entire old headline "Марвин Campus" with exactly "Кампус" (К а м п у с), one word in Cyrillic, capital К and lowercase ампус. Remove all of the old headline. Use the same heavy black sans-serif lettering, left alignment, approximate cap height and baseline; the shorter new word naturally leaves more empty space on its right. Do not append Campus, Marvin, Марвин or Unlikely.
+Preserve every other element: the subtitle exactly "Найдём время пересечься", badge exactly "Don't Panic", yellow 42 sticker, pale warm background, layout, proportions and clean flat illustration style.
+LOCK THE MASCOT: retain the exact selected M2 head, connected diagonal brow, mint eyes, dark torso, mint yoke, short ivory neck, ivory shoulders, both arms and BOTH hands. One hand supports the cheek; the other forearm crosses the front with its second hand supporting the raised elbow. Preserve the complete silhouette and position. Do not redesign, simplify, crop, or change the face/body. No extra text, objects, logos or watermark. Horizontal 1200:630 composition.

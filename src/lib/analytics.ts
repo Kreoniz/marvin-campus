@@ -57,7 +57,7 @@ export async function initAnalytics() {
       ...payload,
       url: cleanURL(payload.url),
       referrer: cleanURL(payload.referrer),
-      title: 'Марвин Campus',
+      title: 'Кампус',
     });
     const script = document.createElement('script');
     script.defer = true;

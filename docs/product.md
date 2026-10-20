@@ -1,6 +1,7 @@
 # Product rules
 
-Marvin Campus compares public university schedules. Presence means the interval
+The app's public name is «Кампус». It compares public university schedules.
+Presence means the interval
 between a group's first and last in-person lessons, including breaks; it does
 not establish a person's actual location. Free windows subtract all lessons,
 including online lessons, from every selected group's shared presence.

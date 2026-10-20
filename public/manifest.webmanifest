@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Марвин Campus",
-  "short_name": "Марвин Campus",
+  "name": "Кампус",
+  "short_name": "Кампус",
   "description": "Расписание ОмГТУ и сравнение групп",
   "lang": "ru",
   "start_url": "/",

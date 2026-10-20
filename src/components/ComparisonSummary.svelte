@@ -43,7 +43,7 @@
       src="/assets/mascot-m2-thinking-v1.webp"
       width="150"
       height="150"
-      alt="Марвин задумался над расписанием"
+      alt="Робот задумался над расписанием"
     />{/if}
   <div class="marvin-result">
     <p class="summary-date">

@@ -1,4 +1,4 @@
-# Марвин Campus
+# Кампус
 
 Сравнение расписаний ОмГТУ: свободные окна, общее присутствие и совместные занятия.
 Svelte 5, TypeScript, TanStack Query, Vite, Tailwind CSS и Bits UI; Go API с SQLite-кэшем.

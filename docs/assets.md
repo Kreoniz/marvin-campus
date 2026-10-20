@@ -91,3 +91,12 @@ record the provenance. Raster exports have embedded metadata stripped.
 The new filenames are referenced by the app shell, social metadata and PWA
 asset list; older image files remain available to older shells. The earlier
 licensing notes and dated design-risk reviews remain applicable.
+
+## Кампус name — 2026-10-20
+
+The public application name is now «Кампус». The built-in image generation tool
+replaced the title on the M2 social preview while preserving its illustration,
+subtitle, badge and sticker. The exact [text edit prompt](assets/campus-name-prompt.txt)
+is retained. `public/social/og-campus-v1.jpg` is the resized 1200×630 JPEG export
+with embedded metadata stripped. Existing mascot and installation artwork is
+retained; earlier preview files remain available at their existing URLs.
