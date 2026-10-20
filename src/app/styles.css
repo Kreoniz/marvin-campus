@@ -12,6 +12,14 @@
 
 @theme {
   --font-sans: Inter, system-ui, sans-serif;
+  --color-campus-presence: light-dark(
+    oklch(92.1% 0.104 93),
+    oklch(81.8% 0.109 92)
+  );
+  --color-campus-presence-border: light-dark(
+    oklch(58.1% 0.121 78),
+    oklch(81.8% 0.109 92)
+  );
 }
 
 @theme inline {

@@ -17,6 +17,7 @@ import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
 import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
+import ScheduleDisplayOptions from '../schedule/ui/ScheduleDisplayOptions.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
 
@@ -41,11 +42,25 @@ export default function ComparisonPage() {
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderFocus, setOrderFocus] = useState(0);
+  const [subgroupShades, setSubgroupShades] = useState(() => {
+    try {
+      return localStorage.getItem('campus-subgroup-shades') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const groups = view.groups,
     week = view.week,
     day = view.day,
     mode = view.mode;
   const busy = links.opening || source.pending;
+
+  function changeSubgroupShades(value: boolean) {
+    setSubgroupShades(value);
+    try {
+      localStorage.setItem('campus-subgroup-shades', String(value));
+    } catch {}
+  }
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -148,7 +163,16 @@ export default function ComparisonPage() {
         returnFocus={orderFocus}
       />
       <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
-        <SiteHeader theme={theme} onToggleTheme={toggleTheme} />
+        <SiteHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          displayOptions={
+            <ScheduleDisplayOptions
+              subgroupShades={subgroupShades}
+              onSubgroupShadesChange={changeSubgroupShades}
+            />
+          }
+        />
         <main>
           {pwa.offline && (
             <p className="my-2 text-xs text-u-muted" role="status">
@@ -219,6 +243,7 @@ export default function ComparisonPage() {
                       schedules={source.schedules}
                       colors={colors}
                       subgroupCatalog={subgroupCatalog}
+                      subgroupShades={subgroupShades}
                       week={week}
                       day={day}
                       mode={mode}
@@ -267,6 +292,7 @@ export default function ComparisonPage() {
                   schedules={source.schedules}
                   colors={colors}
                   subgroupCatalog={subgroupCatalog}
+                  subgroupShades={subgroupShades}
                   day={day}
                   mode={mode}
                   loading={busy}

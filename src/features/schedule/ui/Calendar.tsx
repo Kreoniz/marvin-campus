@@ -17,6 +17,7 @@ interface CalendarProps {
   schedules: GroupSchedule[];
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
+  subgroupShades?: boolean;
   week: string;
   day: string;
   mode: Mode;
@@ -31,6 +32,7 @@ export default function Calendar({
   schedules,
   colors,
   subgroupCatalog = {},
+  subgroupShades = false,
   week,
   day,
   mode,
@@ -226,7 +228,7 @@ export default function Calendar({
                     {highlights.map((range) => (
                       <div
                         key={`${range.start}:${range.end}`}
-                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-u-line'} ${saved ? 'saved-highlight bg-[color-mix(in_srgb,var(--u-muted)_5%,transparent)] [border-left-style:dashed]' : mode === 'free' ? 'bg-[color-mix(in_srgb,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_srgb,var(--u-muted)_8%,transparent)]'}`}
+                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
                         aria-hidden="true"
                         style={{
                           top: (range.start - start) * scale,
@@ -240,15 +242,15 @@ export default function Calendar({
                         block={block}
                         colors={colors}
                         subgroupCatalog={subgroupCatalog}
+                        subgroupShades={subgroupShades}
                         style={{
                           top: (block.lesson.start - start) * scale,
                           height: Math.max(
                             (block.lesson.end - block.lesson.start) * scale - 3,
                             18,
                           ),
-                          left: `calc(${block.left * 100}% + 3px)`,
-                          width: `calc(${block.width * 100}% - 6px)`,
-                          maxWidth: 160,
+                          left: `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
+                          width: `calc(min(${100 / block.columns}%, 166px) - 6px)`,
                         }}
                       />
                     ))}
@@ -289,7 +291,7 @@ export default function Calendar({
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
         {schedules.length >= 2 && (
           <span
-            className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-u-line before:bg-(--u-well)'}`}
+            className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-campus-presence-border before:bg-campus-presence'} ${saved ? 'before:border-dashed' : ''}`}
           >
             {mode === 'presence'
               ? 'Полоса — общее время в вузе'

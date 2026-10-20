@@ -9,7 +9,11 @@ import { Popover } from 'unlikely-ui/popover';
 import { Badge } from 'unlikely-ui/badge';
 import { Button } from 'unlikely-ui/button';
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
-import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
+import {
+  lessonSubgroupNumber,
+  subgroupChipStyle,
+} from '../../../lib/subgroup-colors.ts';
 import { lessonKind } from '../../../lib/lesson-kind.ts';
 import { lessonGroupLabel } from '../../../lib/subgroups.ts';
 import { lessonKey } from '../../../lib/domain.ts';
@@ -22,17 +26,21 @@ interface LessonCardProps {
   block: LessonBlock;
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
+  subgroupShades?: boolean;
   style: CSSProperties;
   horizontal?: boolean;
 }
 
-const chipStyle = (color: number): CSSProperties =>
-  ({ '--chip': colorStyle(color).slice(7) }) as CSSProperties;
+const relativeColorsSupported = CSS.supports(
+  'color',
+  'oklch(from red calc(l + 0.04) c h)',
+);
 
 export default function LessonCard({
   block,
   colors,
   subgroupCatalog = {},
+  subgroupShades = false,
   style,
   horizontal = false,
 }: LessonCardProps) {
@@ -66,6 +74,20 @@ export default function LessonCard({
   }
   const savedMember = (group: Selection) =>
     block.staleMembers.includes(group.id);
+  function chipStyle(group: Selection, event?: Lesson, allowShades = true) {
+    const own = block.memberLessons[group.id] ?? [];
+    const membership = event
+      ? own.filter((source) => lessonKey(source) === lessonKey(event))
+      : own;
+    return subgroupChipStyle(
+      colors[group.id] ?? 0,
+      lessonSubgroupNumber(membership, subgroupCatalog[group.id] ?? []),
+      subgroupShades &&
+        relativeColorsSupported &&
+        allowShades &&
+        !savedMember(group),
+    ) as CSSProperties;
+  }
   const labels = block.members
     .map(
       (group) =>
@@ -136,7 +158,7 @@ export default function LessonCard({
           <span
             key={group.id}
             className={`participant-chip inline-flex items-center gap-[3px] rounded-[3px] px-[3px] py-px text-xs leading-[1.2] font-[650] whitespace-nowrap ${participantBackground(savedMember(group))}`}
-            style={chipStyle(colors[group.id] ?? 0)}
+            style={chipStyle(group, event)}
           >
             {groupLabel(group, event)}
             {savedMember(group) && (
@@ -158,8 +180,8 @@ export default function LessonCard({
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
           render={<button type="button" />}
-          style={chipStyle(colors[block.members[0].id] ?? 0)}
-          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) active:translate-y-px ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-muted' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
+          style={chipStyle(block.members[0], undefined, !block.parallel)}
+          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-muted' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
           aria-label={`${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
@@ -177,7 +199,7 @@ export default function LessonCard({
                 <span
                   key={group.id}
                   className={`flex-1 ${participantBackground(savedMember(group))}`}
-                  style={chipStyle(colors[group.id] ?? 0)}
+                  style={chipStyle(group)}
                 />
               ))}
             </span>
@@ -208,7 +230,7 @@ export default function LessonCard({
                   <span
                     key={group.id}
                     className={`participant-sector flex min-w-0 flex-1 flex-col justify-center text-center leading-[1.05] font-[650] ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[11px]'} ${participantBackground(savedMember(group))}`}
-                    style={chipStyle(colors[group.id] ?? 0)}
+                    style={chipStyle(group)}
                     title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
                   >
                     {horizontal && long ? (

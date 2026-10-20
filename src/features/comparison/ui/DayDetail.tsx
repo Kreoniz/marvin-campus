@@ -13,6 +13,7 @@ interface DayDetailProps {
   schedules: GroupSchedule[];
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
+  subgroupShades?: boolean;
   day: string;
   mode: Mode;
   loading: boolean;
@@ -23,6 +24,7 @@ export default function DayDetail({
   schedules,
   colors,
   subgroupCatalog = {},
+  subgroupShades = false,
   day,
   mode,
   loading,
@@ -124,7 +126,7 @@ export default function DayDetail({
                 {highlights.map((range) => (
                   <div
                     key={`${range.start}:${range.end}`}
-                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border bg-[color-mix(in_srgb,var(--u-accent-soft)_45%,transparent)]' : 'border-u-line bg-[color-mix(in_srgb,var(--u-muted)_8%,transparent)]'} ${saved ? 'saved-highlight border-dashed' : ''}`}
+                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
                     aria-hidden="true"
                     style={{
                       left: `${((range.start - start) * 100) / (end - start)}%`,
@@ -138,6 +140,7 @@ export default function DayDetail({
                     block={block}
                     colors={colors}
                     subgroupCatalog={subgroupCatalog}
+                    subgroupShades={subgroupShades}
                     horizontal
                     style={{
                       left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,

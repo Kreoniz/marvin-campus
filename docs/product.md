@@ -43,11 +43,26 @@ show the first two and a count, with the full list in the popover. Lesson-kind
 badges sit beside the room. Lanes belong to overlapping events, so empty groups
 reserve no space. Cards in the vertical calendar are at most 160 pixels wide in
 both day and week views; an isolated lesson does not stretch across the day.
+Their horizontal pitch is capped too, keeping a six-pixel gap instead of
+spreading narrow cards across a wide day. Pressing a card highlights it without
+moving it on the time scale.
 Their height still represents duration, including long military classes.
 Simultaneous distinct lessons of one group use stripes. The selected-day timeline uses event rows and
 reserves the week's peak row count to keep its panel height stable.
 Long events in the horizontal day timeline keep their temporal length, but their
 participant labels stay compact; the time range is available in the popover.
+Presence uses amber highlights and free windows use green, including their
+legends. Saved ranges retain the mode color with a weaker fill and dashed edge
+in both views.
+
+The header's “Вид расписания” menu offers subgroup shades, off by default and
+remembered locally. Subgroups 1 and 2 use lighter/darker OKLCH variants of their
+group's existing color; visible subgroup numbers remain unchanged. Membership
+comes from source lessons, not the selected filter. Whole-group, unknown or
+multiple membership, and other subgroup numbers retain the base color. Saved
+participants and bundled parallel-card backgrounds retain the base color too;
+fresh individual events in the details may use their own subgroup shade.
+Browsers without relative OKLCH support retain the ordinary group palette.
 
 Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for ten minutes, future weeks for an hour, past weeks for a day; group

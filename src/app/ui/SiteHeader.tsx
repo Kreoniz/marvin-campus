@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Badge } from 'unlikely-ui/badge';
 import HelpDialog from './HelpDialog.tsx';
 import IconButton from '../../shared/ui/IconButton.tsx';
@@ -5,9 +6,11 @@ import IconButton from '../../shared/ui/IconButton.tsx';
 export default function SiteHeader({
   theme,
   onToggleTheme,
+  displayOptions,
 }: {
   theme: string;
   onToggleTheme: () => void;
+  displayOptions?: ReactNode;
 }) {
   return (
     <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-2.5 compact:gap-2 compact:pt-1 compact:pb-2">
@@ -54,7 +57,8 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="header-actions ml-auto flex gap-1 compact:gap-0 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
+      <div className="header-actions flex gap-1 compact:ml-auto compact:gap-0 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
+        {displayOptions}
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}

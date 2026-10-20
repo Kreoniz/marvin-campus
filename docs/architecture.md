@@ -22,7 +22,10 @@
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
   through its public subpaths and style app layout with Tailwind utilities.
   `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
-  the local font and semantic Tailwind theme aliases. Dynamic schedule geometry
+  the local font, semantic Tailwind theme aliases and the app's presence colors.
+  Subgroup shades derive from existing group tokens in `src/lib/subgroup-colors.ts`;
+  the display preference belongs to the comparison page and stays outside URLs
+  and pure schedule calculations. Dynamic schedule geometry
   and categorical colors use computed styles; there are no app component
   stylesheets or parallel control resets. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
