@@ -1,5 +1,5 @@
 import { Dialog } from 'unlikely-ui/dialog';
-import IconButton from './IconButton.tsx';
+import IconButton from '../../shared/ui/IconButton.tsx';
 import PwaHelp from './PwaHelp.tsx';
 
 export default function HelpDialog() {

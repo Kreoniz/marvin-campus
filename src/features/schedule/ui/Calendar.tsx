@@ -6,13 +6,13 @@ import {
   type CSSProperties,
 } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import type { GroupSchedule, Mode, Subgroup } from '../lib/types.ts';
-import { addDays, formatDay, timeLabel } from '../lib/dates.ts';
-import { compareDay } from '../lib/domain.ts';
-import type { GroupColors } from '../lib/colors.ts';
-import { lessonBlocks } from '../lib/lesson-layout.ts';
+import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
+import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
+import { compareDay } from '../../../lib/domain.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
+import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import LessonCard from './LessonCard.tsx';
-import './schedule.css';
+import '../../../components/schedule.css';
 
 interface CalendarProps {
   schedules: GroupSchedule[];

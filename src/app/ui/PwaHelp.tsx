@@ -1,5 +1,5 @@
 import { Button } from 'unlikely-ui/button';
-import { usePwa, installPwa } from '../lib/pwa.ts';
+import { usePwa, installPwa } from '../../lib/pwa.ts';
 
 export default function PwaHelp() {
   const pwa = usePwa();

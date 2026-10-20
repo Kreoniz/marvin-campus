@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { readShare } from './api.ts';
-import { track } from './analytics.ts';
-import { snapshotChangeAt, usableSnapshot } from './cache-policy.ts';
-import { assignColors, type GroupColors } from './colors.ts';
-import { addDays, monday, omskToday, validDate } from './dates.ts';
-import { compareDay } from './domain.ts';
-import { rememberGroups, resolveReadable } from './group-directory.ts';
-import { scheduleOptions } from './queries.ts';
-import { readSavedSchedule } from './saved-schedules.ts';
-import { selectionData } from './selection-analytics.ts';
-import { mergeSubgroups, publicSubgroup, savedSubgroups } from './subgroups.ts';
+import { readShare } from '../../../lib/api.ts';
+import { track } from '../../../lib/analytics.ts';
+import { snapshotChangeAt, usableSnapshot } from '../../../lib/cache-policy.ts';
+import { assignColors, type GroupColors } from '../../../lib/colors.ts';
+import { addDays, monday, omskToday, validDate } from '../../../lib/dates.ts';
+import { compareDay } from '../../../lib/domain.ts';
+import {
+  rememberGroups,
+  resolveReadable,
+} from '../../../lib/group-directory.ts';
+import { scheduleOptions } from '../../../lib/queries.ts';
+import { readSavedSchedule } from '../../../lib/saved-schedules.ts';
+import { selectionData } from '../../../lib/selection-analytics.ts';
+import {
+  mergeSubgroups,
+  publicSubgroup,
+  savedSubgroups,
+} from '../../../lib/subgroups.ts';
 import type {
   Group,
   GroupSchedule,
@@ -19,7 +26,7 @@ import type {
   Snapshot,
   Subgroup,
   Week,
-} from './types.ts';
+} from '../../../lib/types.ts';
 import {
   normalizeView,
   parseView,
@@ -27,7 +34,7 @@ import {
   shareID,
   viewURL,
   type ViewState,
-} from './url.ts';
+} from '../../../lib/url.ts';
 
 export type Notify = (
   message: string,

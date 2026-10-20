@@ -1,10 +1,10 @@
 import { Button } from 'unlikely-ui/button';
 import { Input } from 'unlikely-ui/input';
 import { Popover } from 'unlikely-ui/popover';
-import type { GroupSchedule } from '../lib/types.ts';
-import type { ComparisonLinks } from '../lib/use-comparison.ts';
-import IconButton from './IconButton.tsx';
-import Icon from './Icon.tsx';
+import type { GroupSchedule } from '../../../lib/types.ts';
+import type { ComparisonLinks } from '../model/use-comparison.ts';
+import IconButton from '../../../shared/ui/IconButton.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 
 const checkedLabel = (value: string) =>
   new Intl.DateTimeFormat('ru-RU', {

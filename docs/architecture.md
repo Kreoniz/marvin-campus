@@ -13,9 +13,14 @@
   disabled; the existing database and links are retained.
 - `src/lib`: pure schedule calculations, reversible URL encoding, query options,
   selection state, link synchronization, PWA integration and analytics policy.
-- `src/components`: React components use unlikely-ui controls and semantic theme tokens.
-  The app owns schedule geometry in schedule.css, control layout in controls.css
-  and shared page layout in app.css. TanStack React Query owns browser request state;
+- `src/app`: React providers, theme entry and application shell/help.
+- `src/features/comparison`: page composition, comparison state, navigation,
+  results and data status. It composes the independent groups and schedule UI.
+- `src/features/groups`: group search, subgroup selection and ordering.
+- `src/features/schedule`: time grid and lesson cards; geometry stays separate
+  from the pure calculations in `src/lib`.
+- `src/shared/ui`: small shared icon controls. Components import unlikely-ui
+  through its public subpaths. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
   exact group/week saved responses with `saved-schedules.ts`, orchestrated by
   `use-comparison.ts`, while normal requests run. This transient fallback never overwrites Query data or errors.

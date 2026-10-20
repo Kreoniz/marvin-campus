@@ -1,5 +1,5 @@
 import { Select } from 'unlikely-ui/select';
-import type { Subgroup } from '../lib/types.ts';
+import type { Subgroup } from '../../../lib/types.ts';
 
 interface Props {
   label: string;

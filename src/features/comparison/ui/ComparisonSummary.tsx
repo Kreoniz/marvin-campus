@@ -1,9 +1,9 @@
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import type { GroupSchedule, Mode } from '../lib/types.ts';
-import { formatDay, timeLabel } from '../lib/dates.ts';
-import { compareDay, lessonsFor } from '../lib/domain.ts';
-import './schedule.css';
+import type { GroupSchedule, Mode } from '../../../lib/types.ts';
+import { formatDay, timeLabel } from '../../../lib/dates.ts';
+import { compareDay, lessonsFor } from '../../../lib/domain.ts';
+import '../../../components/schedule.css';
 
 interface ComparisonSummaryProps {
   schedules: GroupSchedule[];

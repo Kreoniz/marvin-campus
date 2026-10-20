@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
 import { RadioGroup } from 'unlikely-ui/radio-group';
-import { track } from '../lib/analytics.ts';
-import type { ComparisonView } from '../lib/use-comparison.ts';
-import type { Mode } from '../lib/types.ts';
-import { addDays, formatDay, omskToday, weekLabel } from '../lib/dates.ts';
+import { track } from '../../../lib/analytics.ts';
+import type { ComparisonView } from '../model/use-comparison.ts';
+import type { Mode } from '../../../lib/types.ts';
+import {
+  addDays,
+  formatDay,
+  omskToday,
+  weekLabel,
+} from '../../../lib/dates.ts';
 import DatePicker from './LazyDatePicker.tsx';
-import Icon from './Icon.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
   view: ComparisonView;

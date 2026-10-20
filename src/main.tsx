@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './app.css';
+import App from './app/App.tsx';
+import './app/styles.css';
 import { initPwa } from './lib/pwa.ts';
 
 initPwa();

@@ -1,14 +1,14 @@
 import type { CSSProperties } from 'react';
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import type { GroupSchedule, Mode, Subgroup } from '../lib/types.ts';
-import { formatDay, timeLabel } from '../lib/dates.ts';
-import { compareDay } from '../lib/domain.ts';
-import { lessonBlocks } from '../lib/lesson-layout.ts';
-import type { GroupColors } from '../lib/colors.ts';
-import LessonCard from './LessonCard.tsx';
+import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
+import { formatDay, timeLabel } from '../../../lib/dates.ts';
+import { compareDay } from '../../../lib/domain.ts';
+import { lessonBlocks } from '../../../lib/lesson-layout.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
+import LessonCard from '../../schedule/ui/LessonCard.tsx';
 import ComparisonSummary from './ComparisonSummary.tsx';
-import './schedule.css';
+import '../../../components/schedule.css';
 
 interface DayDetailProps {
   schedules: GroupSchedule[];

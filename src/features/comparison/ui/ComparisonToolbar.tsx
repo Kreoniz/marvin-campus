@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
 import { RadioGroup } from 'unlikely-ui/radio-group';
-import type { ComparisonView } from '../lib/use-comparison.ts';
-import type { GroupSchedule, Mode, Subgroup } from '../lib/types.ts';
-import type { GroupColors } from '../lib/colors.ts';
-import { addDays, weekLabel } from '../lib/dates.ts';
-import GroupStrip from './GroupStrip.tsx';
-import GroupPicker from './GroupPicker.tsx';
-import IconButton from './IconButton.tsx';
-import Icon from './Icon.tsx';
+import type { ComparisonView } from '../model/use-comparison.ts';
+import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
+import { addDays, weekLabel } from '../../../lib/dates.ts';
+import GroupStrip from '../../groups/ui/GroupStrip.tsx';
+import GroupPicker from '../../groups/ui/GroupPicker.tsx';
+import IconButton from '../../../shared/ui/IconButton.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 import DatePicker from './LazyDatePicker.tsx';
-import './controls.css';
+import '../../../components/controls.css';
 
 interface Props {
   view: ComparisonView;

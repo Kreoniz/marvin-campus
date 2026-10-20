@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Calendar, ru } from 'unlikely-ui/calendar';
-import { addDays, monday, omskToday, weekLabel } from '../lib/dates.ts';
+import { addDays, monday, omskToday, weekLabel } from '../../../lib/dates.ts';
 
 // The calendar uses local calendar dates; schedule URLs use Omsk date strings.
 const localDate = (day: string) =>

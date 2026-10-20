@@ -1,6 +1,6 @@
 import { Badge } from 'unlikely-ui/badge';
 import HelpDialog from './HelpDialog.tsx';
-import IconButton from './IconButton.tsx';
+import IconButton from '../../shared/ui/IconButton.tsx';
 
 export default function SiteHeader({
   theme,

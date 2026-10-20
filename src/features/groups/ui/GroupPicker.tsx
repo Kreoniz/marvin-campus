@@ -4,9 +4,9 @@ import { Button } from 'unlikely-ui/button';
 import { Combobox } from 'unlikely-ui/combobox';
 import { Dialog } from 'unlikely-ui/dialog';
 import { Field } from 'unlikely-ui/field';
-import { groupOptions } from '../lib/queries.ts';
-import type { Group, Selection } from '../lib/types.ts';
-import Icon from './Icon.tsx';
+import { groupOptions } from '../../../lib/queries.ts';
+import type { Group, Selection } from '../../../lib/types.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
   selected: Selection[];

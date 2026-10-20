@@ -8,16 +8,16 @@ import {
 import { Popover } from 'unlikely-ui/popover';
 import { Badge } from 'unlikely-ui/badge';
 import { Button } from 'unlikely-ui/button';
-import type { LessonBlock } from '../lib/lesson-layout.ts';
-import { colorStyle, type GroupColors } from '../lib/colors.ts';
-import { lessonKind } from '../lib/lesson-kind.ts';
-import { lessonGroupLabel } from '../lib/subgroups.ts';
-import { lessonKey } from '../lib/domain.ts';
-import type { Lesson, Selection, Subgroup } from '../lib/types.ts';
-import { timeLabel } from '../lib/dates.ts';
-import { track } from '../lib/analytics.ts';
-import Icon from './Icon.tsx';
-import './schedule.css';
+import type { LessonBlock } from '../../../lib/lesson-layout.ts';
+import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
+import { lessonKind } from '../../../lib/lesson-kind.ts';
+import { lessonGroupLabel } from '../../../lib/subgroups.ts';
+import { lessonKey } from '../../../lib/domain.ts';
+import type { Lesson, Selection, Subgroup } from '../../../lib/types.ts';
+import { timeLabel } from '../../../lib/dates.ts';
+import { track } from '../../../lib/analytics.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
+import '../../../components/schedule.css';
 
 interface LessonCardProps {
   block: LessonBlock;

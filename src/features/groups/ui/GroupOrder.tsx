@@ -1,10 +1,10 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Dialog } from 'unlikely-ui/dialog';
-import type { Selection } from '../lib/types.ts';
-import { colorStyle, type GroupColors } from '../lib/colors.ts';
-import Icon from './Icon.tsx';
-import IconButton from './IconButton.tsx';
+import type { Selection } from '../../../lib/types.ts';
+import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
+import IconButton from '../../../shared/ui/IconButton.tsx';
 
 interface Props {
   groups: Selection[];

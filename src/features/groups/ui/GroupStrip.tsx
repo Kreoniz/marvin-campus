@@ -8,12 +8,12 @@ import {
 } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
-import type { GroupSchedule, Selection, Subgroup } from '../lib/types.ts';
-import { mergeSubgroups } from '../lib/subgroups.ts';
-import { colorStyle, type GroupColors } from '../lib/colors.ts';
+import type { GroupSchedule, Selection, Subgroup } from '../../../lib/types.ts';
+import { mergeSubgroups } from '../../../lib/subgroups.ts';
+import { colorStyle, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
-import IconButton from './IconButton.tsx';
-import Icon from './Icon.tsx';
+import IconButton from '../../../shared/ui/IconButton.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
   groups: Selection[];
