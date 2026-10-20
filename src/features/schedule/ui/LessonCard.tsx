@@ -271,7 +271,7 @@ export default function LessonCard({
           </span>
         </Popover.Trigger>
         <Popover.Content
-          className="lesson-popover w-[min(340px,calc(100vw-28px))] text-xs leading-[1.4]"
+          className="lesson-popover w-[min(340px,calc(100vw-28px))] text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{ sideOffset: 7 }}
           initialFocus={hovering.current ? false : undefined}
           onPointerEnter={cancel}

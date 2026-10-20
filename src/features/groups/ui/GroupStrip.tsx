@@ -43,7 +43,7 @@ interface Pointer {
 const chipStyle = (color: number) =>
   ({ '--chip': colorStyle(color).slice(7) }) as CSSProperties;
 const chipClassName =
-  'group-chip w-32 min-w-32 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.25 py-0.5 [color:var(--u-category-ink)] max-[700px]:w-26 max-[700px]:min-w-26 max-[700px]:p-0';
+  'group-chip w-32 min-w-32 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.25 py-0.5 [color:var(--u-category-ink)] compact:w-26 compact:min-w-26 compact:p-0';
 const settingActionClassName =
   'mt-2 min-h-11 w-full justify-start font-medium [&>.u-button-label]:justify-start';
 
@@ -221,7 +221,7 @@ export default function GroupStrip(props: Props) {
   return (
     <>
       <div
-        className="group-controls group/groups relative flex h-19.25 min-w-0 items-center gap-2.25 overflow-x-auto overflow-y-hidden p-1 [scrollbar-width:thin] [&>*]:shrink-0 max-[700px]:h-13 max-[700px]:flex-1 max-[700px]:gap-2 max-[700px]:py-0.75 pointer-coarse:min-[701px]:h-25.25"
+        className="group-controls group/groups relative flex h-19.25 min-w-0 items-center gap-2.25 overflow-x-auto overflow-y-hidden p-1 [scrollbar-width:thin] [&>*]:shrink-0 compact:h-13 compact:flex-1 compact:gap-2 compact:py-0.75 pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
         data-dragging={drag ? '' : undefined}
         ref={scroller}
         role="group"
@@ -246,7 +246,7 @@ export default function GroupStrip(props: Props) {
               data-group-id={group.id}
               style={chipStyle(colors[group.id] ?? 0)}
             >
-              <div className="max-[700px]:hidden">
+              <div className="compact:hidden">
                 <div className="flex items-center justify-between gap-0.5">
                   <button
                     className="min-h-7 min-w-0 touch-none cursor-grab truncate border-0 bg-transparent px-0 py-0.5 text-[13px] font-bold text-inherit group-data-dragging/groups:cursor-grabbing pointer-coarse:min-h-11"
@@ -283,7 +283,7 @@ export default function GroupStrip(props: Props) {
                   onChange={(value) => onSubgroup(group.id, value)}
                 />
               </div>
-              <div className="hidden max-[700px]:block">
+              <div className="hidden compact:block">
                 <Popover.Root>
                   <Popover.Trigger
                     className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-[5px] border-0 bg-transparent p-1 text-xs leading-[1.2] text-inherit"

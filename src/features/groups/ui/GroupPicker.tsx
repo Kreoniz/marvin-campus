@@ -63,7 +63,7 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
       <Dialog.Trigger
         render={
           <Button
-            className="add-group max-[700px]:size-11 max-[700px]:min-h-11 max-[700px]:min-w-11 max-[700px]:p-0"
+            className="add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0"
             variant="secondary"
             disabled={selected.length >= 30}
             aria-label="Добавить группу"
@@ -71,7 +71,7 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
         }
       >
         <Icon name="plus" />
-        <span className="max-[700px]:hidden">Группа</span>
+        <span className="compact:hidden">Группа</span>
       </Dialog.Trigger>
       <Dialog.Content
         className="w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] overflow-y-auto"

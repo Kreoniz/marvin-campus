@@ -120,7 +120,7 @@ export default function Calendar({
     <>
       <div
         ref={scroller}
-        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] max-[700px]:[--rail-width:46px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] max-[700px]:[--day-base:calc((100vw-74px)/2)]'}${hideHeader ? ' no-day-header' : ''}`}
+        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}${hideHeader ? ' no-day-header' : ''}`}
         tabIndex={0}
         role="region"
         style={
@@ -155,7 +155,7 @@ export default function Calendar({
                 <button
                   type="button"
                   key={date}
-                  className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize max-[700px]:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
+                  className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
                   data-schedule-day={date}
                   disabled={placeholder}
                   aria-pressed={!placeholder && day === date}
@@ -185,7 +185,13 @@ export default function Calendar({
                 className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
                 style={{ top: (hour - start) * scale }}
               >
-                {timeLabel(hour)}
+                <span className="compact:hidden">{timeLabel(hour)}</span>
+                <span className="hidden compact:inline" aria-hidden="true">
+                  {String(hour / 60).padStart(2, '0')}
+                </span>
+                <span className="sr-only hidden compact:inline">
+                  {timeLabel(hour)}
+                </span>
               </span>
             ))}
           </div>
@@ -280,7 +286,7 @@ export default function Calendar({
           })}
         </div>
       </div>
-      <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted max-[700px]:p-[9px] max-[700px]:leading-normal">
+      <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
         {schedules.length >= 2 && (
           <span
             className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-u-line before:bg-(--u-well)'}`}
@@ -294,7 +300,7 @@ export default function Calendar({
         <span className="lesson-hint inline">
           Нажми на занятие — подробности.
           {(!singleDay || overlapWidth + 46 > viewportWidth - 40) && (
-            <span className="mobile-hint hidden max-[700px]:inline">
+            <span className="mobile-hint hidden compact:inline">
               {' '}
               {singleDay
                 ? 'Пары можно прокручивать →'

@@ -4,7 +4,6 @@ import { Popover } from 'unlikely-ui/popover';
 import { RadioGroup } from 'unlikely-ui/radio-group';
 import { track } from '../../../lib/analytics.ts';
 import type { ComparisonView } from '../model/use-comparison.ts';
-import type { Mode } from '../../../lib/types.ts';
 import {
   addDays,
   formatDay,
@@ -40,7 +39,7 @@ export default function MobileDayNav({
     }
   }
   return (
-    <>
+    <div className="mobile-navigation min-[701px]:grid min-[701px]:grid-cols-2 min-[701px]:items-center">
       <div
         className="mobile-view-controls flex items-center gap-1.5 px-1.5"
         inert={opening}
@@ -52,7 +51,7 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="week-arrow h-11 min-h-11 w-7 min-w-7 shrink-0 p-1"
+            className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
             aria-label="Предыдущая неделя"
             onClick={() => view.selectWeek(addDays(view.week, -7))}
           >
@@ -64,7 +63,7 @@ export default function MobileDayNav({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[11px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:text-balance [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
+                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:text-balance [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }
@@ -88,7 +87,7 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="week-arrow h-11 min-h-11 w-7 min-w-7 shrink-0 p-1"
+            className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
             aria-label="Следующая неделя"
             onClick={() => view.selectWeek(addDays(view.week, 7))}
           >
@@ -97,14 +96,14 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="sm"
-            className="today-button min-w-0 px-1 text-[11px] underline underline-offset-[3px]"
+            className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs max-[360px]:hidden underline underline-offset-[3px]"
             onClick={() => view.selectDate(omskToday())}
           >
             Сегодня
           </Button>
         </div>
         <RadioGroup.Root
-          className="view-toggle shrink-0 gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:px-[7px] [&_.u-segmented-item]:text-[11px]"
+          className="view-toggle shrink-0 gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:px-[7px] [&_.u-segmented-item]:text-xs"
           variant="segmented"
           aria-label="Представление расписания"
           value={mobileView}
@@ -115,7 +114,7 @@ export default function MobileDayNav({
         </RadioGroup.Root>
       </div>
       <nav
-        className="agenda-days grid grid-cols-7 gap-0.5 px-2 pb-1"
+        className="agenda-days grid grid-cols-7 gap-0.5 px-2 pb-1 min-[701px]:pb-0"
         data-schedule-days
         aria-label="Дни недели"
         inert={opening}
@@ -150,20 +149,6 @@ export default function MobileDayNav({
           </Button>
         ))}
       </nav>
-      {view.groups.length >= 2 && (
-        <div className="mobile-modes-wrap" inert={opening}>
-          <RadioGroup.Root
-            className="mobile-modes mx-[9px] mt-1 flex [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:text-xs"
-            variant="segmented"
-            aria-label="Режим сравнения"
-            value={view.mode}
-            onValueChange={(value) => view.selectMode(value as Mode)}
-          >
-            <RadioGroup.Item value="presence">В вузе</RadioGroup.Item>
-            <RadioGroup.Item value="free">Без занятий</RadioGroup.Item>
-          </RadioGroup.Root>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

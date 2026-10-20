@@ -56,7 +56,7 @@ export default function ComparisonStatus({
           : 'Расписание недоступно';
   return (
     <>
-      <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 max-[700px]:pl-[9px]">
+      <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 compact:pl-[9px]">
         <span
           className="status-message flex min-w-0 items-center gap-[5px] text-[11px] text-u-muted"
           role="status"
@@ -72,7 +72,7 @@ export default function ComparisonStatus({
             }
           >
             {message}
-            <span className="timezone max-[700px]:hidden"> · Омск, UTC+6</span>
+            <span className="timezone compact:hidden"> · Омск, UTC+6</span>
           </span>
         </span>
         <div className="status-actions flex shrink-0 gap-0.5">

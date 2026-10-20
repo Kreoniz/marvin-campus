@@ -10,33 +10,33 @@ export default function SiteHeader({
   onToggleTheme: () => void;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 max-[700px]:mb-2.5 max-[700px]:gap-2 max-[700px]:pt-1 max-[700px]:pb-2">
+    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-2.5 compact:gap-2 compact:pt-1 compact:pb-2">
       <a
-        className="brand flex items-center gap-2 no-underline max-[700px]:gap-1"
+        className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"
         aria-label="Кампус, главная"
       >
         <img
-          className="brand-avatar size-14 shrink-0 object-contain max-[700px]:size-10"
+          className="brand-avatar size-14 shrink-0 object-contain compact:size-10"
           src="/assets/mascot-mint-head-v1.webp"
           width="60"
           height="60"
           alt=""
         />
         <span className="flex items-center gap-3">
-          <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] max-[700px]:text-xl max-[700px]:tracking-[-0.7px]">
+          <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-xl compact:tracking-[-0.7px]">
             Кампус
           </span>
-          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] max-[700px]:hidden">
+          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] compact:hidden">
             Don't Panic
           </Badge>
         </span>
       </a>
-      <span className="mr-auto text-sm text-u-muted max-[700px]:hidden">
+      <span className="mr-auto text-sm text-u-muted compact:hidden">
         Расписание ОмГТУ
       </span>
       <div
-        className="space-doodle flex items-center gap-3 text-[11px] leading-[1.4] font-semibold max-[700px]:hidden"
+        className="space-doodle flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
         aria-hidden="true"
       >
         <span className="rotate-[-12deg] bg-[#ffe393] px-[7px] py-[3px] text-[17px] text-[#171b18] dark:bg-[#ddc36d]">
@@ -54,7 +54,7 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="header-actions ml-auto flex gap-1 max-[700px]:gap-0 max-[700px]:[&_.icon-button]:min-h-11 max-[700px]:[&_.icon-button]:min-w-11">
+      <div className="header-actions ml-auto flex gap-1 compact:gap-0 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}

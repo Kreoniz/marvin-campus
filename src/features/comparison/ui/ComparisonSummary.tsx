@@ -11,6 +11,7 @@ interface ComparisonSummaryProps {
   mode: Mode;
   compact?: boolean;
   placeholder?: boolean;
+  showHeading?: boolean;
 }
 
 export default function ComparisonSummary({
@@ -20,6 +21,7 @@ export default function ComparisonSummary({
   mode,
   compact = false,
   placeholder = false,
+  showHeading = true,
 }: ComparisonSummaryProps) {
   const result = compareDay(schedules, day);
   const hasLessons = schedules.some((group) =>
@@ -46,7 +48,7 @@ export default function ComparisonSummary({
       .join(', ');
   return (
     <Card.Root
-      className={`marvin-card grid gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-[var(--u-line-soft)] bg-u-surface text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 px-3 py-[9px]' : 'min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
+      className={`marvin-card grid text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0' : 'gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-[var(--u-line-soft)] bg-u-surface min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
       role="complementary"
       aria-label="Результат сравнения"
       aria-busy={loading}
@@ -98,14 +100,18 @@ export default function ComparisonSummary({
           </>
         ) : compact ? (
           <>
-            <strong>
-              {mode === 'free' ? 'Все без занятий' : 'Общее время в вузе'}
-            </strong>
+            {showHeading && (
+              <strong>
+                {mode === 'free'
+                  ? 'Общий перерыв в вузе'
+                  : 'Общее время в вузе'}
+              </strong>
+            )}
             <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
               {ranges.length
                 ? times(ranges)
                 : mode === 'free'
-                  ? 'Нет общего времени без занятий'
+                  ? 'Общего перерыва в вузе нет'
                   : 'Нет общего времени'}
             </p>
             {mode === 'presence' && !!result.free.length && (
@@ -120,11 +126,11 @@ export default function ComparisonSummary({
                 ? times(result.presence)
                 : 'Нет общего времени'}
             </p>
-            <strong>Все без занятий:</strong>
+            <strong>Общий перерыв в вузе:</strong>
             <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
               {result.free.length
                 ? times(result.free)
-                : 'Нет общего времени без занятий'}
+                : 'Общего перерыва в вузе нет'}
             </p>
             {!!result.lessons.length && (
               <span className="shared-count">
@@ -142,13 +148,15 @@ export default function ComparisonSummary({
                 : 'Время присутствия выбранных групп в вузе не пересекается.'}
           </p>
         )}
-        <p className="saved-qualification mt-[5px] text-[11px] text-u-muted">
-          {saved
-            ? 'По сохранённым данным'
-            : result.complete
-              ? 'По расписанию'
-              : '\u00a0'}
-        </p>
+        {(!compact || saved) && (
+          <p className="saved-qualification mt-[5px] text-[11px] text-u-muted">
+            {saved
+              ? 'По сохранённым данным'
+              : result.complete
+                ? 'По расписанию'
+                : '\u00a0'}
+          </p>
+        )}
       </div>
       {!compact && (
         <p className="col-span-full m-0 h-8 border-t border-[var(--u-line-soft)] pt-1.5 text-right text-[10px] leading-3 text-u-muted">

@@ -14,11 +14,14 @@ import GroupOrder from '../groups/ui/GroupOrder.tsx';
 import GroupPicker from '../groups/ui/GroupPicker.tsx';
 import ComparisonToolbar from './ui/ComparisonToolbar.tsx';
 import ComparisonStatus from './ui/ComparisonStatus.tsx';
-import ComparisonSummary from './ui/ComparisonSummary.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
+import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
+
+const compactQuery =
+  '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
 
 export default function ComparisonPage() {
   const manager = Toast.useToastManager();
@@ -34,7 +37,7 @@ export default function ComparisonPage() {
   const [theme, setTheme] = useState<Appearance>(
     document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
-  const [mobile, setMobile] = useState(innerWidth <= 700);
+  const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderFocus, setOrderFocus] = useState(0);
@@ -58,7 +61,7 @@ export default function ComparisonPage() {
   }, [groups]);
   useEffect(() => {
     void initAnalytics();
-    const size = matchMedia('(max-width: 700px)');
+    const size = matchMedia(compactQuery);
     const preference = matchMedia('(prefers-color-scheme: dark)');
     const resize = () => setMobile(size.matches);
     const applyTheme = () => {
@@ -144,7 +147,7 @@ export default function ComparisonPage() {
         onMove={view.move}
         returnFocus={orderFocus}
       />
-      <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 max-[700px]:px-3 max-[700px]:pt-1">
+      <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
         <SiteHeader theme={theme} onToggleTheme={toggleTheme} />
         <main>
           {pwa.offline && (
@@ -169,7 +172,7 @@ export default function ComparisonPage() {
             <>
               <Card.Root
                 id="comparison"
-                className="comparison overflow-hidden max-[700px]:-mx-3 max-[700px]:rounded-none max-[700px]:border-x-0"
+                className="comparison overflow-hidden compact:-mx-3 compact:rounded-none compact:border-x-0"
                 role="region"
                 aria-label="Сравнение расписаний"
                 aria-busy={busy}
@@ -196,22 +199,21 @@ export default function ComparisonPage() {
                         onMobileViewChange={setMobileView}
                       />
                     )}
-                    <ComparisonStatus
-                      schedules={source.schedules}
-                      fetching={links.opening || source.fetching}
-                      links={links}
-                    />
-                    {mobile && (
-                      <div className="mobile-result px-[9px] pb-[9px]">
-                        <ComparisonSummary
-                          schedules={source.schedules}
-                          day={day}
-                          mode={mode}
-                          loading={busy}
-                          placeholder={links.opening}
-                          compact
-                        />
-                      </div>
+                    {mobile ? (
+                      <MobileComparisonPanel
+                        view={view}
+                        schedules={source.schedules}
+                        links={links}
+                        fetching={links.opening || source.fetching}
+                        loading={busy}
+                        opening={links.opening}
+                      />
+                    ) : (
+                      <ComparisonStatus
+                        schedules={source.schedules}
+                        fetching={links.opening || source.fetching}
+                        links={links}
+                      />
                     )}
                     <Calendar
                       schedules={source.schedules}
@@ -228,19 +230,19 @@ export default function ComparisonPage() {
                     />
                   </>
                 ) : (
-                  <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 max-[700px]:min-h-[380px] max-[700px]:flex-col max-[700px]:gap-4 max-[700px]:px-[15px] max-[700px]:py-6 max-[700px]:text-center">
+                  <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
                     <img
-                      className="h-[210px] w-[190px] shrink-0 object-contain max-[700px]:h-[145px] max-[700px]:w-[135px]"
+                      className="h-[210px] w-[190px] shrink-0 object-contain compact:h-[145px] compact:w-[135px]"
                       src="/assets/mascot-m2-thinking-v1.webp"
                       width="190"
                       height="210"
                       alt="Робот ждёт расписание"
                     />
                     <div>
-                      <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] max-[700px]:text-2xl">
+                      <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] compact:text-2xl">
                         С кем пересечёмся?
                       </h2>
-                      <p className="mb-5 text-[15px] leading-relaxed text-u-muted max-[700px]:mb-[15px] max-[700px]:text-[13px]">
+                      <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
                         Добавь свою группу и группу друга.
                         <br />С одной группой можно посмотреть своё расписание.
                       </p>
@@ -250,7 +252,7 @@ export default function ComparisonPage() {
                         onError={(message) => notify(message, 'error')}
                       />
                       <button
-                        className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 max-[700px]:mx-auto"
+                        className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
                         onClick={view.example}
                       >
                         Посмотреть ИВТ-241 и ИВТ-242{' '}
@@ -274,7 +276,7 @@ export default function ComparisonPage() {
             </>
           )}
         </main>
-        <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted max-[700px]:text-[10px]">
+        <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted compact:text-[10px]">
           <a
             className="inline-flex items-center gap-[5px] no-underline hover:underline"
             href="https://rasp.omgtu.ru"

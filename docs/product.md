@@ -23,8 +23,15 @@ events retain each participant's own subgroup membership.
 Desktop uses a week grid and a detailed selected day. Mobile starts with a
 compact day grid; its summary precedes the grid. Mobile group chips open subgroup,
 order and removal controls. Group search starts empty, without suggested groups.
+Its reserved results area keeps the search field still while typing and loading.
 The mobile calendar spans the available screen width, while controls and card
 content keep their internal spacing. Day/week views use a two-button toggle.
+The compact layout also covers short landscape viewports up to 1000 pixels wide.
+Comparison mode, result and freshness form one block; a single selected group
+shows its timetable without a repeated invitation to add another group.
+On screens up to 360 pixels wide, Today remains available in the date picker.
+Compact hour labels omit `:00`; full times remain available to assistive technology
+and in lesson details. The time scale and event durations stay proportional.
 Online lessons use a contrasting two-pixel dashed outline.
 Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
 Sunday defaults to next Monday,
@@ -35,8 +42,9 @@ Group names and subgroup numbers occupy two lines; more than three participants
 show the first two and a count, with the full list in the popover. Lesson-kind
 badges sit beside the room. Lanes belong to overlapping events, so empty groups
 reserve no space. Week-grid cards are at most 160 pixels wide; their height still
-represents duration, including long military classes. Simultaneous distinct
-lessons of one group use stripes. The selected-day timeline uses event rows and
+represents duration, including long military classes. Day-view cards fill their
+allocated overlap lanes without the week cap. Simultaneous distinct lessons of
+one group use stripes. The selected-day timeline uses event rows and
 reserves the week's peak row count to keep its panel height stable.
 Long events in the horizontal day timeline keep their temporal length, but their
 participant labels stay compact; the time range is available in the popover.
@@ -49,6 +57,8 @@ Usable saved responses appear during reload and revalidation. A stable status ro
 shows freshness and opens per-group details; affected cards/participants use a
 muted background and clock marker. Derived results and empty days identify saved
 data too. A missing or expired snapshot never becomes an empty schedule.
+The details show a common check minute only for matching fresh states/times;
+individual timestamps remain available, and differing or failed states are explicit.
 
 The installable PWA keeps a complete application build and recently opened
 schedules for offline restart. It does not invent schedules for unopened groups

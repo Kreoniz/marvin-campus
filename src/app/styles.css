@@ -25,3 +25,9 @@
 }
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *, [data-appearance='dark'], [data-appearance='dark'] *));
+
+@custom-variant compact {
+  @media (max-width: 700px), (max-width: 1000px) and (max-height: 500px) {
+    @slot;
+  }
+}
