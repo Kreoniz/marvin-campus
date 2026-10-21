@@ -124,7 +124,7 @@ export default function DayDetail({
                 {highlights.map((range) => (
                   <div
                     key={`${range.start}:${range.end}`}
-                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
+                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
                     aria-hidden="true"
                     style={{
                       left: `${((range.start - start) * 100) / (end - start)}%`,

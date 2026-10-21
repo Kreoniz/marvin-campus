@@ -23,6 +23,12 @@
 }
 
 @theme inline {
+  --color-campus-free: color-mix(
+    in oklch,
+    var(--u-accent) 70%,
+    var(--u-surface)
+  );
+
   --color-u-line-soft: var(--u-line-soft);
   --color-u-well: var(--u-well);
   --color-u-selection: var(--u-selection);

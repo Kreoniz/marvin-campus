@@ -242,7 +242,7 @@ export default function Calendar({
             return (
               <div
                 key={column.date}
-                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-[color-mix(in_oklch,var(--u-selection)_50%,transparent)]' : ''}`}
+                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-u-raised shadow-[inset_1px_0_var(--u-selection-border),inset_-1px_0_var(--u-selection-border)]' : ''}`}
               >
                 {loading && !hasSnapshot ? (
                   <div
@@ -284,7 +284,7 @@ export default function Calendar({
                     {highlights.map((range) => (
                       <div
                         key={`${range.start}:${range.end}`}
-                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_45%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
+                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
                         aria-hidden="true"
                         style={{
                           top: (range.start - start) * scale,
