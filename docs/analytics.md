@@ -52,6 +52,8 @@ Internal Back/Forward does not count another link opening.
 
 ## Viewing reports in Umami
 
+Open [stats.kreoniz.ru](https://stats.kreoniz.ru) to view the shared Umami dashboard.
+
 In Events → Properties, explicitly choose Event = `group_selected` and Property
 = `group_label` for group popularity, or `selected` for subgroup-feature usage.
 The upper event filter does not select the Properties tab's event. Counts measure
