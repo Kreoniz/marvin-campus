@@ -171,7 +171,7 @@ export default function Calendar({
           {singleDay ? (
             <>
               <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-              <div className="group-headings relative border-b border-(--u-line-soft)">
+              <div className="group-headings relative border-r border-b border-(--u-line-soft)">
                 {schedules.map(({ selection }, index) => (
                   <span
                     key={selection.id}
@@ -179,8 +179,8 @@ export default function Calendar({
                     style={
                       {
                         '--chip': chipColor(colors[selection.id] ?? 0),
-                        left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px) + 3px)`,
-                        width: `calc(min(${100 / groupCount}%, ${groupMaxWidth}px) - 6px)`,
+                        left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px))`,
+                        width: `min(${100 / groupCount}%, ${groupMaxWidth}px)`,
                       } as CSSProperties
                     }
                   >
