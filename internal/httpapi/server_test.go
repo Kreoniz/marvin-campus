@@ -83,8 +83,8 @@ func TestLegacyRefreshParameterCannotBypassFreshCache(t *testing.T) {
 	loc, _ := time.LoadLocation("Asia/Omsk")
 	now := time.Now().In(loc)
 	week := schedule.Monday(now).Format("2006-01-02")
-	c.Now = func() time.Time { return now.Add(-2 * time.Minute) }
-	_, err = c.Get(context.Background(), "v1:week:373:"+week, 10*time.Minute, func(context.Context) ([]byte, error) {
+	c.Now = func() time.Time { return now.Add(-20 * time.Minute) }
+	_, err = c.Get(context.Background(), "v1:week:373:"+week, schedule.TTL(schedule.Monday(now), now), func(context.Context) ([]byte, error) {
 		return []byte(`{"groupId":373,"lessons":[],"subgroups":[]}`), nil
 	})
 	if err != nil {

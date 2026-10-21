@@ -173,5 +173,5 @@ func TTL(week, now time.Time) time.Duration {
 	if week.After(current) {
 		return time.Hour
 	}
-	return 10 * time.Minute
+	return 30 * time.Minute
 }

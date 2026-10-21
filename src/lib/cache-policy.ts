@@ -20,7 +20,7 @@ export function snapshotDeadline(
       ? STALE_GRACE
       : week > currentWeek
         ? 60 * MINUTE
-        : 10 * MINUTE;
+        : 30 * MINUTE;
   return Math.min(
     Date.parse(snapshot.expiresAt),
     Date.parse(snapshot.checkedAt) + ttl,

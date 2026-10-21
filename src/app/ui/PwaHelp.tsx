@@ -6,14 +6,13 @@ export default function PwaHelp() {
   return (
     <div className="mt-4 border-t border-[var(--u-line-soft)]">
       <p className="my-3 text-xs leading-relaxed text-u-muted">
-        <strong>Приложение (PWA).</strong>{' '}
+        <strong>Приложение.</strong>{' '}
         {pwa.installed
           ? 'Установлено.'
           : !pwa.install
-            ? 'Меню браузера → «Установить»; iPhone: «Поделиться» → «На экран Домой».'
+            ? 'Меню браузера → «Установить». На iPhone: «Поделиться» → «На экран Домой».'
             : ''}{' '}
-        Открытые расписания доступны офлайн с датой проверки. Новые данные
-        требуют сети.
+        Недавно открытые расписания доступны офлайн.
       </p>
       {pwa.install && !pwa.installed && (
         <Button variant="secondary" onClick={() => void installPwa()}>

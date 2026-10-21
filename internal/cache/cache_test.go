@@ -192,8 +192,8 @@ func TestFailedRequestsAreThrottledAndTTLCanShrink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	now = now.Add(11 * time.Minute)
-	s, err := c.Get(context.Background(), "week", 10*time.Minute, failing)
+	now = now.Add(31 * time.Minute)
+	s, err := c.Get(context.Background(), "week", 30*time.Minute, failing)
 	if err != nil || !s.Stale || !s.ExpiresAt.Before(now) || calls != 3 {
 		t.Fatalf("old future-week TTL survived: %+v, %v, %d calls", s, err, calls)
 	}

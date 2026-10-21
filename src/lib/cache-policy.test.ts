@@ -14,7 +14,7 @@ const snapshot = {
   expiresAt: new Date(checked + 3600000).toISOString(),
   stale: false,
 };
-test('fetching an older snapshot does not renew freshness; a future week becoming current adopts ten minutes', () => {
+test('fetching an older snapshot does not renew freshness; a future week becoming current adopts thirty minutes', () => {
   assert.equal(
     snapshotStaleTime(
       snapshot,
@@ -22,11 +22,30 @@ test('fetching an older snapshot does not renew freshness; a future week becomin
       checked + 5 * 60000,
       '2026-10-12',
     ),
-    5 * 60000,
+    25 * 60000,
   );
   assert.equal(
     snapshotStaleTime(
       snapshot,
+      '2026-10-12',
+      checked + 15 * 60000,
+      '2026-10-12',
+    ),
+    15 * 60000,
+  );
+  assert.equal(
+    snapshotStaleTime(
+      snapshot,
+      '2026-10-12',
+      checked + 30 * 60000,
+      '2026-10-12',
+    ),
+    0,
+  );
+  // Existing responses with a shorter server deadline keep that deadline.
+  assert.equal(
+    snapshotStaleTime(
+      { ...snapshot, expiresAt: new Date(checked + 10 * 60000).toISOString() },
       '2026-10-12',
       checked + 15 * 60000,
       '2026-10-12',
@@ -58,7 +77,7 @@ test('fetching an older snapshot does not renew freshness; a future week becomin
   ]);
 });
 test('offline fallback has the same hard cutoff as the server and preserves its check date', () => {
-  const deadline = checked + 10 * 60000;
+  const deadline = checked + 30 * 60000;
   const old = {
     ...snapshot,
     expiresAt: new Date(deadline).toISOString(),
@@ -73,7 +92,7 @@ test('offline fallback has the same hard cutoff as the server and preserves its 
 });
 
 test('snapshot transitions wake an idle view at freshness and hard expiry', () => {
-  const deadline = checked + 10 * 60000;
+  const deadline = checked + 30 * 60000;
   assert.equal(snapshotChangeAt(snapshot, '2026-10-12', checked), deadline + 1);
   const stale = usableSnapshot(snapshot, '2026-10-12', deadline + 1)!;
   assert.equal(stale.stale, true);
@@ -108,10 +127,14 @@ test('Monday wakes a future snapshot and applies the shorter current-week TTL', 
   assert.equal(snapshotChangeAt(future, '2026-10-19', checked), midnight);
   assert.equal(
     snapshotChangeAt(future, '2026-10-19', midnight),
-    checked + 10 * 60000 + 1,
+    checked + 30 * 60000 + 1,
   );
   assert.equal(
     usableSnapshot(future, '2026-10-19', checked + 11 * 60000)?.stale,
+    false,
+  );
+  assert.equal(
+    usableSnapshot(future, '2026-10-19', checked + 31 * 60000)?.stale,
     true,
   );
 });

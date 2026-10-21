@@ -37,7 +37,7 @@ func TestFreshness(t *testing.T) {
 	loc, _ := time.LoadLocation("Asia/Omsk")
 	now := time.Date(2026, 10, 11, 23, 0, 0, 0, loc)
 	week := Monday(now)
-	if week.Day() != 5 || TTL(week, now) != 10*time.Minute || TTL(week.AddDate(0, 0, -7), now) != 24*time.Hour || TTL(week.AddDate(0, 0, 7), now) != time.Hour {
+	if week.Day() != 5 || TTL(week, now) != 30*time.Minute || TTL(week.AddDate(0, 0, -7), now) != 24*time.Hour || TTL(week.AddDate(0, 0, 7), now) != time.Hour {
 		t.Fatal("wrong week policy")
 	}
 }

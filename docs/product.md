@@ -67,7 +67,7 @@ preferred for future exploration but remains a mockup, with implementation defer
 Saved-data muting is independent of subgroup membership and remains enabled.
 
 Comparisons live in readable URLs, not on the server. Current-week source data
-is cached for ten minutes, future weeks for an hour, past weeks for a day; group
+is cached for thirty minutes, future weeks for an hour, past weeks for a day; group
 searches for a day. A successful stale snapshot is available for at most another
 24 hours and retains its original check time. There is no manual source refresh.
 Usable saved responses appear during reload and revalidation. A stable status row
