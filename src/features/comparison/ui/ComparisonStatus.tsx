@@ -18,14 +18,10 @@ export default function ComparisonStatus({
   schedules,
   fetching,
   links,
-  subgroupShades,
-  onSubgroupShadesChange,
 }: {
   schedules: GroupSchedule[];
   fetching: boolean;
   links: ComparisonLinks;
-  subgroupShades: boolean;
-  onSubgroupShadesChange: (value: boolean) => void;
 }) {
   const checked = schedules
     .flatMap((g) => (g.snapshot ? [g.snapshot.checkedAt] : []))
@@ -80,16 +76,6 @@ export default function ComparisonStatus({
           </span>
         </span>
         <div className="status-actions flex shrink-0 gap-0.5 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
-          <IconButton
-            name="subgroups"
-            label="Различать подгруппы оттенками"
-            size={17}
-            aria-pressed={subgroupShades}
-            onClick={() => onSubgroupShadesChange(!subgroupShades)}
-            className={
-              subgroupShades ? 'bg-u-selection text-u-selection-ink' : ''
-            }
-          />
           <Popover.Root>
             <Popover.Trigger
               render={

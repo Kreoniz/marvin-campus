@@ -13,7 +13,6 @@ interface DayDetailProps {
   schedules: GroupSchedule[];
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
-  subgroupShades?: boolean;
   day: string;
   mode: Mode;
   loading: boolean;
@@ -24,7 +23,6 @@ export default function DayDetail({
   schedules,
   colors,
   subgroupCatalog = {},
-  subgroupShades = false,
   day,
   mode,
   loading,
@@ -140,7 +138,6 @@ export default function DayDetail({
                     block={block}
                     colors={colors}
                     subgroupCatalog={subgroupCatalog}
-                    subgroupShades={subgroupShades}
                     horizontal
                     style={{
                       left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,

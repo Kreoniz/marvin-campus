@@ -16,7 +16,6 @@ import {
   Moon,
   Plus,
   Search,
-  Split,
   Sun,
   X,
   type LucideIcon,
@@ -42,7 +41,6 @@ const icons: Record<string, LucideIcon> = {
   order: GripVertical,
   up: ChevronUp,
   clock: Clock3,
-  subgroups: Split,
 };
 export default function Icon({
   name,

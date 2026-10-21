@@ -18,7 +18,6 @@ interface CalendarProps {
   schedules: GroupSchedule[];
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
-  subgroupShades?: boolean;
   week: string;
   day: string;
   mode: Mode;
@@ -32,7 +31,6 @@ export default function Calendar({
   schedules,
   colors,
   subgroupCatalog = {},
-  subgroupShades = false,
   week,
   day,
   mode,
@@ -309,7 +307,6 @@ export default function Calendar({
                         displayGroupId={groupId}
                         colors={colors}
                         subgroupCatalog={subgroupCatalog}
-                        subgroupShades={subgroupShades}
                         style={{
                           top: (block.lesson.start - start) * scale,
                           height: Math.max(

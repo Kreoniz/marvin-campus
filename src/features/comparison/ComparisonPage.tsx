@@ -41,25 +41,11 @@ export default function ComparisonPage() {
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderFocus, setOrderFocus] = useState(0);
-  const [subgroupShades, setSubgroupShades] = useState(() => {
-    try {
-      return localStorage.getItem('campus-subgroup-shades') === 'true';
-    } catch {
-      return false;
-    }
-  });
   const groups = view.groups,
     week = view.week,
     day = view.day,
     mode = view.mode;
   const busy = links.opening || source.pending;
-
-  function changeSubgroupShades(value: boolean) {
-    setSubgroupShades(value);
-    try {
-      localStorage.setItem('campus-subgroup-shades', String(value));
-    } catch {}
-  }
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -219,8 +205,6 @@ export default function ComparisonPage() {
                     )}
                     {mobile ? (
                       <MobileComparisonPanel
-                        subgroupShades={subgroupShades}
-                        onSubgroupShadesChange={changeSubgroupShades}
                         view={view}
                         schedules={source.schedules}
                         links={links}
@@ -230,8 +214,6 @@ export default function ComparisonPage() {
                       />
                     ) : (
                       <ComparisonStatus
-                        subgroupShades={subgroupShades}
-                        onSubgroupShadesChange={changeSubgroupShades}
                         schedules={source.schedules}
                         fetching={links.opening || source.fetching}
                         links={links}
@@ -241,7 +223,6 @@ export default function ComparisonPage() {
                       schedules={source.schedules}
                       colors={colors}
                       subgroupCatalog={subgroupCatalog}
-                      subgroupShades={subgroupShades}
                       week={week}
                       day={day}
                       mode={mode}
@@ -289,7 +270,6 @@ export default function ComparisonPage() {
                   schedules={source.schedules}
                   colors={colors}
                   subgroupCatalog={subgroupCatalog}
-                  subgroupShades={subgroupShades}
                   day={day}
                   mode={mode}
                   loading={busy}
