@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
+import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { compareDay } from '../../../lib/domain.ts';
@@ -78,91 +79,103 @@ export default function DayDetail({
             formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })
           )}
         </h2>
-        <div
-          className="day-scroll h-[calc(var(--detail-height)-64px)] overflow-auto px-4 [scrollbar-gutter:stable] [scrollbar-width:thin]"
-          tabIndex={0}
-          role="region"
-          aria-label="Подробное расписание выбранного дня"
-        >
-          <div
-            className="day-timeline relative min-w-[740px] max-w-[1080px] bg-[repeating-linear-gradient(to_right,transparent,transparent_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)))]"
-            style={
-              {
-                height: rows * rowHeight + 40,
-                '--day-divisions': (end - start) / 30,
-              } as CSSProperties
-            }
+        <ScrollArea.Root className="h-[calc(var(--detail-height)-64px)]">
+          <ScrollArea.Viewport
+            className="day-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Подробное расписание выбранного дня"
           >
-            {hours.map((hour) => (
-              <span
-                key={hour}
-                className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
-                style={{ left: `${((hour - start) * 100) / (end - start)}%` }}
-              >
-                {timeLabel(hour)}
-              </span>
-            ))}
-            {loading && !schedules.some((group) => group.snapshot) ? (
+            <ScrollArea.Content className="pl-4">
               <div
-                className="absolute inset-0 [&>div]:absolute"
-                aria-hidden="true"
+                className="day-timeline relative min-w-[740px] max-w-[1080px] bg-[repeating-linear-gradient(to_right,transparent,transparent_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)))]"
+                style={
+                  {
+                    height: rows * rowHeight + 40,
+                    '--day-divisions': (end - start) / 30,
+                  } as CSSProperties
+                }
               >
-                {Array.from({ length: rows }, (_, index) => (
-                  <Skeleton
-                    key={index}
+                {hours.map((hour) => (
+                  <span
+                    key={hour}
+                    className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
                     style={{
-                      top: index * rowHeight + 36,
-                      left: '8%',
-                      width: '72%',
-                      height: rowHeight - 6,
+                      left: `${((hour - start) * 100) / (end - start)}%`,
                     }}
-                  />
+                  >
+                    {timeLabel(hour)}
+                  </span>
                 ))}
-              </div>
-            ) : (
-              <>
-                {highlights.map((range) => (
+                {loading && !schedules.some((group) => group.snapshot) ? (
                   <div
-                    key={`${range.start}:${range.end}`}
-                    className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
+                    className="absolute inset-0 [&>div]:absolute"
                     aria-hidden="true"
-                    style={{
-                      left: `${((range.start - start) * 100) / (end - start)}%`,
-                      width: `${((range.end - range.start) * 100) / (end - start)}%`,
-                    }}
-                  />
-                ))}
-                {placed.map((block) => (
-                  <LessonCard
-                    key={block.identity}
-                    block={block}
-                    colors={colors}
-                    subgroupCatalog={subgroupCatalog}
-                    horizontal
-                    style={{
-                      left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,
-                      width: `calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px)`,
-                      top: block.column * rowHeight + 36,
-                      height: rowHeight - 6,
-                    }}
-                  />
-                ))}
-                {!placed.length && (
-                  <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
-                    {schedules.some((group) => group.error && !group.snapshot)
-                      ? 'Часть расписаний недоступна.'
-                      : schedules.some((group) => !group.snapshot)
-                        ? 'Ждём данные расписания.'
-                        : 'В этот день занятий нет.'}
-                    {saved && schedules.every((group) => group.snapshot) && (
-                      <span>По сохранённым данным</span>
+                  >
+                    {Array.from({ length: rows }, (_, index) => (
+                      <Skeleton
+                        key={index}
+                        style={{
+                          top: index * rowHeight + 36,
+                          left: '8%',
+                          width: '72%',
+                          height: rowHeight - 6,
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {highlights.map((range) => (
+                      <div
+                        key={`${range.start}:${range.end}`}
+                        className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
+                        aria-hidden="true"
+                        style={{
+                          left: `${((range.start - start) * 100) / (end - start)}%`,
+                          width: `${((range.end - range.start) * 100) / (end - start)}%`,
+                        }}
+                      />
+                    ))}
+                    {placed.map((block) => (
+                      <LessonCard
+                        key={block.identity}
+                        block={block}
+                        colors={colors}
+                        subgroupCatalog={subgroupCatalog}
+                        horizontal
+                        style={{
+                          left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,
+                          width: `calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px)`,
+                          top: block.column * rowHeight + 36,
+                          height: rowHeight - 6,
+                        }}
+                      />
+                    ))}
+                    {!placed.length && (
+                      <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
+                        {schedules.some(
+                          (group) => group.error && !group.snapshot,
+                        )
+                          ? 'Часть расписаний недоступна.'
+                          : schedules.some((group) => !group.snapshot)
+                            ? 'Ждём данные расписания.'
+                            : 'В этот день занятий нет.'}
+                        {saved &&
+                          schedules.every((group) => group.snapshot) && (
+                            <span>По сохранённым данным</span>
+                          )}
+                      </p>
                     )}
-                  </p>
+                  </>
                 )}
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar className="z-[2]" />
+          <ScrollArea.Scrollbar orientation="horizontal" className="z-[2]" />
+          <ScrollArea.Corner />
+        </ScrollArea.Root>
       </div>
       <ComparisonSummary
         schedules={schedules}

@@ -6,12 +6,12 @@ import {
   type CSSProperties,
 } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
+import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import { compareDay } from '../../../lib/domain.ts';
-import { chipColor, type GroupColors } from '../../../lib/colors.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
-import { groupLanes } from '../../../lib/group-lanes.ts';
 import LessonCard from './LessonCard.tsx';
 
 interface CalendarProps {
@@ -80,39 +80,17 @@ export default function Calendar({
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
-  const groupCount = Math.max(schedules.length, 1);
-  const layout = dates.map((date) => {
-    const placed = lessonBlocks(schedules, date);
-    return {
-      date,
-      result: compareDay(schedules, date),
-      placed,
-      groupPositions: singleDay
-        ? groupLanes(
-            placed,
-            schedules.map((group) => group.selection.id),
-          )
-        : [],
-    };
-  });
-  // A group's concurrent events may split its slot, but never cover a neighbour.
-  const groupMinWidth = Math.max(
-    112,
+  const layout = dates.map((date) => ({
+    date,
+    result: compareDay(schedules, date),
+    placed: lessonBlocks(schedules, date),
+  }));
+  const overlapWidth = Math.max(
+    160,
     ...layout.flatMap((column) =>
-      column.groupPositions.map(
-        (position) => 112 / (position.width * groupCount),
-      ),
+      column.placed.map((block) => 112 * block.columns),
     ),
   );
-  const groupMaxWidth = Math.max(166, groupMinWidth);
-  const overlapWidth = singleDay
-    ? Math.max(160, groupMinWidth * groupCount)
-    : Math.max(
-        160,
-        ...layout.flatMap((column) =>
-          column.placed.map((block) => 112 * block.columns),
-        ),
-      );
   useLayoutEffect(() => {
     const element = scroller.current;
     if (!element) return;
@@ -138,224 +116,184 @@ export default function Calendar({
   }, [singleDay, week, day, viewportWidth, overlapWidth]);
   return (
     <>
-      <div
-        ref={scroller}
-        className={`week-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)] overflow-auto [overflow-anchor:none] [scrollbar-gutter:stable] [scrollbar-width:thin] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
-        tabIndex={0}
-        role="region"
+      <ScrollArea.Root
+        className="h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]"
         style={
           {
             '--calendar-viewport': `${660 * scale}px`,
-            '--calendar-header': `${singleDay ? 28 : 44}px`,
+            '--calendar-header': '44px',
           } as CSSProperties
         }
-        aria-label={
-          singleDay
-            ? `Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}. Время слева, у каждой группы своя колонка. Общие пары повторяются в колонках участников.`
-            : 'Недельное расписание. На узком экране прокручивается горизонтально.'
-        }
-        aria-busy={loading}
       >
-        <div
-          className="week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] grid-rows-[var(--calendar-header)_var(--calendar-height)] [--day-min:max(var(--day-base),var(--overlap-min))]"
-          data-schedule-days
-          style={
-            {
-              '--calendar-height': `${(end - start) * scale}px`,
-              '--hour-height': `${60 * scale}px`,
-              '--overlap-min': `${overlapWidth}px`,
-              '--day-count': dates.length,
-            } as CSSProperties
+        <ScrollArea.Viewport
+          ref={scroller}
+          className={`week-scroll [overflow-anchor:none] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
+          tabIndex={0}
+          role="region"
+          aria-label={
+            singleDay
+              ? `Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}. Время слева. Каждая общая пара показана один раз с её участниками.`
+              : 'Недельное расписание. На узком экране прокручивается горизонтально.'
           }
+          aria-busy={loading}
         >
-          {singleDay ? (
-            <>
-              <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-              <div className="group-headings relative border-r border-b border-(--u-line-soft)">
-                {schedules.map(({ selection }, index) => (
-                  <span
-                    key={selection.id}
-                    className="absolute inset-y-0 flex items-center truncate border-l-2 border-(--chip) px-1.5 text-[11px] font-bold"
-                    style={
-                      {
-                        '--chip': chipColor(colors[selection.id] ?? 0),
-                        left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px))`,
-                        width: `min(${100 / groupCount}%, ${groupMaxWidth}px)`,
-                      } as CSSProperties
-                    }
+          <ScrollArea.Content>
+            <div
+              className="week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] grid-rows-[var(--calendar-header)_var(--calendar-height)] [--day-min:max(var(--day-base),var(--overlap-min))]"
+              data-schedule-days
+              style={
+                {
+                  '--calendar-height': `${(end - start) * scale}px`,
+                  '--hour-height': `${60 * scale}px`,
+                  '--overlap-min': `${overlapWidth}px`,
+                  '--day-count': dates.length,
+                } as CSSProperties
+              }
+            >
+              <>
+                <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
+                {dates.map((date) => (
+                  <button
+                    type="button"
+                    key={date}
+                    className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
+                    data-schedule-day={date}
+                    disabled={placeholder}
+                    aria-pressed={!placeholder && day === date}
+                    aria-label={formatDay(date, {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                    onClick={() => onDay(date)}
                   >
-                    {selection.label}
+                    {placeholder ? (
+                      <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
+                    ) : (
+                      <>
+                        <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
+                        {Number(date.slice(8))}
+                      </>
+                    )}
+                  </button>
+                ))}
+              </>
+              <div className="time-rail sticky left-0 z-[4] bg-u-surface">
+                {hours.map((hour) => (
+                  <span
+                    key={hour}
+                    className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
+                    style={{ top: (hour - start) * scale }}
+                  >
+                    <span className="compact:hidden">{timeLabel(hour)}</span>
+                    <span className="hidden compact:inline" aria-hidden="true">
+                      {String(hour / 60).padStart(2, '0')}
+                    </span>
+                    <span className="sr-only hidden compact:inline">
+                      {timeLabel(hour)}
+                    </span>
                   </span>
                 ))}
               </div>
-            </>
-          ) : (
-            <>
-              <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-              {dates.map((date) => (
-                <button
-                  type="button"
-                  key={date}
-                  className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
-                  data-schedule-day={date}
-                  disabled={placeholder}
-                  aria-pressed={!placeholder && day === date}
-                  aria-label={formatDay(date, {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                  onClick={() => onDay(date)}
-                >
-                  {placeholder ? (
-                    <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
-                  ) : (
-                    <>
-                      <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
-                      {Number(date.slice(8))}
-                    </>
-                  )}
-                </button>
-              ))}
-            </>
-          )}
-          <div className="time-rail sticky left-0 z-[4] bg-u-surface">
-            {hours.map((hour) => (
-              <span
-                key={hour}
-                className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
-                style={{ top: (hour - start) * scale }}
-              >
-                <span className="compact:hidden">{timeLabel(hour)}</span>
-                <span className="hidden compact:inline" aria-hidden="true">
-                  {String(hour / 60).padStart(2, '0')}
-                </span>
-                <span className="sr-only hidden compact:inline">
-                  {timeLabel(hour)}
-                </span>
-              </span>
-            ))}
-          </div>
-          {layout.map((column) => {
-            const highlights =
-              mode === 'presence' ? column.result.presence : column.result.free;
-            return (
-              <div
-                key={column.date}
-                className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-u-raised shadow-[inset_1px_0_var(--u-selection-border),inset_-1px_0_var(--u-selection-border)]' : ''}`}
-              >
-                {loading && !hasSnapshot ? (
+              {layout.map((column) => {
+                const highlights =
+                  mode === 'presence'
+                    ? column.result.presence
+                    : column.result.free;
+                return (
                   <div
-                    className="calendar-skeleton absolute inset-0"
-                    aria-hidden="true"
+                    key={column.date}
+                    className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-u-raised shadow-[inset_1px_0_var(--u-selection-border),inset_-1px_0_var(--u-selection-border)]' : ''}`}
                   >
-                    {(placeholder ? [] : [0, 1, 2]).map((index) => (
-                      <Skeleton
-                        key={index}
-                        className="absolute"
-                        style={{
-                          top: (45 + index * 180) * scale,
-                          height: (index === 1 ? 150 : 95) * scale,
-                          left: `${index % 2 ? 18 : 6}%`,
-                          right: '6%',
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {singleDay &&
-                      schedules.map(({ selection, snapshot, error }, index) => (
-                        <div
-                          key={selection.id}
-                          className="group-lane pointer-events-none absolute inset-y-0 border-l border-(--u-line-soft)"
-                          style={{
-                            left: `calc(${index} * min(${100 / groupCount}%, ${groupMaxWidth}px))`,
-                            width: `min(${100 / groupCount}%, ${groupMaxWidth}px)`,
-                          }}
-                        >
-                          {!snapshot && column.placed.length > 0 && (
-                            <span className="absolute inset-0 flex items-center justify-center p-2 text-center text-xs text-u-muted">
-                              {error ? 'Данные недоступны' : 'Ждём данные'}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    {highlights.map((range) => (
+                    {loading && !hasSnapshot ? (
                       <div
-                        key={`${range.start}:${range.end}`}
-                        className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
+                        className="calendar-skeleton absolute inset-0"
                         aria-hidden="true"
-                        style={{
-                          top: (range.start - start) * scale,
-                          height: (range.end - range.start) * scale,
-                        }}
-                      />
-                    ))}
-                    {(singleDay
-                      ? column.groupPositions
-                      : column.placed.map((block) => ({
-                          block,
-                          groupId: undefined,
-                          left: block.column / block.columns,
-                          width: 1 / block.columns,
-                        }))
-                    ).map(({ block, groupId, left, width }) => (
-                      <LessonCard
-                        key={`${block.identity}:${groupId ?? 'event'}`}
-                        block={block}
-                        displayGroupId={groupId}
-                        colors={colors}
-                        subgroupCatalog={subgroupCatalog}
-                        style={{
-                          top: (block.lesson.start - start) * scale,
-                          height: Math.max(
-                            (block.lesson.end - block.lesson.start) * scale - 3,
-                            18,
-                          ),
-                          left: singleDay
-                            ? `calc(${left * groupCount} * min(${100 / groupCount}%, ${groupMaxWidth}px) + 3px)`
-                            : `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
-                          width: singleDay
-                            ? `calc(min(${width * groupCount} * min(${100 / groupCount}%, ${groupMaxWidth}px), 166px) - 6px)`
-                            : `calc(min(${100 / block.columns}%, 166px) - 6px)`,
-                        }}
-                      />
-                    ))}
-                    {!column.placed.length && (
-                      <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
-                        <span>
-                          {!complete
-                            ? schedules.some(
-                                (group) => group.error && !group.snapshot,
-                              )
-                              ? 'Данные недоступны'
-                              : 'Ждём данные'
-                            : 'Нет занятий'}
-                        </span>
-                        {complete && saved && (
-                          <span className="empty-saved text-[11px]">
-                            По сохранённым данным
-                          </span>
-                        )}
-                        {complete && (
-                          <img
-                            src="/assets/planet.webp"
-                            alt=""
-                            width="52"
-                            height="52"
-                            className="opacity-55 in-[[data-appearance=dark]]:invert"
+                      >
+                        {(placeholder ? [] : [0, 1, 2]).map((index) => (
+                          <Skeleton
+                            key={index}
+                            className="absolute"
+                            style={{
+                              top: (45 + index * 180) * scale,
+                              height: (index === 1 ? 150 : 95) * scale,
+                              left: `${index % 2 ? 18 : 6}%`,
+                              right: '6%',
+                            }}
                           />
-                        )}
+                        ))}
                       </div>
+                    ) : (
+                      <>
+                        {highlights.map((range) => (
+                          <div
+                            key={`${range.start}:${range.end}`}
+                            className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
+                            aria-hidden="true"
+                            style={{
+                              top: (range.start - start) * scale,
+                              height: (range.end - range.start) * scale,
+                            }}
+                          />
+                        ))}
+                        {column.placed.map((block) => (
+                          <LessonCard
+                            key={block.identity}
+                            block={block}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            style={{
+                              top: (block.lesson.start - start) * scale,
+                              height: Math.max(
+                                (block.lesson.end - block.lesson.start) *
+                                  scale -
+                                  3,
+                                18,
+                              ),
+                              left: `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
+                              width: `calc(min(${100 / block.columns}%, 166px) - 6px)`,
+                            }}
+                          />
+                        ))}
+                        {!column.placed.length && (
+                          <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
+                            <span>
+                              {!complete
+                                ? schedules.some(
+                                    (group) => group.error && !group.snapshot,
+                                  )
+                                  ? 'Данные недоступны'
+                                  : 'Ждём данные'
+                                : 'Нет занятий'}
+                            </span>
+                            {complete && saved && (
+                              <span className="empty-saved text-[11px]">
+                                По сохранённым данным
+                              </span>
+                            )}
+                            {complete && (
+                              <img
+                                src="/assets/planet.webp"
+                                alt=""
+                                width="52"
+                                height="52"
+                                className="opacity-55 in-[[data-appearance=dark]]:invert"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar className="z-[6]" />
+        <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
+        <ScrollArea.Corner />
+      </ScrollArea.Root>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
         {schedules.length >= 2 && (
           <span

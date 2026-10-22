@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
+import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Selection, Subgroup } from '../../../lib/types.ts';
 import { mergeSubgroups } from '../../../lib/subgroups.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
@@ -220,145 +221,154 @@ export default function GroupStrip(props: Props) {
   }
   return (
     <>
-      <div
-        className="group-controls group/groups relative flex h-19.25 min-w-0 items-center gap-2.25 overflow-x-auto overflow-y-hidden p-1 [scrollbar-width:thin] [&>*]:shrink-0 compact:h-13 compact:flex-1 compact:gap-2 compact:py-0.75 pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
+      <ScrollArea.Root
+        className="group/groups h-19.25 min-w-0 compact:h-[calc(3.25rem+var(--u-scroll-area-size))] compact:flex-1 pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
         data-dragging={drag ? '' : undefined}
-        ref={scroller}
         role="group"
         aria-label="Выбранные группы"
       >
-        {shown.map((group) => {
-          const loaded = schedules.find((s) => s.selection.id === group.id);
-          const subgroups = mergeSubgroups(
-            subgroupCatalog[group.id] ?? [],
-            loaded?.snapshot?.data.subgroups ?? [],
-          );
-          const subgroupLabel = group.subgroupNumber
-            ? `Подгруппа ${group.subgroupNumber}`
-            : group.subgroup
-              ? (subgroups.find((item) => item.id === group.subgroup)?.label ??
-                'Подгруппа')
-              : 'Вся группа';
-          return (
-            <div
-              className={`${chipClassName} ${drag?.id === group.id ? 'opacity-35' : ''}`}
-              key={group.id}
-              data-group-id={group.id}
-              style={chipStyle(colors[group.id] ?? 0)}
-            >
-              <div className="compact:hidden">
-                <div className="flex items-center justify-between gap-0.5">
-                  <button
-                    className="min-h-7 min-w-0 touch-none cursor-grab truncate border-0 bg-transparent px-0 py-0.5 text-[13px] font-bold text-inherit group-data-dragging/groups:cursor-grabbing pointer-coarse:min-h-11"
-                    type="button"
-                    data-drag-id={group.id}
-                    aria-label={`Порядок группы ${group.label}`}
-                    aria-describedby="group-drag-help"
-                    onPointerDown={(event) => start(event, group)}
-                    onKeyDown={(event) => keyboard(event, group)}
-                    onClick={(event) => {
-                      if (suppressClick.current && event.detail !== 0) {
-                        event.preventDefault();
-                        suppressClick.current = false;
-                        return;
-                      }
-                      if (groups.length > 1) onOrder(group.id);
-                    }}
-                  >
-                    {group.label}
-                  </button>
-                  <IconButton
-                    className="size-7 min-h-7 min-w-7 border-0 bg-transparent p-0 text-inherit hover:bg-black/7 pointer-coarse:size-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-                    label={`Убрать ${group.label}`}
-                    name="close"
-                    onClick={() => onRemove(group.id)}
-                  />
-                </div>
-                <SubgroupPicker
-                  compact
-                  label={group.label}
-                  subgroups={subgroups}
-                  value={group.subgroup}
-                  subgroupNumber={group.subgroupNumber}
-                  onChange={(value) => onSubgroup(group.id, value)}
-                />
-              </div>
-              <div className="hidden compact:block">
-                <Popover.Root>
-                  <Popover.Trigger
-                    className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-[5px] border-0 bg-transparent p-1 text-xs leading-[1.2] text-inherit"
-                    data-drag-id={group.id}
-                    aria-label={`Настройки группы ${group.label}: ${subgroupLabel}`}
-                  >
-                    <strong className="max-w-full truncate leading-[1.2]">
-                      {group.label}
-                    </strong>
-                    <span className="flex max-w-full items-center gap-0.75 text-[11px] leading-[1.2]">
-                      {subgroupLabel}
-                      <Icon name="down" size={10} />
-                    </span>
-                  </Popover.Trigger>
-                  <Popover.Content
-                    className="w-62.5 max-w-[calc(100vw-32px)] p-3.5"
-                    positionerProps={{ sideOffset: 6 }}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <Popover.Title className="m-0 text-xl leading-6">
-                        {group.label}
-                      </Popover.Title>
-                      <Popover.Close
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="min-h-11 min-w-11 shrink-0"
-                            aria-label={`Закрыть настройки ${group.label}`}
-                          />
-                        }
+        <ScrollArea.Viewport
+          ref={scroller}
+          className="group-controls relative"
+          role="region"
+          aria-label="Прокрутка выбранных групп"
+        >
+          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2.25 p-1 pb-[var(--u-scroll-area-size)] [&>*]:shrink-0 compact:gap-2 compact:pt-0.75">
+            {shown.map((group) => {
+              const loaded = schedules.find((s) => s.selection.id === group.id);
+              const subgroups = mergeSubgroups(
+                subgroupCatalog[group.id] ?? [],
+                loaded?.snapshot?.data.subgroups ?? [],
+              );
+              const subgroupLabel = group.subgroupNumber
+                ? `Подгруппа ${group.subgroupNumber}`
+                : group.subgroup
+                  ? (subgroups.find((item) => item.id === group.subgroup)
+                      ?.label ?? 'Подгруппа')
+                  : 'Вся группа';
+              return (
+                <div
+                  className={`${chipClassName} ${drag?.id === group.id ? 'opacity-35' : ''}`}
+                  key={group.id}
+                  data-group-id={group.id}
+                  style={chipStyle(colors[group.id] ?? 0)}
+                >
+                  <div className="compact:hidden">
+                    <div className="flex items-center justify-between gap-0.5">
+                      <button
+                        className="min-h-7 min-w-0 touch-none cursor-grab truncate border-0 bg-transparent px-0 py-0.5 text-[13px] font-bold text-inherit group-data-dragging/groups:cursor-grabbing pointer-coarse:min-h-11"
+                        type="button"
+                        data-drag-id={group.id}
+                        aria-label={`Порядок группы ${group.label}`}
+                        aria-describedby="group-drag-help"
+                        onPointerDown={(event) => start(event, group)}
+                        onKeyDown={(event) => keyboard(event, group)}
+                        onClick={(event) => {
+                          if (suppressClick.current && event.detail !== 0) {
+                            event.preventDefault();
+                            suppressClick.current = false;
+                            return;
+                          }
+                          if (groups.length > 1) onOrder(group.id);
+                        }}
                       >
-                        <Icon name="close" size={16} />
-                      </Popover.Close>
+                        {group.label}
+                      </button>
+                      <IconButton
+                        className="size-7 min-h-7 min-w-7 border-0 bg-transparent p-0 text-inherit hover:bg-black/7 pointer-coarse:size-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+                        label={`Убрать ${group.label}`}
+                        name="close"
+                        onClick={() => onRemove(group.id)}
+                      />
                     </div>
                     <SubgroupPicker
+                      compact
                       label={group.label}
                       subgroups={subgroups}
                       value={group.subgroup}
                       subgroupNumber={group.subgroupNumber}
                       onChange={(value) => onSubgroup(group.id, value)}
                     />
-                    {groups.length > 1 && (
-                      <Popover.Close
-                        render={
-                          <Button
-                            variant="secondary"
-                            className={settingActionClassName}
-                          />
-                        }
-                        onClick={() => onOrder(group.id)}
+                  </div>
+                  <div className="hidden compact:block">
+                    <Popover.Root>
+                      <Popover.Trigger
+                        className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-[5px] border-0 bg-transparent p-1 text-xs leading-[1.2] text-inherit"
+                        data-drag-id={group.id}
+                        aria-label={`Настройки группы ${group.label}: ${subgroupLabel}`}
                       >
-                        <Icon name="order" size={16} />
-                        Изменить порядок
-                      </Popover.Close>
-                    )}
-                    <Popover.Close
-                      render={
-                        <Button
-                          variant="secondary"
-                          className={settingActionClassName}
+                        <strong className="max-w-full truncate leading-[1.2]">
+                          {group.label}
+                        </strong>
+                        <span className="flex max-w-full items-center gap-0.75 text-[11px] leading-[1.2]">
+                          {subgroupLabel}
+                          <Icon name="down" size={10} />
+                        </span>
+                      </Popover.Trigger>
+                      <Popover.Content
+                        className="w-62.5 max-w-[calc(100vw-32px)] p-3.5"
+                        positionerProps={{ sideOffset: 6 }}
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <Popover.Title className="m-0 text-xl leading-6">
+                            {group.label}
+                          </Popover.Title>
+                          <Popover.Close
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="min-h-11 min-w-11 shrink-0"
+                                aria-label={`Закрыть настройки ${group.label}`}
+                              />
+                            }
+                          >
+                            <Icon name="close" size={16} />
+                          </Popover.Close>
+                        </div>
+                        <SubgroupPicker
+                          label={group.label}
+                          subgroups={subgroups}
+                          value={group.subgroup}
+                          subgroupNumber={group.subgroupNumber}
+                          onChange={(value) => onSubgroup(group.id, value)}
                         />
-                      }
-                      onClick={() => onRemove(group.id)}
-                    >
-                      <Icon name="close" size={16} />
-                      Убрать группу
-                    </Popover.Close>
-                  </Popover.Content>
-                </Popover.Root>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                        {groups.length > 1 && (
+                          <Popover.Close
+                            render={
+                              <Button
+                                variant="secondary"
+                                className={settingActionClassName}
+                              />
+                            }
+                            onClick={() => onOrder(group.id)}
+                          >
+                            <Icon name="order" size={16} />
+                            Изменить порядок
+                          </Popover.Close>
+                        )}
+                        <Popover.Close
+                          render={
+                            <Button
+                              variant="secondary"
+                              className={settingActionClassName}
+                            />
+                          }
+                          onClick={() => onRemove(group.id)}
+                        >
+                          <Icon name="close" size={16} />
+                          Убрать группу
+                        </Popover.Close>
+                      </Popover.Content>
+                    </Popover.Root>
+                  </div>
+                </div>
+              );
+            })}
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="horizontal" />
+      </ScrollArea.Root>
       {drag && (
         <div
           className={`${chipClassName} pointer-events-none fixed z-120 flex flex-col justify-center gap-1.5 text-xs shadow-[3px_5px_16px_#0003] select-none`}

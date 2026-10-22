@@ -24,7 +24,6 @@ interface LessonCardProps {
   subgroupCatalog?: Record<number, Subgroup[]>;
   style: CSSProperties;
   horizontal?: boolean;
-  displayGroupId?: number;
 }
 
 export default function LessonCard({
@@ -33,7 +32,6 @@ export default function LessonCard({
   subgroupCatalog = {},
   style,
   horizontal = false,
-  displayGroupId,
 }: LessonCardProps) {
   const { lesson } = block;
   const shared = block.members.length > 1;
@@ -80,8 +78,7 @@ export default function LessonCard({
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
   const remote = events.every((event) => event.remote);
-  const laneGroup = block.members.find((group) => group.id === displayGroupId);
-  const accessibleLabel = `${laneGroup ? `Колонка ${laneGroup.label}. ` : ''}${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
+  const accessibleLabel = `${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
   const background = block.parallel
     ? allSaved
       ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
@@ -158,7 +155,6 @@ export default function LessonCard({
     <div
       className={`lesson-position absolute z-[2] [container-type:size] ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
-      data-group-id={displayGroupId}
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger

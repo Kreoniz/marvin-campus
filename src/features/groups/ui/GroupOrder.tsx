@@ -75,8 +75,7 @@ export default function GroupOrder({
           </Dialog.Close>
         </div>
         <Dialog.Description>
-          Поменяй порядок групп и их колонок в режиме дня. Цвета групп останутся
-          прежними.
+          Поменяй порядок выбранных групп. Цвета групп останутся прежними.
         </Dialog.Description>
         <ol
           className="mt-5 flex max-h-[min(60dvh,440px)] list-none flex-col gap-2 overflow-y-auto p-0.5"

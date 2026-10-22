@@ -36,17 +36,16 @@ Online lessons use a contrasting two-pixel dashed outline.
 Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
 Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
-Ordinary cards use the group color. In the week grid, each shared event appears once with a common
+Ordinary cards use the group color. In both calendar views, each shared event appears once with a common
 subject and room, and colored participant sections in stable group-ID order.
 Group names and subgroup numbers occupy two lines; more than three participants
 show the first two and a count, with the full list in the popover. Lesson-kind
-badges sit beside the room. Week-grid lanes belong to overlapping events, so empty groups
-reserve no space there. The mobile day grid uses fixed columns in selection order:
-each group keeps its column, including empty or unavailable groups. Unavailable
-columns show their unknown state. Shared events repeat in their participants'
-columns, retaining the same source block, participants and details; they never
-span unrelated groups. Overlapping distinct events divide only their own group's
-column. Reordering groups also reorders these day columns, while colors stay stable.
+badges sit beside the room. Day and week lanes belong to overlapping events,
+so empty groups reserve no space. Distinct concurrent events use separate lanes;
+a shared event keeps all its participants in one card. Missing group data remains
+explicit in the comparison result and data status; known lessons never establish
+an empty schedule for an unavailable group. Reordering selected groups keeps
+event placement and colors stable.
 Cards in the vertical calendar are at most 160 pixels wide in
 both day and week views; an isolated lesson does not stretch across the day.
 Their horizontal pitch is capped too, keeping a six-pixel gap instead of
@@ -65,6 +64,11 @@ Subgroups use their group's unchanged base color and retain their visible public
 numbers. There is no subgroup shade setting. The side-index concept (03) is
 preferred for future exploration but remains a mockup, with implementation deferred.
 Saved-data muting is independent of subgroup membership and remains enabled.
+
+Time board is retained as a future UX idea, not part of the current release:
+show common windows across the week and compact per-group occupancy rows, with
+shared lessons listed once. Before implementation, clarify busy versus off-campus
+time, exact interval boundaries, participant visibility and unavailable data.
 
 Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for thirty minutes, future weeks for an hour, past weeks for a day; group
