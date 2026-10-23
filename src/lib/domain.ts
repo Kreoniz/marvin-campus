@@ -17,6 +17,28 @@ export function lessonsFor(group: GroupSchedule): Lesson[] {
   );
 }
 
+export function comparisonIssue(
+  group: GroupSchedule,
+): 'missing' | 'subgroup' | undefined {
+  if (!group.snapshot) return 'missing';
+  if (
+    selectedSubgroup(group.selection, group.snapshot.data.subgroups) === -1 &&
+    group.snapshot.data.lessons.some((lesson) => lesson.subgroups.length > 0)
+  )
+    return 'subgroup';
+  // A successful week without subgroup-specific lessons is still usable.
+  // Retain the requested subgroup for later weeks rather than inventing an error.
+  return undefined;
+}
+
+export function comparisonScope(schedules: GroupSchedule[]) {
+  const included: GroupSchedule[] = [];
+  const excluded: GroupSchedule[] = [];
+  for (const group of schedules)
+    (comparisonIssue(group) ? excluded : included).push(group);
+  return { included, excluded };
+}
+
 export function merge(intervals: Interval[]): Interval[] {
   const result: Interval[] = [];
   for (const interval of intervals
@@ -64,9 +86,10 @@ export function compareDay(
   date: string,
 ): DayResult {
   const empty = { presence: [], free: [], lessons: [], complete: false };
-  if (schedules.length < 2 || schedules.some((group) => !group.snapshot))
-    return empty;
-  const days = schedules.map((group) =>
+  const { included, excluded } = comparisonScope(schedules);
+  if (included.length < 2) return empty;
+  const complete = excluded.length === 0;
+  const days = included.map((group) =>
     lessonsFor(group).filter((lesson) => lesson.date === date),
   );
   const identities = days
@@ -95,7 +118,7 @@ export function compareDay(
       : undefined;
   });
   if (ranges.some((range) => !range))
-    return { presence: [], free: [], lessons: common, complete: true };
+    return { presence: [], free: [], lessons: common, complete };
   const range = {
     start: Math.max(...ranges.map((r) => r!.start)),
     end: Math.min(...ranges.map((r) => r!.end)),
@@ -104,6 +127,6 @@ export function compareDay(
     presence: range.start < range.end ? [range] : [],
     free: range.start < range.end ? subtract(range, days.flat()) : [],
     lessons: common,
-    complete: true,
+    complete,
   };
 }

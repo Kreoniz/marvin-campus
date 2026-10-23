@@ -4,7 +4,11 @@ import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
-import { compareDay } from '../../../lib/domain.ts';
+import {
+  compareDay,
+  comparisonIssue,
+  comparisonScope,
+} from '../../../lib/domain.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import LessonCard from '../../schedule/ui/LessonCard.tsx';
@@ -30,7 +34,8 @@ export default function DayDetail({
   placeholder = false,
 }: DayDetailProps) {
   const result = compareDay(schedules, day);
-  const saved = schedules.some(
+  const { included } = comparisonScope(schedules);
+  const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const placed = lessonBlocks(schedules, day);
@@ -155,12 +160,16 @@ export default function DayDetail({
                     {!placed.length && (
                       <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
                         {schedules.some(
-                          (group) => group.error && !group.snapshot,
+                          (group) => comparisonIssue(group) === 'subgroup',
                         )
-                          ? 'Часть расписаний недоступна.'
-                          : schedules.some((group) => !group.snapshot)
-                            ? 'Ждём данные расписания.'
-                            : 'В этот день занятий нет.'}
+                          ? 'Подгруппа не определена; сравнение ограничено.'
+                          : schedules.some(
+                                (group) => group.error && !group.snapshot,
+                              )
+                            ? 'Часть расписаний недоступна.'
+                            : schedules.some((group) => !group.snapshot)
+                              ? 'Ждём данные расписания.'
+                              : 'В этот день занятий нет.'}
                         {saved &&
                           schedules.every((group) => group.snapshot) && (
                             <span>По сохранённым данным</span>

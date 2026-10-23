@@ -9,7 +9,12 @@ import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
-import { compareDay } from '../../../lib/domain.ts';
+import {
+  compareDay,
+  comparisonIssue,
+  comparisonScope,
+} from '../../../lib/domain.ts';
+import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import LessonCard from './LessonCard.tsx';
@@ -75,8 +80,9 @@ export default function Calendar({
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
   );
-  const complete = schedules.every((group) => group.snapshot);
-  const saved = schedules.some(
+  const { included, excluded } = comparisonScope(schedules);
+  const complete = excluded.length === 0;
+  const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
@@ -259,11 +265,17 @@ export default function Calendar({
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
                               {!complete
-                                ? schedules.some(
-                                    (group) => group.error && !group.snapshot,
+                                ? excluded.some(
+                                    (group) =>
+                                      comparisonIssue(group) === 'subgroup',
                                   )
-                                  ? 'Данные недоступны'
-                                  : 'Ждём данные'
+                                  ? 'Подгруппа не определена'
+                                  : schedules.some(
+                                        (group) =>
+                                          group.error && !group.snapshot,
+                                      )
+                                    ? 'Данные недоступны'
+                                    : 'Ждём данные'
                                 : 'Нет занятий'}
                             </span>
                             {complete && saved && (
@@ -295,13 +307,15 @@ export default function Calendar({
         <ScrollArea.Corner />
       </ScrollArea.Root>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {schedules.length >= 2 && (
+        {included.length >= 2 && (
           <span
             className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-campus-presence-border before:bg-campus-presence'} ${saved ? 'before:border-dashed' : ''}`}
           >
-            {mode === 'presence'
-              ? 'Полоса — общее время в вузе'
-              : 'Полоса — все без занятий'}
+            {excluded.length
+              ? `Полоса — ${mode === 'presence' ? 'общее время в вузе' : 'без занятий'}: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
+              : mode === 'presence'
+                ? 'Полоса — общее время в вузе'
+                : 'Полоса — все без занятий'}
             {saved && ' · по сохранённым данным'}
           </span>
         )}

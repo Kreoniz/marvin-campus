@@ -11,6 +11,7 @@ import { Popover } from 'unlikely-ui/popover';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
 import type { GroupSchedule, Selection, Subgroup } from '../../../lib/types.ts';
 import { mergeSubgroups } from '../../../lib/subgroups.ts';
+import { comparisonIssue } from '../../../lib/domain.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
@@ -236,6 +237,16 @@ export default function GroupStrip(props: Props) {
           <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2.25 p-1 pb-[var(--u-scroll-area-size)] [&>*]:shrink-0 compact:gap-2 compact:pt-0.75">
             {shown.map((group) => {
               const loaded = schedules.find((s) => s.selection.id === group.id);
+              const issue =
+                loaded && (!loaded.loading || loaded.snapshot)
+                  ? comparisonIssue(loaded)
+                  : undefined;
+              const issueText =
+                issue === 'subgroup'
+                  ? `Не удалось определить подгруппу ${group.subgroupNumber}. Группа исключена из расчёта.`
+                  : issue
+                    ? 'Расписание недоступно. Группа исключена из расчёта.'
+                    : '';
               const subgroups = mergeSubgroups(
                 subgroupCatalog[group.id] ?? [],
                 loaded?.snapshot?.data.subgroups ?? [],
@@ -248,9 +259,11 @@ export default function GroupStrip(props: Props) {
                   : 'Вся группа';
               return (
                 <div
-                  className={`${chipClassName} ${drag?.id === group.id ? 'opacity-35' : ''}`}
+                  className={`${chipClassName} ${issue ? 'outline-2 outline-(--u-danger)' : ''} ${drag?.id === group.id ? 'opacity-35' : ''}`}
                   key={group.id}
                   data-group-id={group.id}
+                  data-comparison-excluded={issue || undefined}
+                  title={issueText || undefined}
                   style={chipStyle(colors[group.id] ?? 0)}
                 >
                   <div className="compact:hidden">
@@ -260,7 +273,7 @@ export default function GroupStrip(props: Props) {
                         type="button"
                         data-drag-id={group.id}
                         aria-label={`Порядок группы ${group.label}`}
-                        aria-describedby="group-drag-help"
+                        aria-describedby={`group-drag-help${issue ? ` group-issue-${group.id}` : ''}`}
                         onPointerDown={(event) => start(event, group)}
                         onKeyDown={(event) => keyboard(event, group)}
                         onClick={(event) => {
@@ -274,6 +287,11 @@ export default function GroupStrip(props: Props) {
                       >
                         {group.label}
                       </button>
+                      {issue && (
+                        <span className="shrink-0" aria-hidden="true">
+                          <Icon name="alert" size={14} />
+                        </span>
+                      )}
                       <IconButton
                         className="size-7 min-h-7 min-w-7 border-0 bg-transparent p-0 text-inherit hover:bg-black/7 pointer-coarse:size-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
                         label={`Убрать ${group.label}`}
@@ -296,9 +314,13 @@ export default function GroupStrip(props: Props) {
                         className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-[5px] border-0 bg-transparent p-1 text-xs leading-[1.2] text-inherit"
                         data-drag-id={group.id}
                         aria-label={`Настройки группы ${group.label}: ${subgroupLabel}`}
+                        aria-describedby={
+                          issue ? `group-issue-${group.id}` : undefined
+                        }
                       >
-                        <strong className="max-w-full truncate leading-[1.2]">
+                        <strong className="flex max-w-full items-center gap-1 truncate leading-[1.2]">
                           {group.label}
+                          {issue && <Icon name="alert" size={14} />}
                         </strong>
                         <span className="flex max-w-full items-center gap-0.75 text-[11px] leading-[1.2]">
                           {subgroupLabel}
@@ -326,6 +348,11 @@ export default function GroupStrip(props: Props) {
                             <Icon name="close" size={16} />
                           </Popover.Close>
                         </div>
+                        {issue && (
+                          <p className="mb-3 text-xs leading-snug">
+                            {issueText}
+                          </p>
+                        )}
                         <SubgroupPicker
                           label={group.label}
                           subgroups={subgroups}
@@ -362,6 +389,11 @@ export default function GroupStrip(props: Props) {
                       </Popover.Content>
                     </Popover.Root>
                   </div>
+                  {issue && (
+                    <span id={`group-issue-${group.id}`} className="sr-only">
+                      {issueText}
+                    </span>
+                  )}
                 </div>
               );
             })}

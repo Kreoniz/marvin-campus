@@ -1,4 +1,4 @@
-import { lessonsFor, lessonKey } from './domain.ts';
+import { comparisonIssue, lessonsFor, lessonKey } from './domain.ts';
 import type { GroupSchedule, Lesson, Selection } from './types.ts';
 
 export interface LessonBlock {
@@ -87,7 +87,7 @@ export function lessonBlocks(
       y.lesson.end - x.lesson.end ||
       a.localeCompare(b),
   );
-  const complete = schedules.every((g) => !!g.snapshot);
+  const complete = schedules.every((g) => !comparisonIssue(g));
   const blocks: LessonBlock[] = [];
   let cluster: typeof ordered = [],
     until = -1;

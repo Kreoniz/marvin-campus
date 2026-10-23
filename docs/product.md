@@ -8,6 +8,13 @@ including online lessons, from every selected group's shared presence.
 When a complete comparison has no shared presence, its summary explains whether
 a selected group has no onsite lessons or the groups' presence does not overlap.
 A group without onsite lessons is not silently excluded from the comparison.
+Unavailable schedules and selections whose subgroup cannot be resolved are
+marked in the group strip and excluded from calculations. If at least two usable
+selections remain, show a partial result naming both the included subset and
+excluded selections. With zero or one usable selection, show no shared result.
+Keep the original selection and URL, and keep known lessons visible. A successful
+empty week and usable saved data remain valid inputs; neither is excluded simply
+for being empty or saved.
 
 Shared lessons require matching source identity and event details. Matching
 subject text and time alone do not establish a shared lesson. Unavailable data

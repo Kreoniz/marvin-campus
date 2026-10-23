@@ -12,10 +12,16 @@ export function selectedSubgroup(
   if (selection.subgroup !== undefined) return selection.subgroup;
   if (selection.subgroupNumber === undefined) return undefined;
   // Unknown public numbers include only whole-group lessons, never all subgroups.
-  return (
-    subgroups.find((s) => publicSubgroup(s.label) === selection.subgroupNumber)
-      ?.id ?? -1
+  const matches = subgroups.filter(
+    (s) => publicSubgroup(s.label) === selection.subgroupNumber,
   );
+  return matches.length === 1 ? matches[0].id : -1;
+}
+
+export function selectionLabel(selection: Selection): string {
+  return selection.subgroupNumber
+    ? `${selection.label}/${selection.subgroupNumber}`
+    : selection.label;
 }
 
 // Labels describe source membership, independently of the selected filter.

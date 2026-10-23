@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compareDay, forSelection } from './domain.ts';
+import {
+  compareDay,
+  comparisonIssue,
+  comparisonScope,
+  forSelection,
+  lessonsFor,
+} from './domain.ts';
 import { addDays, monday, omskToday } from './dates.ts';
 import { parseView, viewURL } from './url.ts';
 import type { GroupSchedule, Lesson } from './types.ts';
@@ -117,6 +123,89 @@ test('a subgroup preserves group/stream lessons and excludes other subgroups', (
     forSelection(lessons, 10).map((l) => l.start),
     [480, 600],
   );
+});
+
+test('unresolved subgroup is excluded, never interpreted as free time', () => {
+  const edges = [lesson(480, 540), lesson(720, 780)];
+  const unresolved = group(1, [
+    ...edges,
+    lesson(540, 720, { subgroups: [12] }),
+  ]);
+  unresolved.selection.subgroupNumber = 2;
+  unresolved.snapshot!.data.subgroups = [{ id: 12, label: 'Подгруппа 12' }];
+  const second = group(2, edges);
+  assert.equal(comparisonIssue(unresolved), 'subgroup');
+  assert.deepEqual(lessonsFor(unresolved), edges);
+  assert.deepEqual(compareDay([unresolved, second], date), {
+    presence: [],
+    free: [],
+    lessons: [],
+    complete: false,
+  });
+  const third = group(3, edges);
+  const scope = comparisonScope([unresolved, second, third]);
+  assert.deepEqual(
+    scope.included.map((g) => g.selection.id),
+    [2, 3],
+  );
+  assert.deepEqual(
+    scope.excluded.map((g) => g.selection.id),
+    [1],
+  );
+  const partial = compareDay([unresolved, second, third], date);
+  assert.equal(partial.complete, false);
+  assert.deepEqual(partial.presence, [{ start: 480, end: 780 }]);
+  assert.deepEqual(partial.free, [{ start: 540, end: 720 }]);
+  unresolved.selection.subgroup = 12;
+  const resolved = compareDay([unresolved, second, third], date);
+  assert.equal(resolved.complete, true);
+  assert.deepEqual(resolved.free, []);
+});
+
+test('partial comparisons retain valid empty, remote-only and saved schedules', () => {
+  const missing: GroupSchedule = {
+    selection: { id: 1, label: 'Г-1' },
+    error: 'Unavailable',
+  };
+  const second = group(2, [lesson(480, 540), lesson(720, 780)]);
+  const saved = group(3, [lesson(480, 540), lesson(720, 780)]);
+  saved.snapshot!.stale = true;
+  saved.error = 'Source unavailable';
+  assert.deepEqual(compareDay([missing, second, saved], date).free, [
+    { start: 540, end: 720 },
+  ]);
+  for (const fourth of [
+    group(4, []),
+    group(4, [lesson(600, 660, { remote: true })]),
+  ]) {
+    assert.equal(
+      comparisonScope([missing, second, saved, fourth]).included.length,
+      3,
+    );
+    assert.deepEqual(
+      compareDay([missing, second, saved, fourth], date).presence,
+      [],
+    );
+  }
+  const empty = group(5, []);
+  empty.selection.subgroupNumber = 2;
+  assert.equal(comparisonIssue(empty), undefined);
+  assert.equal(compareDay([empty, second], date).complete, true);
+  empty.selection.subgroup = 12;
+  assert.equal(comparisonIssue(empty), undefined);
+  assert.equal(empty.selection.subgroupNumber, 2);
+  assert.deepEqual(compareDay([missing], date).free, []);
+});
+
+test('ambiguous public subgroup identities cannot become a complete comparison', () => {
+  const ambiguous = group(1, [lesson(480, 540, { subgroups: [12] })]);
+  ambiguous.selection.subgroupNumber = 2;
+  ambiguous.snapshot!.data.subgroups = [
+    { id: 12, label: 'Г-1/2' },
+    { id: 13, label: 'Г-1/2' },
+  ];
+  assert.equal(comparisonIssue(ambiguous), 'subgroup');
+  assert.equal(compareDay([ambiguous, group(2, [])], date).complete, false);
 });
 test('common events need matching source identity and details across all groups', () => {
   const shared = lesson(480, 540);

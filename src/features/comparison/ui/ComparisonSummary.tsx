@@ -2,7 +2,12 @@ import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import type { GroupSchedule, Mode } from '../../../lib/types.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
-import { compareDay, lessonsFor } from '../../../lib/domain.ts';
+import {
+  compareDay,
+  comparisonScope,
+  lessonsFor,
+} from '../../../lib/domain.ts';
+import { selectionLabel } from '../../../lib/subgroups.ts';
 
 interface ComparisonSummaryProps {
   schedules: GroupSchedule[];
@@ -24,22 +29,24 @@ export default function ComparisonSummary({
   showHeading = true,
 }: ComparisonSummaryProps) {
   const result = compareDay(schedules, day);
-  const hasLessons = schedules.some((group) =>
+  const { included, excluded } = comparisonScope(schedules);
+  const comparing = included.length >= 2;
+  const hasLessons = included.some((group) =>
     lessonsFor(group).some((lesson) => lesson.date === day),
   );
   const ranges = mode === 'free' ? result.free : result.presence;
-  const saved = schedules.some(
+  const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
-  const withoutOnsite = schedules
+  const withoutOnsite = included
     .filter(
       (group) =>
         !lessonsFor(group).some(
           (lesson) => lesson.date === day && !lesson.remote,
         ),
     )
-    .map((group) => group.selection.label);
+    .map((group) => selectionLabel(group.selection));
   const times = (intervals: typeof ranges) =>
     intervals
       .map(
@@ -72,6 +79,32 @@ export default function ComparisonSummary({
             formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })
           )}
         </div>
+        {!!excluded.length && (
+          <div
+            className="comparison-scope mb-2 text-xs leading-snug"
+            role="status"
+          >
+            <strong>
+              {comparing
+                ? `Частичное сравнение · ${included.length} из ${schedules.length}`
+                : `Доступно расписаний: ${included.length} из ${schedules.length}`}
+            </strong>
+            {!!included.length && (
+              <p className="my-1">
+                Учтены:{' '}
+                {included
+                  .map((group) => selectionLabel(group.selection))
+                  .join(' + ')}
+              </p>
+            )}
+            <p className="my-1">
+              Не учтены:{' '}
+              {excluded
+                .map((group) => selectionLabel(group.selection))
+                .join(', ')}
+            </p>
+          </div>
+        )}
         {loading && !hasSnapshot ? (
           <>
             <div
@@ -88,10 +121,10 @@ export default function ComparisonSummary({
             <strong>Твоё расписание</strong>
             <p>Добавь группу друга — найдём время пересечься.</p>
           </>
-        ) : !result.complete ? (
+        ) : !comparing ? (
           <>
-            <strong>Нужны все расписания</strong>
-            <p>Без данных одной из групп сравнение не получится.</p>
+            <strong>Совместный результат недоступен</strong>
+            <p>Для сравнения нужны хотя бы два доступных расписания.</p>
           </>
         ) : !hasLessons ? (
           <>
@@ -139,7 +172,7 @@ export default function ComparisonSummary({
             )}
           </>
         )}
-        {result.complete && hasLessons && !result.presence.length && (
+        {comparing && hasLessons && !result.presence.length && (
           <p className="presence-reason text-xs leading-snug text-u-ink">
             {withoutOnsite.length === 1
               ? `У ${withoutOnsite[0]} в этот день нет очных занятий.`
@@ -152,7 +185,7 @@ export default function ComparisonSummary({
           <p className="saved-qualification mt-[5px] text-[11px] text-u-ink">
             {saved
               ? 'По сохранённым данным'
-              : result.complete
+              : comparing
                 ? 'По расписанию'
                 : '\u00a0'}
           </p>
