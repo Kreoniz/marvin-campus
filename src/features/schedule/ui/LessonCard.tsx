@@ -77,6 +77,13 @@ export default function LessonCard({
   const visibleMembers =
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
+  const fullMemberLabels =
+    !(horizontal && long) &&
+    block.members.length <= 4 &&
+    block.members.every((group) => groupLabel(group).length <= 10);
+  const hiddenSaved = block.members
+    .slice(visibleMembers.length)
+    .some(savedMember);
   const remote = events.every((event) => event.remote);
   const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
   const background = block.parallel
@@ -199,53 +206,73 @@ export default function LessonCard({
             </span>
           )}
           {shared ? (
-            <span
-              className={`participant-sectors flex min-w-0 flex-none gap-px ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
-            >
-              {visibleMembers.map((group) => {
-                const parts = groupParts(group);
-                return (
-                  <span
-                    key={group.id}
-                    className={`participant-sector flex min-w-0 flex-1 flex-col justify-center text-center leading-[1.05] font-[650] ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[11px]'} ${participantBackground(savedMember(group))}`}
-                    style={chipStyle(group)}
-                    title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
-                  >
-                    {horizontal && long ? (
-                      <span className="group-name flex items-center justify-center gap-0.5 truncate">
-                        {groupLabel(group)}
-                        {savedMember(group) && <Icon name="clock" size={10} />}
-                      </span>
-                    ) : (
-                      <>
-                        <span className="group-prefix truncate text-[10px]">
-                          {parts.name}
-                        </span>
-                        {parts.number && (
-                          <span className="group-number flex items-center justify-center gap-0.5 truncate text-[11px] [@container(width<120px)]:text-[10px]">
-                            {parts.number}
-                            {savedMember(group) && (
-                              <Icon name="clock" size={10} />
-                            )}
-                          </span>
-                        )}
-                        {!parts.number && savedMember(group) && (
-                          <Icon name="clock" size={10} />
-                        )}
-                      </>
-                    )}
-                  </span>
-                );
-              })}
-              {visibleMembers.length < block.members.length && (
-                <span
-                  className={`more-participants flex min-w-0 flex-1 flex-col justify-center bg-(--u-line-soft) text-center leading-[1.05] font-[650] text-u-ink ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[13px]'}`}
-                  title={labels}
-                >
-                  +{block.members.length - visibleMembers.length}
+            <>
+              {fullMemberLabels && (
+                <span className="participant-sectors full-participant-labels hidden min-w-0 flex-none grid-cols-2 gap-px [@container(width>=150px)_and_(height>=50px)]:grid">
+                  {block.members.map((group) => (
+                    <span
+                      key={group.id}
+                      className={`participant-sector flex min-w-0 items-center justify-center gap-0.5 px-0.5 text-[10px] leading-3 font-[650] ${participantBackground(savedMember(group))}`}
+                      style={chipStyle(group)}
+                      title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
+                    >
+                      <span className="truncate">{groupLabel(group)}</span>
+                      {savedMember(group) && <Icon name="clock" size={10} />}
+                    </span>
+                  ))}
                 </span>
               )}
-            </span>
+              <span
+                className={`participant-sectors flex min-w-0 flex-none gap-px ${fullMemberLabels ? '[@container(width>=150px)_and_(height>=50px)]:hidden' : ''} ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
+              >
+                {visibleMembers.map((group) => {
+                  const parts = groupParts(group);
+                  return (
+                    <span
+                      key={group.id}
+                      className={`participant-sector flex min-w-0 flex-1 flex-col justify-center text-center leading-[1.05] font-[650] ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[11px]'} ${participantBackground(savedMember(group))}`}
+                      style={chipStyle(group)}
+                      title={`${groupLabel(group)}${savedMember(group) ? ' · сохранённые данные' : ''}`}
+                    >
+                      {horizontal && long ? (
+                        <span className="group-name flex items-center justify-center gap-0.5 truncate">
+                          {groupLabel(group)}
+                          {savedMember(group) && (
+                            <Icon name="clock" size={10} />
+                          )}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="group-prefix truncate text-[10px]">
+                            {parts.name}
+                          </span>
+                          {parts.number && (
+                            <span className="group-number flex items-center justify-center gap-0.5 truncate text-[11px] [@container(width<120px)]:text-[10px]">
+                              {parts.number}
+                              {savedMember(group) && (
+                                <Icon name="clock" size={10} />
+                              )}
+                            </span>
+                          )}
+                          {!parts.number && savedMember(group) && (
+                            <Icon name="clock" size={10} />
+                          )}
+                        </>
+                      )}
+                    </span>
+                  );
+                })}
+                {visibleMembers.length < block.members.length && (
+                  <span
+                    className={`more-participants flex min-w-0 flex-1 items-center justify-center gap-0.5 bg-(--u-line-soft) text-center leading-[1.05] font-[650] text-u-ink ${horizontal && long ? 'p-[3px] text-xs' : 'px-0.5 py-px text-[11px]'}`}
+                    title={labels}
+                  >
+                    +{block.members.length - visibleMembers.length}
+                    {hiddenSaved && <Icon name="clock" size={10} />}
+                  </span>
+                )}
+              </span>
+            </>
           ) : (
             <span className="single-group flex items-center gap-[3px] truncate text-[13px] font-[650]">
               <span className="truncate">{groupLabel(block.members[0])}</span>
