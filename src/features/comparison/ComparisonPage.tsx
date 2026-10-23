@@ -208,6 +208,7 @@ export default function ComparisonPage() {
                     )}
                     {mobile ? (
                       <MobileComparisonPanel
+                        section="controls"
                         view={view}
                         schedules={source.schedules}
                         links={links}
@@ -232,8 +233,20 @@ export default function ComparisonPage() {
                       loading={busy}
                       placeholder={links.opening}
                       onDay={view.selectDay}
+                      compact={mobile}
                       singleDay={mobile && mobileView === 'day'}
                     />
+                    {mobile && (
+                      <MobileComparisonPanel
+                        section="result"
+                        view={view}
+                        schedules={source.schedules}
+                        links={links}
+                        fetching={links.opening || source.fetching}
+                        loading={busy}
+                        opening={links.opening}
+                      />
+                    )}
                   </>
                 ) : (
                   <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">

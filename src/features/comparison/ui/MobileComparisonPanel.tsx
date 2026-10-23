@@ -1,4 +1,6 @@
 import { RadioGroup } from 'unlikely-ui/radio-group';
+import { comparisonScope } from '../../../lib/domain.ts';
+import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { GroupSchedule, Mode } from '../../../lib/types.ts';
 import type {
   ComparisonLinks,
@@ -8,6 +10,7 @@ import ComparisonSummary from './ComparisonSummary.tsx';
 import ComparisonStatus from './ComparisonStatus.tsx';
 
 interface Props {
+  section: 'controls' | 'result';
   view: ComparisonView;
   schedules: GroupSchedule[];
   links: ComparisonLinks;
@@ -17,6 +20,7 @@ interface Props {
 }
 
 export default function MobileComparisonPanel({
+  section,
   view,
   schedules,
   links,
@@ -25,15 +29,13 @@ export default function MobileComparisonPanel({
   opening,
 }: Props) {
   const comparing = view.groups.length >= 2 || opening;
-  return (
-    <section
-      className={`mobile-comparison border-y border-[var(--u-line-soft)] ${comparing ? 'min-[701px]:grid min-[701px]:grid-cols-[minmax(0,1fr)_270px] min-[701px]:items-center' : ''}`}
-      aria-label="Результат и состояние расписания"
-    >
-      {comparing && (
-        <div className="space-y-2 px-3 pt-2 min-[701px]:grid min-[701px]:grid-cols-[220px_minmax(0,1fr)] min-[701px]:items-center min-[701px]:gap-3 min-[701px]:space-y-0 min-[701px]:py-2">
+  const { included, excluded } = comparisonScope(schedules);
+  if (section === 'controls') {
+    return (
+      <div className="mobile-comparison-controls">
+        {comparing && (
           <RadioGroup.Root
-            className="mobile-modes flex [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:text-xs"
+            className="mobile-modes mx-3 my-2 flex [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:text-xs"
             variant="segmented"
             aria-label="Режим сравнения"
             value={view.mode}
@@ -43,6 +45,34 @@ export default function MobileComparisonPanel({
             <RadioGroup.Item value="presence">В вузе</RadioGroup.Item>
             <RadioGroup.Item value="free">Без занятий</RadioGroup.Item>
           </RadioGroup.Root>
+        )}
+        {!opening && excluded.length > 0 && (
+          <p
+            className="m-0 border-t border-(--u-line-soft) px-3 py-2 text-xs leading-snug"
+            role="status"
+          >
+            {included.length >= 2
+              ? 'Частичное сравнение. '
+              : 'Совместный результат недоступен. '}
+            {included.length > 0 &&
+              `Учтены: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. `}
+            Не учтены:{' '}
+            {excluded
+              .map((group) => selectionLabel(group.selection))
+              .join(', ')}
+            .
+          </p>
+        )}
+      </div>
+    );
+  }
+  return (
+    <section
+      className="mobile-comparison border-t border-(--u-line-soft)"
+      aria-label="Результат и состояние расписания"
+    >
+      {comparing && (
+        <div className="px-3 pt-2">
           <ComparisonSummary
             schedules={schedules}
             day={view.day}

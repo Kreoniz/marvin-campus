@@ -28,14 +28,21 @@ whole-group lesson keeps the base group name when a subgroup is selected; shared
 events retain each participant's own subgroup membership.
 
 Desktop uses a week grid and a detailed selected day. Mobile starts with a
-compact day grid; its summary precedes the grid. Mobile group chips open subgroup,
+compact day grid; its summary and freshness follow the grid. Mobile group chips open subgroup,
 order and removal controls. Group search starts empty, without suggested groups.
 Its reserved results area keeps the search field still while typing and loading.
 The mobile calendar spans the available screen width, while controls and card
 content keep their internal spacing. Day/week views use a two-button toggle.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
-Comparison mode, result and freshness form one block; a single selected group
-shows its timetable without a repeated invitation to add another group.
+Comparison modes stay above the mobile calendar. A partial-data notice names
+included and excluded selections beside those controls. Mobile day and week grids
+expand to their full time range and use page scrolling vertically; week and
+overlap lanes can still scroll horizontally. Only the day selector shows the date
+in mobile day view. A single selected group shows its timetable without a repeated
+invitation to add another group.
+Custom scrollbars fade out fully when idle, preserving their reserved space.
+Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
+a click or tap does not. Forced-color mode keeps scrollbars visible.
 On screens up to 360 pixels wide, Today remains available in the date picker.
 Compact hour labels omit `:00`; full times remain available to assistive technology
 and in lesson details. The time scale and event durations stay proportional.

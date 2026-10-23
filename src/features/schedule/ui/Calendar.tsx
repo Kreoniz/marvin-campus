@@ -30,6 +30,7 @@ interface CalendarProps {
   loading: boolean;
   onDay: (day: string) => void;
   singleDay?: boolean;
+  compact?: boolean;
   placeholder?: boolean;
 }
 
@@ -43,6 +44,7 @@ export default function Calendar({
   loading,
   onDay,
   singleDay = false,
+  compact = false,
   placeholder = false,
 }: CalendarProps) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -76,7 +78,18 @@ export default function Calendar({
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
-  const { start, end } = clock;
+  // Saved lessons can arrive while another group is still loading. Their full
+  // bounds must fit immediately, before the settled clock effect runs.
+  const start = Math.min(clock.start, earliest);
+  const end = Math.max(clock.end, latest);
+  const calendarHeight = Math.max(
+    (end - start) * scale,
+    ...all.map(
+      (lesson) =>
+        (lesson.start - start) * scale +
+        Math.max((lesson.end - lesson.start) * scale - 3, 18),
+    ),
+  );
   const hours = Array.from(
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
@@ -112,23 +125,26 @@ export default function Calendar({
     );
     const columnWidth = Math.max(overlapWidth, column.offsetWidth);
     element.scrollTo({
-      left:
-        viewportWidth <= 700
-          ? Math.max(0, index) * columnWidth
-          : Math.max(0, (index + 1) * columnWidth + 48 - element.clientWidth),
+      left: compact
+        ? Math.max(0, index) * columnWidth
+        : Math.max(0, (index + 1) * columnWidth + 48 - element.clientWidth),
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
         ? 'auto'
         : 'smooth',
     });
-  }, [singleDay, week, day, viewportWidth, overlapWidth]);
+  }, [singleDay, compact, week, day, viewportWidth, overlapWidth]);
   return (
     <>
       <AutoHideScrollArea
-        className="h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]"
+        className={
+          compact
+            ? 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]'
+            : 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]'
+        }
         style={
           {
-            '--calendar-viewport': `${660 * scale}px`,
-            '--calendar-header': '44px',
+            '--calendar-viewport': `${compact ? calendarHeight : 660 * scale}px`,
+            '--calendar-header': singleDay ? '0px' : '44px',
           } as CSSProperties
         }
       >
@@ -150,7 +166,7 @@ export default function Calendar({
               data-schedule-days
               style={
                 {
-                  '--calendar-height': `${(end - start) * scale}px`,
+                  '--calendar-height': `${calendarHeight}px`,
                   '--hour-height': `${60 * scale}px`,
                   '--overlap-min': `${overlapWidth}px`,
                   '--day-count': dates.length,
@@ -305,7 +321,7 @@ export default function Calendar({
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar className="z-[6]" />
+        {!compact && <ScrollArea.Scrollbar className="z-[6]" />}
         <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
         <ScrollArea.Corner />
       </AutoHideScrollArea>
