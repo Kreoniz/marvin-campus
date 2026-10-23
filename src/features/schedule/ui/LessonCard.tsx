@@ -14,7 +14,7 @@ import { lessonKind } from '../../../lib/lesson-kind.ts';
 import { lessonGroupLabel } from '../../../lib/subgroups.ts';
 import { lessonKey } from '../../../lib/domain.ts';
 import type { Lesson, Selection, Subgroup } from '../../../lib/types.ts';
-import { timeLabel } from '../../../lib/dates.ts';
+import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { track } from '../../../lib/analytics.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 
@@ -78,7 +78,7 @@ export default function LessonCard({
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
   const remote = events.every((event) => event.remote);
-  const accessibleLabel = `${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
+  const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. ${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
   const background = block.parallel
     ? allSaved
       ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
@@ -103,7 +103,7 @@ export default function LessonCard({
         : 'border-[color-mix(in_srgb,var(--chip)_65%,#384333)]';
   const participantBackground = (isSaved: boolean) =>
     isSaved
-      ? 'saved-participant bg-[color-mix(in_srgb,var(--chip)_25%,var(--u-well))] text-u-muted'
+      ? 'saved-participant bg-[color-mix(in_srgb,var(--chip)_25%,var(--u-well))] text-u-ink'
       : 'bg-(--chip) text-[#142016]';
   function groupParts(group: Selection) {
     const label = groupLabel(group),
@@ -160,7 +160,7 @@ export default function LessonCard({
         <Popover.Trigger
           render={<button type="button" aria-label={accessibleLabel} />}
           style={chipStyle(block.members[0])}
-          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-muted' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
+          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card gap-0 p-0 text-u-ink' : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${allSaved ? 'text-u-ink' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
           onClick={() => {

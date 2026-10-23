@@ -80,6 +80,23 @@ export default function GroupStrip(props: Props) {
         ?.focus({ preventScroll: true }),
     );
   }
+  function remove(id: number) {
+    const index = groups.findIndex((group) => group.id === id);
+    const remaining = groups.filter((group) => group.id !== id);
+    const next = remaining[Math.min(index, remaining.length - 1)];
+    const container = scroller.current?.closest('.group-strip');
+    onRemove(id);
+    requestAnimationFrame(() => {
+      const target = next
+        ? Array.from(
+            container?.querySelectorAll<HTMLButtonElement>(
+              `[data-drag-id="${next.id}"]`,
+            ) ?? [],
+          ).find((button) => button.getClientRects().length)
+        : container?.querySelector<HTMLButtonElement>('.add-group');
+      target?.focus({ preventScroll: true });
+    });
+  }
   function start(event: PointerEvent<HTMLButtonElement>, group: Selection) {
     if (groups.length < 2 || event.button !== 0 || !event.isPrimary) return;
     const button = event.currentTarget;
@@ -296,7 +313,7 @@ export default function GroupStrip(props: Props) {
                         className="size-7 min-h-7 min-w-7 border-0 bg-transparent p-0 text-inherit hover:bg-black/7 pointer-coarse:size-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
                         label={`Убрать ${group.label}`}
                         name="close"
-                        onClick={() => onRemove(group.id)}
+                        onClick={() => remove(group.id)}
                       />
                     </div>
                     <SubgroupPicker
@@ -381,7 +398,7 @@ export default function GroupStrip(props: Props) {
                               className={settingActionClassName}
                             />
                           }
-                          onClick={() => onRemove(group.id)}
+                          onClick={() => remove(group.id)}
                         >
                           <Icon name="close" size={16} />
                           Убрать группу

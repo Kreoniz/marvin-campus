@@ -98,6 +98,7 @@ export default function ComparisonToolbar({
               <Icon name="down" size={16} />
             </Popover.Trigger>
             <Popover.Content
+              aria-label="Выбор даты расписания"
               className="week-popover w-[min(340px,calc(100vw-24px))] p-3"
               positionerProps={{ sideOffset: 8 }}
             >
