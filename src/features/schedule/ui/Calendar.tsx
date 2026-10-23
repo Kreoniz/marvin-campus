@@ -145,7 +145,7 @@ export default function Calendar({
         >
           <ScrollArea.Content>
             <div
-              className="week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] grid-rows-[var(--calendar-header)_var(--calendar-height)] [--day-min:max(var(--day-base),var(--overlap-min))]"
+              className={`week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] [--day-min:max(var(--day-base),var(--overlap-min))] ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
               data-schedule-days
               style={
                 {
@@ -156,34 +156,36 @@ export default function Calendar({
                 } as CSSProperties
               }
             >
-              <>
-                <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-                {dates.map((date) => (
-                  <button
-                    type="button"
-                    key={date}
-                    className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
-                    data-schedule-day={date}
-                    disabled={placeholder}
-                    aria-pressed={!placeholder && day === date}
-                    aria-label={formatDay(date, {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                    })}
-                    onClick={() => onDay(date)}
-                  >
-                    {placeholder ? (
-                      <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
-                    ) : (
-                      <>
-                        <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
-                        {Number(date.slice(8))}
-                      </>
-                    )}
-                  </button>
-                ))}
-              </>
+              {!singleDay && (
+                <>
+                  <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
+                  {dates.map((date) => (
+                    <button
+                      type="button"
+                      key={date}
+                      className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
+                      data-schedule-day={date}
+                      disabled={placeholder}
+                      aria-pressed={!placeholder && day === date}
+                      aria-label={formatDay(date, {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                      })}
+                      onClick={() => onDay(date)}
+                    >
+                      {placeholder ? (
+                        <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
+                      ) : (
+                        <>
+                          <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
+                          {Number(date.slice(8))}
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </>
+              )}
               <div className="time-rail sticky left-0 z-[4] bg-u-surface">
                 {hours.map((hour) => (
                   <span
