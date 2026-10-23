@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from 'unlikely-ui/button';
 import { Combobox } from 'unlikely-ui/combobox';
@@ -12,14 +19,16 @@ interface Props {
   selected: Selection[];
   onAdd: (group: Group) => void;
   onError: (message: string) => void;
-  labelled?: boolean;
+  children: ReactNode;
+  returnFocus: RefObject<HTMLButtonElement | null>;
 }
 
 export default function GroupPicker({
   selected,
   onAdd,
   onError,
-  labelled = false,
+  children,
+  returnFocus,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -53,40 +62,26 @@ export default function GroupPicker({
       onError(error);
     }
   }, [open, error, search.errorUpdatedAt, onError]);
-  const status = loading
-    ? 'Ищем группы…'
-    : error ||
-      (stale
-        ? 'Поиск по сохранённому снимку: источник временно недоступен.'
-        : term.length >= 2 && !visible.length
-          ? 'Группы не найдены. Попробуй другое название.'
-          : term.length < 2
-            ? 'Для поиска введи хотя бы 2 символа.'
-            : '');
+  const status =
+    selected.length >= 30
+      ? 'Добавлено максимум 30 групп. Убери одну из выбранных групп, чтобы добавить другую.'
+      : loading
+        ? 'Ищем группы…'
+        : error ||
+          (stale
+            ? 'Поиск по сохранённому снимку: источник временно недоступен.'
+            : term.length >= 2 && !visible.length
+              ? 'Группы не найдены. Попробуй другое название.'
+              : term.length < 2
+                ? 'Для поиска введи хотя бы 2 символа.'
+                : '');
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger
-        render={
-          <Button
-            className={
-              labelled
-                ? 'add-group compact:min-h-11'
-                : 'add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0'
-            }
-            variant="secondary"
-            disabled={selected.length >= 30}
-            aria-label="Добавить группу"
-          />
-        }
-      >
-        <Icon name="plus" />
-        <span className={labelled ? undefined : 'compact:hidden'}>
-          {labelled ? 'Добавить группу' : 'Группа'}
-        </span>
-      </Dialog.Trigger>
+      {children}
       <Dialog.Content
         className="w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] overflow-y-auto"
         initialFocus={input}
+        finalFocus={selected.length ? returnFocus : undefined}
       >
         <div className="mb-2 flex items-center justify-between gap-3">
           <Dialog.Title className="m-0 text-xl leading-6">
@@ -130,8 +125,7 @@ export default function GroupPicker({
             onValueChange={(group) => {
               if (group && !selectedIds.has(group.id) && selected.length < 30) {
                 onAdd(group);
-                setOpen(false);
-                setQuery('');
+                input.current?.focus({ preventScroll: true });
               }
             }}
           >
@@ -154,7 +148,9 @@ export default function GroupPicker({
                     className="min-h-14 border-b border-u-line-soft px-2 py-2.5 [&>span:first-child]:w-full"
                     key={group.id}
                     value={group}
-                    disabled={selectedIds.has(group.id)}
+                    disabled={
+                      selectedIds.has(group.id) || selected.length >= 30
+                    }
                   >
                     <span className="flex w-full items-center justify-between gap-3">
                       <span className="min-w-0">
@@ -191,5 +187,35 @@ export default function GroupPicker({
         </Field.Root>
       </Dialog.Content>
     </Dialog.Root>
+  );
+}
+
+export function GroupPickerTrigger({
+  labelled = false,
+  buttonRef,
+}: {
+  labelled?: boolean;
+  buttonRef?: RefObject<HTMLButtonElement | null>;
+}) {
+  return (
+    <Dialog.Trigger
+      ref={buttonRef}
+      render={
+        <Button
+          className={
+            labelled
+              ? 'add-group compact:min-h-11'
+              : 'add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0'
+          }
+          variant="secondary"
+          aria-label="Добавить группу"
+        />
+      }
+    >
+      <Icon name="plus" />
+      <span className={labelled ? undefined : 'compact:hidden'}>
+        {labelled ? 'Добавить группу' : 'Группа'}
+      </span>
+    </Dialog.Trigger>
   );
 }

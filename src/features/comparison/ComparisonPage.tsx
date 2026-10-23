@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Alert } from 'unlikely-ui/alert';
 import { Button } from 'unlikely-ui/button';
@@ -11,7 +11,7 @@ import { usePwa, updatePwa } from '../../lib/pwa.ts';
 import { scheduleNavigation } from '../../lib/keyboard.ts';
 import SiteHeader from '../../app/ui/SiteHeader.tsx';
 import GroupOrder from '../groups/ui/GroupOrder.tsx';
-import GroupPicker from '../groups/ui/GroupPicker.tsx';
+import GroupPicker, { GroupPickerTrigger } from '../groups/ui/GroupPicker.tsx';
 import ComparisonToolbar from './ui/ComparisonToolbar.tsx';
 import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
@@ -39,6 +39,7 @@ export default function ComparisonPage() {
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
+  const addGroupRef = useRef<HTMLButtonElement>(null);
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderFocus, setOrderFocus] = useState(0);
   const groups = view.groups,
@@ -184,103 +185,106 @@ export default function ComparisonPage() {
                 aria-label="Сравнение расписаний"
                 aria-busy={busy}
               >
-                <ComparisonToolbar
-                  view={view}
-                  schedules={source.schedules}
-                  subgroupCatalog={subgroupCatalog}
-                  colors={colors}
-                  opening={links.opening}
-                  onOrder={(id) => {
-                    setOrderFocus(id);
-                    setOrderOpen(true);
-                  }}
+                <GroupPicker
+                  selected={groups}
+                  onAdd={view.add}
                   onError={(message) => notify(message, 'error')}
-                />
-                {groups.length || links.opening ? (
-                  <>
-                    {mobile && (
-                      <MobileDayNav
-                        view={view}
-                        opening={links.opening}
-                        mobileView={mobileView}
-                        onMobileViewChange={setMobileView}
-                      />
-                    )}
-                    {mobile ? (
-                      <MobileComparisonPanel
-                        section="controls"
-                        view={view}
+                  returnFocus={addGroupRef}
+                >
+                  <ComparisonToolbar
+                    view={view}
+                    schedules={source.schedules}
+                    subgroupCatalog={subgroupCatalog}
+                    colors={colors}
+                    opening={links.opening}
+                    onOrder={(id) => {
+                      setOrderFocus(id);
+                      setOrderOpen(true);
+                    }}
+                    addGroupRef={addGroupRef}
+                  />
+                  {groups.length || links.opening ? (
+                    <>
+                      {mobile && (
+                        <MobileDayNav
+                          view={view}
+                          opening={links.opening}
+                          mobileView={mobileView}
+                          onMobileViewChange={setMobileView}
+                        />
+                      )}
+                      {mobile ? (
+                        <MobileComparisonPanel
+                          section="controls"
+                          view={view}
+                          schedules={source.schedules}
+                          links={links}
+                          fetching={links.opening || source.fetching}
+                          loading={busy}
+                          opening={links.opening}
+                        />
+                      ) : (
+                        <ComparisonStatus
+                          schedules={source.schedules}
+                          fetching={links.opening || source.fetching}
+                          links={links}
+                        />
+                      )}
+                      <Calendar
                         schedules={source.schedules}
-                        links={links}
-                        fetching={links.opening || source.fetching}
+                        colors={colors}
+                        subgroupCatalog={subgroupCatalog}
+                        week={week}
+                        day={day}
+                        mode={mode}
                         loading={busy}
-                        opening={links.opening}
+                        placeholder={links.opening}
+                        onDay={view.selectDay}
+                        compact={mobile}
+                        singleDay={mobile && mobileView === 'day'}
                       />
-                    ) : (
-                      <ComparisonStatus
-                        schedules={source.schedules}
-                        fetching={links.opening || source.fetching}
-                        links={links}
+                      {mobile && (
+                        <MobileComparisonPanel
+                          section="result"
+                          view={view}
+                          schedules={source.schedules}
+                          links={links}
+                          fetching={links.opening || source.fetching}
+                          loading={busy}
+                          opening={links.opening}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
+                      <img
+                        className="h-[210px] w-[190px] shrink-0 object-contain compact:h-[145px] compact:w-[135px]"
+                        src="/assets/mascot-m2-thinking-v1.webp"
+                        width="190"
+                        height="210"
+                        alt="Робот ждёт расписание"
                       />
-                    )}
-                    <Calendar
-                      schedules={source.schedules}
-                      colors={colors}
-                      subgroupCatalog={subgroupCatalog}
-                      week={week}
-                      day={day}
-                      mode={mode}
-                      loading={busy}
-                      placeholder={links.opening}
-                      onDay={view.selectDay}
-                      compact={mobile}
-                      singleDay={mobile && mobileView === 'day'}
-                    />
-                    {mobile && (
-                      <MobileComparisonPanel
-                        section="result"
-                        view={view}
-                        schedules={source.schedules}
-                        links={links}
-                        fetching={links.opening || source.fetching}
-                        loading={busy}
-                        opening={links.opening}
-                      />
-                    )}
-                  </>
-                ) : (
-                  <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
-                    <img
-                      className="h-[210px] w-[190px] shrink-0 object-contain compact:h-[145px] compact:w-[135px]"
-                      src="/assets/mascot-m2-thinking-v1.webp"
-                      width="190"
-                      height="210"
-                      alt="Робот ждёт расписание"
-                    />
-                    <div>
-                      <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] compact:text-2xl">
-                        С кем пересечёмся?
-                      </h2>
-                      <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
-                        Добавь свою группу и группу друга.
-                        <br />С одной группой можно посмотреть своё расписание.
-                      </p>
-                      <GroupPicker
-                        labelled
-                        selected={groups}
-                        onAdd={view.add}
-                        onError={(message) => notify(message, 'error')}
-                      />
-                      <button
-                        className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
-                        onClick={view.example}
-                      >
-                        Посмотреть ИВТ-241 и ИВТ-242{' '}
-                        <span aria-hidden="true">→</span>
-                      </button>
+                      <div>
+                        <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] compact:text-2xl">
+                          С кем пересечёмся?
+                        </h2>
+                        <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
+                          Добавь свою группу и группу друга.
+                          <br />С одной группой можно посмотреть своё
+                          расписание.
+                        </p>
+                        <GroupPickerTrigger labelled />
+                        <button
+                          className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
+                          onClick={view.example}
+                        >
+                          Посмотреть ИВТ-241 и ИВТ-242{' '}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </GroupPicker>
               </Card.Root>
               {(groups.length > 0 || links.opening) && !mobile && (
                 <DayDetail

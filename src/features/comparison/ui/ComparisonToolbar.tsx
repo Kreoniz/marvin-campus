@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
 import { RadioGroup } from 'unlikely-ui/radio-group';
@@ -7,7 +7,7 @@ import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { addDays, weekLabel } from '../../../lib/dates.ts';
 import GroupStrip from '../../groups/ui/GroupStrip.tsx';
-import GroupPicker from '../../groups/ui/GroupPicker.tsx';
+import { GroupPickerTrigger } from '../../groups/ui/GroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
 import DatePicker from './LazyDatePicker.tsx';
@@ -19,7 +19,7 @@ interface Props {
   colors: GroupColors;
   opening: boolean;
   onOrder: (id: number) => void;
-  onError: (message: string) => void;
+  addGroupRef: RefObject<HTMLButtonElement | null>;
 }
 export default function ComparisonToolbar({
   view,
@@ -28,7 +28,7 @@ export default function ComparisonToolbar({
   colors,
   opening,
   onOrder,
-  onError,
+  addGroupRef,
 }: Props) {
   const [weekOpen, setWeekOpen] = useState(false);
   function selectDate(value: string) {
@@ -62,11 +62,7 @@ export default function ComparisonToolbar({
           />
         )}
         <div className="flex shrink-0 items-center pb-[calc(var(--group-scrollbar-size)-0.25rem)] compact:pb-[var(--group-scrollbar-size)]">
-          <GroupPicker
-            selected={view.groups}
-            onAdd={view.add}
-            onError={onError}
-          />
+          <GroupPickerTrigger buttonRef={addGroupRef} />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-[11px] min-[1100px]:shrink-0 max-[1100px]:w-full max-[1100px]:justify-between compact:hidden">

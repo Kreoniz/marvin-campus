@@ -31,6 +31,11 @@ Desktop uses a week grid and a detailed selected day. Mobile starts with a
 compact day grid; its summary and freshness follow the grid. Mobile group chips open subgroup,
 order and removal controls. Group search starts empty, without suggested groups.
 Its reserved results area keeps the search field still while typing and loading.
+Adding a group keeps the same search dialog, query and results open, including
+the first addition from the welcome screen. Added rows are marked “Уже добавлена”
+and cannot be added twice. Focus returns to the search input; Escape, outside
+click or Close dismisses the dialog. The 30-group cap disables further additions
+and explains how to make space without closing the dialog.
 The mobile calendar spans the available screen width, while controls and card
 content keep their internal spacing. Day/week views use a two-button toggle.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
