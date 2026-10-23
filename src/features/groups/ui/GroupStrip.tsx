@@ -241,7 +241,7 @@ export default function GroupStrip(props: Props) {
   return (
     <>
       <AutoHideScrollArea
-        className="group/groups h-19.25 min-w-0 compact:h-[calc(3.25rem+var(--u-scroll-area-size))] compact:flex-1 pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
+        className="group/groups h-19.25 min-w-0 compact:h-[calc(3.25rem+var(--group-scrollbar-size))] compact:flex-1 compact:[--u-scroll-area-size:var(--group-scrollbar-size)] pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
         data-dragging={drag ? '' : undefined}
         role="group"
         aria-label="Выбранные группы"
@@ -252,7 +252,7 @@ export default function GroupStrip(props: Props) {
           role="region"
           aria-label="Прокрутка выбранных групп"
         >
-          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2.25 p-1 pb-[var(--u-scroll-area-size)] [&>*]:shrink-0 compact:gap-2 compact:pt-0.75">
+          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2.25 p-1 pb-[var(--u-scroll-area-size)] [&>*]:shrink-0 compact:gap-2 compact:pb-[calc(var(--group-scrollbar-size)+0.25rem)]">
             {shown.map((group) => {
               const loaded = schedules.find((s) => s.selection.id === group.id);
               const issue =
