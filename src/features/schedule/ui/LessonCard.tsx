@@ -186,7 +186,7 @@ export default function LessonCard({
             className={`card-heading flex min-w-0 items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px' : ''}`}
           >
             <span
-              className={`card-subject min-w-0 flex-1 truncate font-bold [@container(width<95px)]:text-[10px] [@container(height<58px)]:text-[10px] ${horizontal && long ? 'text-xs' : 'text-[11px]'}`}
+              className={`card-subject min-w-0 flex-1 truncate font-bold [@container(width<95px)]:text-[10px] [@container(height<58px)]:text-[10px] ${!horizontal && !block.parallel ? '[@container(width>=140px)_and_(height>=72px)]:line-clamp-2 [@container(width>=140px)_and_(height>=72px)]:whitespace-normal' : ''} ${horizontal && long ? 'text-xs' : 'text-[11px]'}`}
             >
               {block.parallel
                 ? `${events.length} занятия`
