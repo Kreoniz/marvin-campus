@@ -166,6 +166,9 @@ export default function ComparisonPage() {
                 <Alert.Title>Не удалось открыть сравнение</Alert.Title>
                 <Alert.Description>{links.error}</Alert.Description>
               </Alert.Root>
+              {links.canRetryOpening && (
+                <Button onClick={links.retryOpening}>Повторить открытие</Button>
+              )}
               <Button
                 render={<a href="/" aria-label="Открыть своё расписание" />}
               >
@@ -250,6 +253,7 @@ export default function ComparisonPage() {
                         <br />С одной группой можно посмотреть своё расписание.
                       </p>
                       <GroupPicker
+                        labelled
                         selected={groups}
                         onAdd={view.add}
                         onError={(message) => notify(message, 'error')}

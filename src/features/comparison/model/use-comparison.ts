@@ -60,12 +60,31 @@ export interface ComparisonView extends ViewState {
 export interface ComparisonLinks {
   readonly opening: boolean;
   readonly error: string;
+  readonly canRetryOpening: boolean;
   readonly sharing: boolean;
   readonly manual: string;
+  retryOpening(): void;
   sync(): void;
   copy(): Promise<void>;
   canonicalize(): void;
   copyManual(): Promise<void>;
+}
+
+function retryableOpeningError(error: unknown): boolean {
+  // The API currently exposes messages without HTTP status codes. Offer recovery
+  // only for known temporary failures, not malformed/ambiguous/missing links.
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error &&
+      [
+        'Нет сети. Эта группа ещё не сохранена на устройстве.',
+        'Слишком много запросов. Подождите несколько секунд.',
+        'Очередь обновления занята. Попробуйте через несколько секунд.',
+        'Не удалось получить расписание. Попробуйте обновить позже.',
+        'Не удалось открыть сравнение. Попробуй позже.',
+        'Сервер вернул непонятный ответ. Попробуйте позже.',
+      ].includes(error.message))
+  );
 }
 
 function initialView() {
@@ -389,6 +408,7 @@ export function useComparison(notify: Notify) {
   }));
   const linkRef = useRef(linkState);
   const readController = useRef<AbortController | undefined>(undefined);
+  const retryOpeningRef = useRef<(() => void) | undefined>(undefined);
   const links = useMemo<ComparisonLinks>(() => {
     function update(next: Partial<typeof linkState>) {
       linkRef.current = { ...linkRef.current, ...next };
@@ -411,11 +431,17 @@ export function useComparison(notify: Notify) {
       get error() {
         return linkRef.current.error;
       },
+      get canRetryOpening() {
+        return !!retryOpeningRef.current && !linkRef.current.opening;
+      },
       get sharing() {
         return linkRef.current.sharing;
       },
       get manual() {
         return linkRef.current.manual;
+      },
+      retryOpening() {
+        if (!linkRef.current.opening) retryOpeningRef.current?.();
       },
       canonicalize,
       sync() {
@@ -476,6 +502,7 @@ export function useComparison(notify: Notify) {
     }
     async function openLocation(url: URL) {
       readController.current?.abort();
+      retryOpeningRef.current = undefined;
       const controller = new AbortController();
       readController.current = controller;
       const signal = controller.signal,
@@ -504,13 +531,17 @@ export function useComparison(notify: Notify) {
         update({ opening: false });
         links.canonicalize();
       } catch (error) {
-        if (!signal.aborted)
+        if (!signal.aborted) {
+          // Keep the exact failed URL; retries use the same resolver/query cache.
+          if (retryableOpeningError(error))
+            retryOpeningRef.current = () => void openLocation(url);
           update({
             error:
               error instanceof Error
                 ? error.message
                 : 'Не удалось открыть сравнение.',
           });
+        }
       } finally {
         if (!signal.aborted) update({ opening: false });
       }
@@ -536,6 +567,7 @@ export function useComparison(notify: Notify) {
         return;
       }
       readController.current?.abort();
+      retryOpeningRef.current = undefined;
       update({ opening: false, error: '', manual: '' });
       view.apply(normalizeView(event.state.campusView));
       links.canonicalize();
@@ -543,6 +575,7 @@ export function useComparison(notify: Notify) {
     window.addEventListener('popstate', onBack);
     return () => {
       readController.current?.abort();
+      retryOpeningRef.current = undefined;
       window.removeEventListener('popstate', onBack);
     };
   }, [client, links, view]);

@@ -12,9 +12,15 @@ interface Props {
   selected: Selection[];
   onAdd: (group: Group) => void;
   onError: (message: string) => void;
+  labelled?: boolean;
 }
 
-export default function GroupPicker({ selected, onAdd, onError }: Props) {
+export default function GroupPicker({
+  selected,
+  onAdd,
+  onError,
+  labelled = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -31,9 +37,8 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
     open && term.length >= 2 && (term !== debounced || search.isPending);
   const error = term === debounced ? (search.error?.message ?? '') : '';
   const stale = term === debounced && !!search.data?.stale;
-  const visible = (term.length < 2 ? [] : results).filter(
-    (group) => !selected.some((s) => s.id === group.id),
-  );
+  const visible = term.length < 2 ? [] : results;
+  const selectedIds = new Set(selected.map((group) => group.id));
   useEffect(() => {
     if (!open || term.length < 2) {
       setDebounced('');
@@ -63,7 +68,11 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
       <Dialog.Trigger
         render={
           <Button
-            className="add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0"
+            className={
+              labelled
+                ? 'add-group compact:min-h-11'
+                : 'add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0'
+            }
             variant="secondary"
             disabled={selected.length >= 30}
             aria-label="Добавить группу"
@@ -71,7 +80,9 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
         }
       >
         <Icon name="plus" />
-        <span className="compact:hidden">Группа</span>
+        <span className={labelled ? undefined : 'compact:hidden'}>
+          {labelled ? 'Добавить группу' : 'Группа'}
+        </span>
       </Dialog.Trigger>
       <Dialog.Content
         className="w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] overflow-y-auto"
@@ -117,7 +128,7 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
             itemToStringLabel={(group) => group.label}
             isItemEqualToValue={(a, b) => a.id === b.id}
             onValueChange={(group) => {
-              if (group && selected.length < 30) {
+              if (group && !selectedIds.has(group.id) && selected.length < 30) {
                 onAdd(group);
                 setOpen(false);
                 setQuery('');
@@ -143,6 +154,7 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
                     className="min-h-14 border-b border-u-line-soft px-2 py-2.5 [&>span:first-child]:w-full"
                     key={group.id}
                     value={group}
+                    disabled={selectedIds.has(group.id)}
                   >
                     <span className="flex w-full items-center justify-between gap-3">
                       <span className="min-w-0">
@@ -154,7 +166,13 @@ export default function GroupPicker({ selected, onAdd, onError }: Props) {
                         </small>
                       </span>
                       <span className="flex shrink-0 items-center">
-                        <Icon name="plus" size={16} />
+                        {selectedIds.has(group.id) ? (
+                          <span className="text-xs text-u-muted">
+                            Уже добавлена
+                          </span>
+                        ) : (
+                          <Icon name="plus" size={16} />
+                        )}
                       </span>
                     </span>
                   </Combobox.Item>
