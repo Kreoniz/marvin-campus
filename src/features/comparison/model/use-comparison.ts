@@ -5,7 +5,7 @@ import { track } from '../../../lib/analytics.ts';
 import { snapshotChangeAt, usableSnapshot } from '../../../lib/cache-policy.ts';
 import { assignColors, type GroupColors } from '../../../lib/colors.ts';
 import { addDays, monday, omskToday, validDate } from '../../../lib/dates.ts';
-import { compareDay } from '../../../lib/domain.ts';
+import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
 import {
   rememberGroups,
   resolveReadable,
@@ -17,6 +17,7 @@ import {
   mergeSubgroups,
   publicSubgroup,
   savedSubgroups,
+  selectedSubgroup,
 } from '../../../lib/subgroups.ts';
 import type {
   Group,
@@ -334,16 +335,11 @@ export function useComparison(notify: Notify) {
         let updated = false;
         const groups = stateRef.current.groups.map((group) => {
           const options = known[group.id] ?? [];
-          const match = group.subgroup
-            ? options.find((option) => option.id === group.subgroup)
-            : group.subgroupNumber
-              ? options.find(
-                  (option) =>
-                    publicSubgroup(option.label) === group.subgroupNumber,
-                )
-              : undefined;
+          const match = options.find(
+            (option) => option.id === selectedSubgroup(group, options),
+          );
           if (!match) return group;
-          const number = publicSubgroup(match.label);
+          const number = publicSubgroup(match.label) ?? group.subgroupNumber;
           if (group.subgroup === match.id && group.subgroupNumber === number)
             return group;
           updated = true;
@@ -643,7 +639,7 @@ export function useComparison(notify: Notify) {
     const currentWeek = monday(omskToday());
     track('schedule_loaded', {
       group_count: state.groups.length,
-      success: source.schedules.every((group) => !!group.snapshot),
+      success: source.schedules.every((group) => !comparisonIssue(group)),
       stale: source.schedules.some((group) => !!group.snapshot?.stale),
       week_relation:
         state.week < currentWeek
@@ -669,7 +665,7 @@ export function useComparison(notify: Notify) {
     if (
       state.groups.length < 2 ||
       busy ||
-      source.schedules.some((group) => !group.snapshot) ||
+      source.schedules.some((group) => comparisonIssue(group)) ||
       signature === reportKey.current
     )
       return;

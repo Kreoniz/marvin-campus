@@ -2,6 +2,8 @@ import { Button } from 'unlikely-ui/button';
 import { Input } from 'unlikely-ui/input';
 import { Popover } from 'unlikely-ui/popover';
 import type { GroupSchedule } from '../../../lib/types.ts';
+import { comparisonIssue } from '../../../lib/domain.ts';
+import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { ComparisonLinks } from '../model/use-comparison.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
@@ -30,6 +32,7 @@ export default function ComparisonStatus({
     (g) => g.snapshot && (g.snapshot.stale || g.error),
   );
   const missing = schedules.some((g) => !g.snapshot && !g.loading);
+  const unresolved = schedules.some((g) => comparisonIssue(g) === 'subgroup');
   const commonCheck =
     checked &&
     schedules.every(
@@ -47,13 +50,15 @@ export default function ComparisonStatus({
       : checked
         ? 'Проверяем обновления…'
         : 'Загружаем расписания…'
-    : missing
-      ? 'Часть расписаний недоступна'
-      : saved
-        ? `Сохранённые данные${checked ? ` · ${checkedLabel(checked)}` : ''}`
-        : checked
-          ? `Проверено ${checkedLabel(checked)}`
-          : 'Расписание недоступно';
+    : unresolved
+      ? 'Подгруппа не определена · расчёт ограничен'
+      : missing
+        ? 'Часть расписаний недоступна'
+        : saved
+          ? `Сохранённые данные${checked ? ` · ${checkedLabel(checked)}` : ''}`
+          : checked
+            ? `Проверено ${checkedLabel(checked)}`
+            : 'Расписание недоступно';
   return (
     <>
       <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 compact:pl-[9px]">
@@ -114,13 +119,16 @@ export default function ComparisonStatus({
                 {schedules.map((group) => {
                   const snapshot = group.snapshot;
                   const warning = group.error ?? snapshot?.warning;
+                  const unresolved = comparisonIssue(group) === 'subgroup';
                   const state = group.loading
                     ? 'Загружаем…'
-                    : snapshot
-                      ? snapshot.stale || warning
-                        ? 'Сохранено'
-                        : 'Актуально'
-                      : 'Недоступно';
+                    : unresolved
+                      ? 'Не учтена в расчёте'
+                      : snapshot
+                        ? snapshot.stale || warning
+                          ? 'Сохранено'
+                          : 'Актуально'
+                        : 'Недоступно';
                   return (
                     <li
                       key={group.selection.id}
@@ -128,10 +136,17 @@ export default function ComparisonStatus({
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                         <strong className="text-sm font-semibold">
-                          {group.selection.label}
+                          {selectionLabel(group.selection)}
                         </strong>
                         <span className="text-xs text-u-muted">{state}</span>
                       </div>
+                      {unresolved && (
+                        <p className="mt-1 text-xs leading-[18px] text-u-ink">
+                          Не удалось определить подгруппу{' '}
+                          {group.selection.subgroupNumber}. Известные занятия
+                          показаны, но группа исключена из расчёта.
+                        </p>
+                      )}
                       {warning && (
                         <p className="mt-1 text-xs leading-[18px] text-u-muted">
                           {warning}

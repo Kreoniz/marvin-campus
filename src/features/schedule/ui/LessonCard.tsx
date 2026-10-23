@@ -78,7 +78,7 @@ export default function LessonCard({
     block.members.length > 3 ? block.members.slice(0, 2) : block.members;
   const long = lesson.end - lesson.start >= 240;
   const remote = events.every((event) => event.remote);
-  const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. ${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
+  const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}`;
   const background = block.parallel
     ? allSaved
       ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
