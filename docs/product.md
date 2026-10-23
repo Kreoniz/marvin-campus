@@ -45,11 +45,8 @@ Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
 Ordinary cards use the group color. In both calendar views, each shared event appears once with a common
 subject and room, and colored participant sections in stable group-ID order.
-Complete group identifiers use a compact two-column arrangement where up to four
-short labels fit. Narrower cards retain split names/numbers; more than three
-participants show the first two and a count, with a clock when hidden participants
-include saved data. Longer identifiers use that same fallback. The full list
-remains in the popover. Lesson-kind
+Group names and subgroup numbers occupy two lines; more than three participants
+show the first two and a count, with the full list in the popover. Lesson-kind
 badges sit beside the room. Day and week lanes belong to overlapping events,
 so empty groups reserve no space. Distinct concurrent events use separate lanes;
 a shared event keeps all its participants in one card. Missing group data remains
