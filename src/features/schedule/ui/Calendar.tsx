@@ -18,6 +18,7 @@ import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import LessonCard from './LessonCard.tsx';
+import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
 
 interface CalendarProps {
   schedules: GroupSchedule[];
@@ -122,7 +123,7 @@ export default function Calendar({
   }, [singleDay, week, day, viewportWidth, overlapWidth]);
   return (
     <>
-      <ScrollArea.Root
+      <AutoHideScrollArea
         className="h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]"
         style={
           {
@@ -307,7 +308,7 @@ export default function Calendar({
         <ScrollArea.Scrollbar className="z-[6]" />
         <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
         <ScrollArea.Corner />
-      </ScrollArea.Root>
+      </AutoHideScrollArea>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
         {included.length >= 2 && (
           <span

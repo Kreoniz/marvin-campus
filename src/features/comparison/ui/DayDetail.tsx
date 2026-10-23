@@ -13,6 +13,7 @@ import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import LessonCard from '../../schedule/ui/LessonCard.tsx';
 import ComparisonSummary from './ComparisonSummary.tsx';
+import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
 
 interface DayDetailProps {
   schedules: GroupSchedule[];
@@ -84,7 +85,7 @@ export default function DayDetail({
             formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })
           )}
         </h2>
-        <ScrollArea.Root className="h-[calc(var(--detail-height)-64px)]">
+        <AutoHideScrollArea className="h-[calc(var(--detail-height)-64px)]">
           <ScrollArea.Viewport
             className="day-scroll"
             tabIndex={0}
@@ -184,7 +185,7 @@ export default function DayDetail({
           <ScrollArea.Scrollbar className="z-[2]" />
           <ScrollArea.Scrollbar orientation="horizontal" className="z-[2]" />
           <ScrollArea.Corner />
-        </ScrollArea.Root>
+        </AutoHideScrollArea>
       </div>
       <ComparisonSummary
         schedules={schedules}

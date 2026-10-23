@@ -16,6 +16,7 @@ import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
+import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
 
 interface Props {
   groups: Selection[];
@@ -239,7 +240,7 @@ export default function GroupStrip(props: Props) {
   }
   return (
     <>
-      <ScrollArea.Root
+      <AutoHideScrollArea
         className="group/groups h-19.25 min-w-0 compact:h-[calc(3.25rem+var(--u-scroll-area-size))] compact:flex-1 pointer-coarse:[@media(min-width:701px)_and_(min-height:501px)]:h-25.25"
         data-dragging={drag ? '' : undefined}
         role="group"
@@ -417,7 +418,7 @@ export default function GroupStrip(props: Props) {
           </ScrollArea.Content>
         </ScrollArea.Viewport>
         <ScrollArea.Scrollbar orientation="horizontal" />
-      </ScrollArea.Root>
+      </AutoHideScrollArea>
       {drag && (
         <div
           className={`${chipClassName} pointer-events-none fixed z-120 flex flex-col justify-center gap-1.5 text-xs shadow-[3px_5px_16px_#0003] select-none`}
