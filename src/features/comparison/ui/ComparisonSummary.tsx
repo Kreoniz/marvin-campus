@@ -55,7 +55,7 @@ export default function ComparisonSummary({
       .join(', ');
   return (
     <Card.Root
-      className={`marvin-card grid text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0' : 'gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised shadow-[var(--u-shadow-md)] dark:bg-[color-mix(in_srgb,var(--u-surface-raised)_88%,var(--u-ink))] min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_32px] content-stretch items-center p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
+      className={`marvin-card grid text-u-ink ${compact ? 'compact-summary w-full grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0' : 'gap-x-3 gap-y-2 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised shadow-[var(--u-shadow-md)] dark:bg-[color-mix(in_srgb,var(--u-surface-raised)_88%,var(--u-ink))] min-h-[182px] w-[340px] shrink-0 grid-cols-[112px_minmax(0,1fr)] grid-rows-[auto_auto] content-start items-start p-4 max-[1100px]:w-[300px] max-[1100px]:grid-cols-[96px_minmax(0,1fr)] max-[1100px]:p-3.5'}`}
       role="complementary"
       aria-label="Результат сравнения"
       aria-busy={loading}
@@ -69,7 +69,7 @@ export default function ComparisonSummary({
           alt="Робот задумался над расписанием"
         />
       )}
-      <div className="marvin-result relative self-start text-xs leading-snug [&>strong]:text-[13px] [&>strong]:font-bold [&>p]:my-1">
+      <div className="marvin-result relative min-w-0 self-start text-xs leading-snug [overflow-wrap:anywhere] [&>strong]:text-[13px] [&>strong]:font-bold [&>p]:my-1">
         <div
           className={`summary-date mb-2 text-[10px] font-semibold capitalize ${compact ? 'hidden' : ''}`}
         >
@@ -117,10 +117,7 @@ export default function ComparisonSummary({
             <span className="sr-only">Загружаем результат сравнения.</span>
           </>
         ) : schedules.length < 2 ? (
-          <>
-            <strong>Твоё расписание</strong>
-            <p>Добавь группу друга — найдём время пересечься.</p>
-          </>
+          <strong>Твоё расписание</strong>
         ) : !comparing ? (
           <>
             <strong>Совместный результат недоступен</strong>
@@ -192,7 +189,7 @@ export default function ComparisonSummary({
         )}
       </div>
       {!compact && (
-        <p className="col-span-full m-0 h-8 border-t border-u-line pt-1.5 text-right text-[10px] leading-3 text-u-ink">
+        <p className="col-span-full m-0 border-t border-u-line pt-1.5 text-right text-[10px] leading-3 text-u-ink">
           {result.free.length
             ? 'Даже у вселенной бывают окна.'
             : 'Время — иллюзия. Расписание — чуть сложнее.'}
