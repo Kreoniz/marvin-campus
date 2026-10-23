@@ -7,6 +7,39 @@ assembled mockups. Findings below reconcile their evidence with parent checks.
 
 ## Recommendation
 
+### Follow-up after localhost review
+
+The user rejected the smaller shared-lesson participant labels. Item 5 was
+reverted independently in `270ff39`; the original two-line participant sections
+and overflow count are restored. Other approved fixes remain.
+
+The follow-up aligns Add with the chip content rather than the strip including
+its scrollbar rail, on both compact and desktop layouts. On mobile, comparison
+results and freshness move below the calendar; modes and a named partial-data
+notice stay above it. Both compact calendar views expand to their full time
+bounds, leaving vertical scrolling to the page and keeping horizontal scrolling.
+The single-day grid has no repeated date heading. Idle custom scrollbars now
+disappear completely; mouse/touch focus alone no longer keeps them visible.
+These changes supersede the previous faint horizontal-thumb behavior.
+
+Chromium checks at 320, 390, 700, 900 × 450 and 1440 px, with fine and coarse
+pointers, verified calendar bounds using 07:00–23:00 schedules and a short final
+lesson. Compact day/week views had zero vertical overflow; wheel input moved the
+page, horizontal week scrolling remained available, and page width stayed within
+the viewport. Add centers matched chip centers in the checked layouts. Hover,
+keyboard, wheel, drag, idle and forced-color scrollbar states retained stable
+geometry. An independent focused code review found no material issues. Checks
+use browser emulation, not a physical touch device. No deployment was requested.
+
+The user then requested keeping group search open after selection. One persistent
+dialog now serves the welcome and toolbar triggers, preserving query/results and
+input focus through the first addition and subsequent additions. Browser checks
+at 390 and 1440 px verified the same dialog remains mounted with zero input
+movement, pointer and keyboard additions, disabled duplicates, the 30-group cap,
+close/Escape/outside dismissal and focus return. Cancelling before any addition
+returns to the welcome trigger; after additions, focus returns to toolbar Add.
+TypeScript, lint, targeted formatting and the refreshed production build pass.
+
 ### Implementation decision after focused review
 
 The user validated items 1, 4, 5, 6 and 9 after seeing the focused examples.
