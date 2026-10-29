@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "check": "tsc --noEmit",
-    "test": "node --test --test-isolation=none src/lib/*.test.ts",
+    "test": "node --test --test-isolation=none src/lib/*.test.ts src/features/schedule/model/*.test.ts",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "oxlint --deny-warnings src public/theme.js vite.config.ts pwa-build.ts",

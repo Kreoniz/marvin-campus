@@ -16,6 +16,20 @@ export interface LessonBlock {
   parallel?: Lesson[];
 }
 
+// Unknown source IDs are separate occurrences, even when all visible fields
+// match. Keep their retained references when looking up a bundle constituent.
+export function eventMemberLessons(
+  block: LessonBlock,
+  memberId: number,
+  event?: Lesson,
+): Lesson[] {
+  const own = block.memberLessons[memberId] ?? [];
+  if (!event) return own;
+  return own.filter((source) =>
+    event.id ? lessonKey(source) === lessonKey(event) : source === event,
+  );
+}
+
 // Lanes belong to overlapping events, not groups. A shared event is rendered
 // once, and groups without lessons never reserve space.
 export function lessonBlocks(
