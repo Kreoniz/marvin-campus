@@ -1,30 +1,35 @@
 import { Badge } from 'unlikely-ui/badge';
+import type { ReactNode } from 'react';
 import HelpDialog from './HelpDialog.tsx';
 import IconButton from '../../shared/ui/IconButton.tsx';
 
 export default function SiteHeader({
   theme,
   onToggleTheme,
+  viewControl,
+  settingsControl,
 }: {
   theme: string;
   onToggleTheme: () => void;
+  viewControl?: ReactNode;
+  settingsControl: ReactNode;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-2.5 compact:gap-2 compact:pt-1 compact:pb-2">
+    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0.5 compact:border-b-0 compact:py-0">
       <a
         className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"
         aria-label="Кампус, главная"
       >
         <img
-          className="brand-avatar size-14 shrink-0 object-contain compact:size-10"
+          className="brand-avatar size-14 shrink-0 object-contain compact:size-6"
           src="/assets/mascot-mint-head-v1.webp"
           width="60"
           height="60"
           alt=""
         />
         <span className="flex items-center gap-3">
-          <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-xl compact:tracking-[-0.7px]">
+          <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-lg compact:tracking-[-0.7px]">
             Кампус
           </span>
           <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] compact:hidden">
@@ -54,7 +59,7 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="header-actions flex gap-1 compact:ml-auto compact:gap-0 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
+      <div className="header-actions flex gap-1 compact:hidden">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}
@@ -65,6 +70,10 @@ export default function SiteHeader({
           onClick={onToggleTheme}
         />
       </div>
+      <div className="ml-auto hidden shrink-0 items-center compact:flex">
+        {viewControl}
+      </div>
+      {settingsControl}
     </header>
   );
 }

@@ -1,65 +1,84 @@
 import { Select } from 'unlikely-ui/select';
+import type { KeyboardEventHandler } from 'react';
 import type { Subgroup } from '../../../lib/types.ts';
+import { publicSubgroup } from '../../../lib/subgroups.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
+  groupId: number;
   label: string;
   subgroups: Subgroup[];
   value?: number;
   subgroupNumber?: number;
-  compact?: boolean;
+  describedBy?: string;
+  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
   onChange: (value?: number) => void;
 }
 
 export default function SubgroupPicker({
+  groupId,
   label,
   subgroups,
   value,
   subgroupNumber,
-  compact = false,
+  describedBy,
+  onKeyDown,
   onChange,
 }: Props) {
+  const current = subgroups.find((subgroup) => subgroup.id === value);
+  const number = subgroupNumber ?? (current && publicSubgroup(current.label));
   const currentLabel = value
-    ? (subgroups.find((s) => s.id === value)?.label ??
-      (subgroupNumber ? `${label}/${subgroupNumber}` : 'Выбранная подгруппа'))
-    : subgroupNumber
-      ? `${label}/${subgroupNumber}`
+    ? (current?.label ??
+      (number ? `${label}/${number}` : 'Выбранная подгруппа'))
+    : number
+      ? `${label}/${number}`
       : 'Вся группа';
   const items = [
     { value: 'all', label: 'Вся группа' },
     ...(!value && subgroupNumber
       ? [{ value: 'pending', label: currentLabel }]
       : []),
-    ...(value && !subgroups.some((item) => item.id === value)
+    ...(value && !current
       ? [{ value: String(value), label: currentLabel }]
       : []),
-    ...subgroups.map((s) => ({ value: String(s.id), label: s.label })),
+    ...subgroups.map((subgroup) => ({
+      value: String(subgroup.id),
+      label: subgroup.label,
+    })),
   ];
+  const selected = value ? String(value) : subgroupNumber ? 'pending' : 'all';
   return (
     <Select.Root
       items={items}
-      value={value ? String(value) : subgroupNumber ? 'pending' : 'all'}
+      value={selected}
       onValueChange={(next) => {
         if (next !== null && next !== 'pending')
           onChange(next === 'all' ? undefined : Number(next));
       }}
     >
       <Select.Trigger
-        className={
-          compact
-            ? 'h-auto min-h-6 w-full max-w-45 gap-0.75 border-0 bg-transparent px-0 py-0.5 text-xs text-inherit shadow-none pointer-coarse:min-h-11 [&>.u-select-icon]:w-3 [&>.u-select-icon]:shrink-0 [&>span:first-child]:min-w-0 [&>span:first-child]:truncate'
-            : 'min-h-11 w-full text-sm'
-        }
-        size="sm"
+        className="subgroup-trigger relative h-11 min-h-11 min-w-18 flex-1 gap-0 rounded-none border-0 bg-transparent px-1 text-inherit shadow-none [&_.u-select-icon]:hidden"
         aria-label={`Подгруппа ${label}: ${currentLabel}`}
+        data-drag-id={groupId}
+        aria-describedby={describedBy}
+        onKeyDown={onKeyDown}
+        title={currentLabel}
       >
-        <Select.Value />
+        <span className="flex w-full min-w-0 flex-col items-center gap-0.5 leading-[1.2]">
+          <strong className="max-w-full truncate text-[13px]">{label}</strong>
+          <span className="subgroup-caption inline-flex shrink-0 items-center gap-0.5 text-[11px] whitespace-nowrap">
+            {number ? `Подгр. ${number}` : value ? 'Подгр.' : 'Все'}
+            <Icon name="down" size={10} />
+          </span>
+        </span>
       </Select.Trigger>
-      <Select.Content>
+      <Select.Content className="min-w-48 max-w-[calc(100vw-32px)]">
         {items.map((item) => (
           <Select.Item
             key={item.value}
             value={item.value}
             disabled={item.value === 'pending'}
+            className="min-h-11 min-w-0 text-sm wrap-anywhere [&>div]:min-w-0"
           >
             {item.label}
           </Select.Item>

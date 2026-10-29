@@ -1,10 +1,8 @@
 import { useRef, useState, type CSSProperties } from 'react';
-import { Button } from 'unlikely-ui/button';
-import { Dialog } from 'unlikely-ui/dialog';
 import type { Selection } from '../../../lib/types.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
-import Icon from '../../../shared/ui/Icon.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
+import { selectionLabel } from '../../../lib/subgroups.ts';
 
 const moveButtonClassName =
   'min-h-11 min-w-11 shrink-0 text-inherit hover:bg-black/7 data-disabled:cursor-default data-disabled:bg-transparent data-disabled:text-inherit data-disabled:opacity-30';
@@ -12,18 +10,16 @@ const moveButtonClassName =
 interface Props {
   groups: Selection[];
   colors: GroupColors;
-  open?: boolean;
-  onOpenChange: (open: boolean) => void;
   onMove: (id: number, offset: number) => void;
-  returnFocus: number;
+  onRemove: (id: number) => void;
+  onEmpty: () => void;
 }
 export default function GroupOrder({
   groups,
   colors,
-  open = false,
-  onOpenChange,
   onMove,
-  returnFocus,
+  onRemove,
+  onEmpty,
 }: Props) {
   const [announcement, setAnnouncement] = useState('');
   const list = useRef<HTMLOListElement>(null);
@@ -46,75 +42,72 @@ export default function GroupOrder({
     });
   }
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Content
-        className="w-[min(480px,calc(100vw-32px))]"
-        finalFocus={() =>
-          Array.from(
-            document.querySelectorAll<HTMLButtonElement>(
-              `[data-drag-id="${returnFocus}"]`,
-            ),
-          ).find((button) => button.offsetParent !== null) ?? true
-        }
+    <>
+      <ol
+        data-group-order
+        className="mt-2 flex max-h-[min(24dvh,220px)] list-none flex-col gap-2 overflow-y-auto p-0.5"
+        ref={list}
       >
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <Dialog.Title className="m-0 text-xl leading-6">
-            Порядок групп
-          </Dialog.Title>
-          <Dialog.Close
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="min-h-11 min-w-11 shrink-0"
-                aria-label="Закрыть порядок групп"
-              />
+        {groups.map((group, index) => (
+          <li
+            key={group.id}
+            data-group-id={group.id}
+            className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
+            style={
+              {
+                '--chip': chipColor(colors[group.id] ?? 0),
+              } as CSSProperties
             }
           >
-            <Icon name="close" />
-          </Dialog.Close>
-        </div>
-        <Dialog.Description>
-          Поменяй порядок выбранных групп. Цвета групп останутся прежними.
-        </Dialog.Description>
-        <ol
-          className="mt-5 flex max-h-[min(60dvh,440px)] list-none flex-col gap-2 overflow-y-auto p-0.5"
-          ref={list}
-        >
-          {groups.map((group, index) => (
-            <li
-              key={group.id}
-              data-group-id={group.id}
-              className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
-              style={
-                {
-                  '--chip': chipColor(colors[group.id] ?? 0),
-                } as CSSProperties
-              }
-            >
-              <span className="min-w-6 text-xs">{index + 1}</span>
-              <strong className="min-w-0 flex-1 text-sm">{group.label}</strong>
-              <IconButton
-                label={`Переместить ${group.label} выше`}
-                name="up"
-                className={moveButtonClassName}
-                disabled={index === 0}
-                onClick={() => move(group, index, -1)}
-              />
-              <IconButton
-                label={`Переместить ${group.label} ниже`}
-                name="down"
-                className={moveButtonClassName}
-                disabled={index === groups.length - 1}
-                onClick={() => move(group, index, 1)}
-              />
-            </li>
-          ))}
-        </ol>
-        <p className="sr-only" aria-live="polite">
-          {announcement}
-        </p>
-      </Dialog.Content>
-    </Dialog.Root>
+            <strong className="min-w-0 flex-1 text-sm wrap-anywhere">
+              {selectionLabel(group)}
+            </strong>
+            <IconButton
+              label={`Переместить ${group.label} выше`}
+              name="up"
+              className={moveButtonClassName}
+              disabled={index === 0}
+              onClick={() => move(group, index, -1)}
+            />
+            <IconButton
+              label={`Переместить ${group.label} ниже`}
+              name="down"
+              className={moveButtonClassName}
+              disabled={index === groups.length - 1}
+              onClick={() => move(group, index, 1)}
+            />
+            <IconButton
+              label={`Убрать ${group.label}`}
+              data-group-remove={group.id}
+              name="close"
+              className={moveButtonClassName}
+              onClick={() => {
+                const next = groups[index + 1] ?? groups[index - 1];
+                if (next)
+                  list.current
+                    ?.querySelector<HTMLButtonElement>(
+                      `[data-group-remove="${next.id}"]`,
+                    )
+                    ?.focus({ preventScroll: true });
+                onRemove(group.id);
+                setAnnouncement(`${group.label} убрана из сравнения.`);
+                if (!next) onEmpty();
+                else
+                  requestAnimationFrame(() =>
+                    list.current
+                      ?.querySelector<HTMLButtonElement>(
+                        `[data-group-id="${next.id}"] button:not(:disabled)`,
+                      )
+                      ?.focus(),
+                  );
+              }}
+            />
+          </li>
+        ))}
+      </ol>
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+    </>
   );
 }

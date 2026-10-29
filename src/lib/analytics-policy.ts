@@ -36,7 +36,7 @@ function valid(key: string, value: string | number | boolean): boolean {
     theme: ['light', 'dark'],
     week_relation: ['past', 'current', 'future'],
     link_format: ['legacy', 'readable'],
-    view: ['day', 'week'],
+    view: ['day', 'week', 'list'],
   };
   if (choices[key])
     return typeof value === 'string' && choices[key].includes(value);

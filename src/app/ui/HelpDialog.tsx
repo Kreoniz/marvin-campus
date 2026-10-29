@@ -2,13 +2,28 @@ import { Dialog } from 'unlikely-ui/dialog';
 import IconButton from '../../shared/ui/IconButton.tsx';
 import PwaHelp from './PwaHelp.tsx';
 
-export default function HelpDialog() {
+export default function HelpDialog({
+  open,
+  onOpenChange,
+  hideTrigger = false,
+  returnFocus,
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+  returnFocus?: () => HTMLElement | true;
+}) {
   return (
-    <Dialog.Root>
-      <Dialog.Trigger
-        render={<IconButton name="info" label="Как работает сравнение" />}
-      />
-      <Dialog.Content className="help-dialog max-h-[calc(100dvh-40px)] overflow-auto">
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      {!hideTrigger && (
+        <Dialog.Trigger
+          render={<IconButton name="info" label="Как работает сравнение" />}
+        />
+      )}
+      <Dialog.Content
+        className="help-dialog max-h-[calc(100dvh-40px)] overflow-auto"
+        finalFocus={returnFocus}
+      >
         <div className="mb-3 flex items-start justify-between gap-3">
           <Dialog.Title className="text-xl leading-7">
             Как пользоваться
@@ -32,7 +47,13 @@ export default function HelpDialog() {
           </dd>
         </dl>
         <p className="my-3 text-xs leading-relaxed text-u-muted">
-          У каждой группы свой цвет. Нажми на пару, чтобы открыть подробности.
+          У каждой группы свой цвет. Значок фокуса рядом с группой выделяет её
+          занятия; можно выделить несколько групп. Нажми на пару, чтобы открыть
+          подробности.
+        </p>
+        <p className="my-3 text-xs leading-relaxed text-u-muted">
+          Янтарная линия — общее время в вузе, зелёные полосы — общие окна без
+          занятий. Видимость обоих слоёв меняется в настройках отображения.
         </p>
         <p className="my-3 text-xs leading-relaxed text-u-muted">
           Текущую неделю проверяем при обращении, не чаще раза в 30 минут.

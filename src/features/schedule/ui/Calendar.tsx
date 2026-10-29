@@ -1,13 +1,7 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
-import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
+import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
@@ -17,8 +11,11 @@ import {
 import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
+import { dayMinimum, verticalLayout } from '../model/vertical-layout.ts';
+import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
+import ComparisonHighlights, { type CalendarLayers } from './ComparisonHighlights.tsx';
 
 interface CalendarProps {
   schedules: GroupSchedule[];
@@ -26,12 +23,13 @@ interface CalendarProps {
   subgroupCatalog?: Record<number, Subgroup[]>;
   week: string;
   day: string;
-  mode: Mode;
+  layers: CalendarLayers;
   loading: boolean;
   onDay: (day: string) => void;
   singleDay?: boolean;
   compact?: boolean;
   placeholder?: boolean;
+  spotlightIds?: number[];
 }
 
 export default function Calendar({
@@ -40,15 +38,22 @@ export default function Calendar({
   subgroupCatalog = {},
   week,
   day,
-  mode,
+  layers,
   loading,
   onDay,
   singleDay = false,
   compact = false,
   placeholder = false,
+  spotlightIds = [],
 }: CalendarProps) {
   const scroller = useRef<HTMLDivElement>(null);
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const viewportWidth = useCalendarNavigation(
+    scroller,
+    week,
+    day,
+    singleDay,
+    compact,
+  );
   const [clock, setClock] = useState({ start: 480, end: 1140 });
   const dates = singleDay
     ? [day]
@@ -73,11 +78,6 @@ export default function Calendar({
         : { start, end };
     });
   }, [earliest, latest, loading]);
-  useEffect(() => {
-    const resize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, []);
   // Saved lessons can arrive while another group is still loading. Their full
   // bounds must fit immediately, before the settled clock effect runs.
   const start = Math.min(clock.start, earliest);
@@ -103,36 +103,15 @@ export default function Calendar({
   const layout = dates.map((date) => ({
     date,
     result: compareDay(schedules, date),
-    placed: lessonBlocks(schedules, date),
+    placed: verticalLayout(lessonBlocks(schedules, date), start, scale),
   }));
-  const overlapWidth = Math.max(
-    160,
-    ...layout.flatMap((column) =>
-      column.placed.map((block) => 112 * block.columns),
+  const railWidth = compact ? 32 : 48;
+  const minima = layout.map((column) =>
+    dayMinimum(
+      column.placed,
+      compact && !singleDay ? Math.max(0, (viewportWidth - railWidth) / 2) : 0,
     ),
   );
-  useLayoutEffect(() => {
-    const element = scroller.current;
-    if (!element) return;
-    if (singleDay) {
-      element.scrollTo({ left: 0, behavior: 'auto' });
-      return;
-    }
-    const column = element.querySelector<HTMLElement>('.day-column');
-    if (!column) return;
-    const index = Array.from({ length: 7 }, (_, i) => addDays(week, i)).indexOf(
-      day,
-    );
-    const columnWidth = Math.max(overlapWidth, column.offsetWidth);
-    element.scrollTo({
-      left: compact
-        ? Math.max(0, index) * columnWidth
-        : Math.max(0, (index + 1) * columnWidth + 48 - element.clientWidth),
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'auto'
-        : 'smooth',
-    });
-  }, [singleDay, compact, week, day, viewportWidth, overlapWidth]);
   return (
     <>
       <AutoHideScrollArea
@@ -162,14 +141,16 @@ export default function Calendar({
         >
           <ScrollArea.Content>
             <div
-              className={`week-grid grid min-w-[calc(var(--rail-width)+var(--day-count,7)*var(--day-min))] grid-cols-[var(--rail-width)_repeat(var(--day-count,7),minmax(var(--day-min),1fr))] [--day-min:max(var(--day-base),var(--overlap-min))] ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
+              className={`week-grid grid w-full ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
               data-schedule-days
               style={
                 {
                   '--calendar-height': `${calendarHeight}px`,
                   '--hour-height': `${60 * scale}px`,
-                  '--overlap-min': `${overlapWidth}px`,
-                  '--day-count': dates.length,
+                  gridTemplateColumns: `${railWidth}px ${minima.map((minimum) => `minmax(${minimum}px,1fr)`).join(' ')}`,
+                  minWidth:
+                    railWidth +
+                    minima.reduce((sum, minimum) => sum + minimum, 0),
                 } as CSSProperties
               }
             >
@@ -221,13 +202,10 @@ export default function Calendar({
                 ))}
               </div>
               {layout.map((column) => {
-                const highlights =
-                  mode === 'presence'
-                    ? column.result.presence
-                    : column.result.free;
                 return (
                   <div
                     key={column.date}
+                    data-calendar-date={column.date}
                     className={`day-column relative border-r border-(--u-line-soft) bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] ${!placeholder && !singleDay && column.date === day ? 'chosen bg-u-raised shadow-[inset_1px_0_var(--u-selection-border),inset_-1px_0_var(--u-selection-border)]' : ''}`}
                   >
                     {loading && !hasSnapshot ? (
@@ -250,36 +228,31 @@ export default function Calendar({
                       </div>
                     ) : (
                       <>
-                        {highlights.map((range) => (
-                          <div
-                            key={`${range.start}:${range.end}`}
-                            className={`shared-highlight pointer-events-none absolute right-px left-px z-[1] border-l-2 transition-colors duration-150 motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-y border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight [border-left-style:dashed] ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_18%,transparent)]'}`}
-                            aria-hidden="true"
-                            style={{
-                              top: (range.start - start) * scale,
-                              height: (range.end - range.start) * scale,
-                            }}
-                          />
-                        ))}
-                        {column.placed.map((block) => (
-                          <LessonCard
-                            key={block.identity}
-                            block={block}
-                            colors={colors}
-                            subgroupCatalog={subgroupCatalog}
-                            style={{
-                              top: (block.lesson.start - start) * scale,
-                              height: Math.max(
-                                (block.lesson.end - block.lesson.start) *
-                                  scale -
-                                  3,
-                                18,
-                              ),
-                              left: `calc(${block.column} * min(${100 / block.columns}%, 166px) + 3px)`,
-                              width: `calc(min(${100 / block.columns}%, 166px) - 6px)`,
-                            }}
-                          />
-                        ))}
+                        <ComparisonHighlights result={column.result} layers={layers} saved={saved} start={start} scale={scale} />
+                        {column.placed.map(
+                          ({
+                            block,
+                            top,
+                            height,
+                            column: lane,
+                            columns,
+                            span,
+                          }) => (
+                            <LessonCard
+                              key={block.identity}
+                              block={block}
+                              colors={colors}
+                              subgroupCatalog={subgroupCatalog}
+                              spotlightIds={spotlightIds}
+                              style={{
+                                top,
+                                height,
+                                left: `calc(min(${(lane * 100) / columns}%, ${lane * 166}px) + 3px)`,
+                                width: `min(${span > 1 ? 320 : 160}px, calc(min(${(span * 100) / columns}%, ${span * 166}px) - 6px))`,
+                              }}
+                            />
+                          ),
+                        )}
                         {!column.placed.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
@@ -326,21 +299,20 @@ export default function Calendar({
         <ScrollArea.Corner />
       </AutoHideScrollArea>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {included.length >= 2 && (
-          <span
-            className={`mode-legend mr-3 inline-flex items-center gap-[5px] before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${mode === 'free' ? 'free-legend before:border-u-accent-border before:bg-(--u-accent-soft)' : 'before:border-campus-presence-border before:bg-campus-presence'} ${saved ? 'before:border-dashed' : ''}`}
-          >
-            {excluded.length
-              ? `Полоса — ${mode === 'presence' ? 'общее время в вузе' : 'без занятий'}: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
-              : mode === 'presence'
-                ? 'Полоса — общее время в вузе'
-                : 'Полоса — все без занятий'}
-            {saved && ' · по сохранённым данным'}
-          </span>
-        )}
+        {included.length >= 2 && <>
+          {(['presence', 'free'] as const).map((layer) => layers[layer] && (
+            <span key={layer} className={`mode-legend mr-3 inline-flex items-center gap-1 before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${layer === 'free' ? 'free-legend before:border-y before:border-u-accent-border before:bg-u-accent-soft' : 'before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}>
+              {layer === 'presence' ? 'В вузе' : 'Без занятий'}
+            </span>
+          ))}
+          {(layers.presence || layers.free) && <span className="mr-3">
+            {excluded.length ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}` : `Для всех ${included.length} групп`}
+            {saved && ' · по сохранённым данным'}.
+          </span>}
+        </>}
         <span className="lesson-hint inline">
           Нажми на занятие — подробности.
-          {(!singleDay || overlapWidth + 46 > viewportWidth - 40) && (
+          {(!singleDay || minima[0] + railWidth > viewportWidth) && (
             <span className="mobile-hint hidden compact:inline">
               {' '}
               {singleDay

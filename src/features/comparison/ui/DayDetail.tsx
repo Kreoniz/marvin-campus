@@ -14,6 +14,12 @@ import type { GroupColors } from '../../../lib/colors.ts';
 import LessonCard from '../../schedule/ui/LessonCard.tsx';
 import ComparisonSummary from './ComparisonSummary.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
+import { Button } from 'unlikely-ui/button';
+import { RadioGroup } from 'unlikely-ui/radio-group';
+import DayAgenda from '../../schedule/ui/DayAgenda.tsx';
+import ComparisonHighlights, {
+  type CalendarLayers,
+} from '../../schedule/ui/ComparisonHighlights.tsx';
 
 interface DayDetailProps {
   schedules: GroupSchedule[];
@@ -21,8 +27,14 @@ interface DayDetailProps {
   subgroupCatalog?: Record<number, Subgroup[]>;
   day: string;
   mode: Mode;
+  layers: CalendarLayers;
   loading: boolean;
   placeholder?: boolean;
+  dayFormat: 'timeline' | 'list';
+  onDayFormat: (format: 'timeline' | 'list') => void;
+  spotlightIds: number[];
+  spotlightLabel?: string;
+  onClearSpotlight: () => void;
 }
 
 export default function DayDetail({
@@ -31,8 +43,14 @@ export default function DayDetail({
   subgroupCatalog = {},
   day,
   mode,
+  layers,
   loading,
   placeholder = false,
+  dayFormat,
+  onDayFormat,
+  spotlightIds,
+  spotlightLabel,
+  onClearSpotlight,
 }: DayDetailProps) {
   const result = compareDay(schedules, day);
   const { included } = comparisonScope(schedules);
@@ -61,8 +79,10 @@ export default function DayDetail({
     ),
   );
   const rowHeight = 68;
-  const panelHeight = Math.max(252, Math.min(496, weekRows * rowHeight + 104));
-  const highlights = mode === 'presence' ? result.presence : result.free;
+  const panelHeight =
+    dayFormat === 'list'
+      ? 400
+      : Math.max(252, Math.min(496, weekRows * rowHeight + 104));
   return (
     <Card.Root
       className="day-detail mt-[17px] flex h-[var(--detail-height)] gap-3.5 p-3 [overflow-anchor:none] [&>.marvin-card]:min-h-0 [&>.marvin-card]:overflow-y-auto [&>.marvin-card]:[scrollbar-gutter:stable]"
@@ -71,121 +91,162 @@ export default function DayDetail({
       aria-labelledby="day-title"
       style={{ '--detail-height': `${panelHeight}px` } as CSSProperties}
     >
-      <div className="min-w-0 flex-1">
-        <h2
-          id="day-title"
-          className="h-6 truncate text-sm leading-6 font-bold first-letter:uppercase"
-        >
-          {placeholder ? (
-            <>
-              <Skeleton className="inline-block h-5 w-[min(220px,100%)] align-middle" />
-              <span className="sr-only">Загружаем выбранный день</span>
-            </>
-          ) : (
-            formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-1 flex min-h-9 flex-wrap items-center gap-2">
+          <h2
+            id="day-title"
+            className="m-0 min-w-0 flex-1 truncate text-sm leading-6 font-bold first-letter:uppercase"
+          >
+            {placeholder ? (
+              <>
+                <Skeleton className="inline-block h-5 w-[min(220px,100%)] align-middle" />
+                <span className="sr-only">Загружаем выбранный день</span>
+              </>
+            ) : (
+              formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })
+            )}
+          </h2>
+          {spotlightLabel && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs"
+              onClick={onClearSpotlight}
+              aria-label={`Снять подсветку ${spotlightLabel}`}
+            >
+              Снять подсветку
+            </Button>
           )}
-        </h2>
-        <AutoHideScrollArea className="h-[calc(var(--detail-height)-64px)]">
-          <ScrollArea.Viewport
-            className="day-scroll"
+          <RadioGroup.Root
+            variant="segmented"
+            className="shrink-0 gap-0 p-0.5 [&_.u-segmented-item]:min-h-8 [&_.u-segmented-item]:px-2 [&_.u-segmented-item]:text-xs"
+            value={dayFormat}
+            aria-label="Представление выбранного дня"
+            onValueChange={(value) => {
+              if (value === 'list' || value === 'timeline') onDayFormat(value);
+            }}
+          >
+            <RadioGroup.Item value="timeline">Шкала</RadioGroup.Item>
+            <RadioGroup.Item value="list">Список</RadioGroup.Item>
+          </RadioGroup.Root>
+        </div>
+        {dayFormat === 'list' ? (
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
             tabIndex={0}
             role="region"
-            aria-label="Подробное расписание выбранного дня"
+            aria-label="Прокрутка списка дня"
           >
-            <ScrollArea.Content className="pl-4">
-              <div
-                className="day-timeline relative min-w-[740px] max-w-[1080px] bg-[repeating-linear-gradient(to_right,transparent,transparent_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)))]"
-                style={
-                  {
-                    height: rows * rowHeight + 40,
-                    '--day-divisions': (end - start) / 30,
-                  } as CSSProperties
-                }
-              >
-                {hours.map((hour) => (
-                  <span
-                    key={hour}
-                    className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
-                    style={{
-                      left: `${((hour - start) * 100) / (end - start)}%`,
-                    }}
-                  >
-                    {timeLabel(hour)}
-                  </span>
-                ))}
-                {loading && !schedules.some((group) => group.snapshot) ? (
-                  <div
-                    className="absolute inset-0 [&>div]:absolute"
-                    aria-hidden="true"
-                  >
-                    {Array.from({ length: rows }, (_, index) => (
-                      <Skeleton
-                        key={index}
-                        style={{
-                          top: index * rowHeight + 36,
-                          left: '8%',
-                          width: '72%',
-                          height: rowHeight - 6,
-                        }}
+            <DayAgenda
+              schedules={schedules}
+              day={day}
+              colors={colors}
+              subgroupCatalog={subgroupCatalog}
+              loading={loading}
+              placeholder={placeholder}
+              spotlightIds={spotlightIds}
+            />
+          </div>
+        ) : (
+          <AutoHideScrollArea className="min-h-0 flex-1">
+            <ScrollArea.Viewport
+              className="day-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="Подробное расписание выбранного дня"
+            >
+              <ScrollArea.Content className="pl-4">
+                <div
+                  className="day-timeline relative min-w-[740px] max-w-[1080px] bg-[repeating-linear-gradient(to_right,transparent,transparent_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)-1px),var(--u-line-soft)_calc(100%/var(--day-divisions)))]"
+                  style={
+                    {
+                      height: rows * rowHeight + 40,
+                      '--day-divisions': (end - start) / 30,
+                    } as CSSProperties
+                  }
+                >
+                  {hours.map((hour) => (
+                    <span
+                      key={hour}
+                      className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
+                      style={{
+                        left: `${((hour - start) * 100) / (end - start)}%`,
+                      }}
+                    >
+                      {timeLabel(hour)}
+                    </span>
+                  ))}
+                  {loading && !schedules.some((group) => group.snapshot) ? (
+                    <div
+                      className="absolute inset-0 [&>div]:absolute"
+                      aria-hidden="true"
+                    >
+                      {Array.from({ length: rows }, (_, index) => (
+                        <Skeleton
+                          key={index}
+                          style={{
+                            top: index * rowHeight + 36,
+                            left: '8%',
+                            width: '72%',
+                            height: rowHeight - 6,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <ComparisonHighlights
+                        result={result}
+                        layers={layers}
+                        saved={saved}
+                        start={start}
+                        end={end}
                       />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {highlights.map((range) => (
-                      <div
-                        key={`${range.start}:${range.end}`}
-                        className={`day-highlight absolute top-[29px] bottom-1 border-t-2 transition-colors motion-reduce:transition-none ${mode === 'free' ? 'free-highlight border-u-accent-border' : 'border-campus-presence-border'} ${saved ? `saved-highlight border-dashed ${mode === 'free' ? 'bg-[color-mix(in_oklch,var(--u-accent-soft)_25%,transparent)]' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_10%,transparent)]'}` : mode === 'free' ? 'bg-campus-free' : 'bg-[color-mix(in_oklch,var(--color-campus-presence)_25%,transparent)]'}`}
-                        aria-hidden="true"
-                        style={{
-                          left: `${((range.start - start) * 100) / (end - start)}%`,
-                          width: `${((range.end - range.start) * 100) / (end - start)}%`,
-                        }}
-                      />
-                    ))}
-                    {placed.map((block) => (
-                      <LessonCard
-                        key={block.identity}
-                        block={block}
-                        colors={colors}
-                        subgroupCatalog={subgroupCatalog}
-                        horizontal
-                        style={{
-                          left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,
-                          width: `calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px)`,
-                          top: block.column * rowHeight + 36,
-                          height: rowHeight - 6,
-                        }}
-                      />
-                    ))}
-                    {!placed.length && (
-                      <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
-                        {schedules.some(
-                          (group) => comparisonIssue(group) === 'subgroup',
-                        )
-                          ? 'Подгруппа не определена; сравнение ограничено.'
-                          : schedules.some(
-                                (group) => group.error && !group.snapshot,
-                              )
-                            ? 'Часть расписаний недоступна.'
-                            : schedules.some((group) => !group.snapshot)
-                              ? 'Ждём данные расписания.'
-                              : 'В этот день занятий нет.'}
-                        {saved &&
-                          schedules.every((group) => group.snapshot) && (
-                            <span>По сохранённым данным</span>
-                          )}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea.Content>
-          </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar className="z-[2]" />
-          <ScrollArea.Scrollbar orientation="horizontal" className="z-[2]" />
-          <ScrollArea.Corner />
-        </AutoHideScrollArea>
+                      {placed.map((block) => (
+                        <LessonCard
+                          key={block.identity}
+                          block={block}
+                          colors={colors}
+                          subgroupCatalog={subgroupCatalog}
+                          horizontal
+                          spotlightIds={spotlightIds}
+                          style={{
+                            left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,
+                            width: `calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px)`,
+                            top: block.column * rowHeight + 36,
+                            height: rowHeight - 6,
+                          }}
+                        />
+                      ))}
+                      {!placed.length && (
+                        <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
+                          {schedules.some(
+                            (group) => comparisonIssue(group) === 'subgroup',
+                          )
+                            ? 'Подгруппа не определена; сравнение ограничено.'
+                            : schedules.some(
+                                  (group) => group.error && !group.snapshot,
+                                )
+                              ? 'Часть расписаний недоступна.'
+                              : schedules.some((group) => !group.snapshot)
+                                ? 'Ждём данные расписания.'
+                                : 'В этот день занятий нет.'}
+                          {saved &&
+                            schedules.every((group) => group.snapshot) && (
+                              <span>По сохранённым данным</span>
+                            )}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </ScrollArea.Content>
+            </ScrollArea.Viewport>
+            <ScrollArea.Scrollbar className="z-[2]" />
+            <ScrollArea.Scrollbar orientation="horizontal" className="z-[2]" />
+            <ScrollArea.Corner />
+          </AutoHideScrollArea>
+        )}
       </div>
       <ComparisonSummary
         schedules={schedules}

@@ -16,11 +16,27 @@
 - `src/app`: React providers, theme entry and application shell/help.
 - `src/features/comparison`: page composition, comparison state, navigation,
   results and data status. It composes the independent groups and schedule UI.
-- `src/features/groups`: group search, subgroup selection and ordering.
+- `src/features/groups`: group search, direct subgroup selection and ordering.
+  The subgroup trigger and spotlight icon are independent controls. Multiple
+  spotlight IDs live as local presentation state in `ComparisonPage`; they do
+  not change schedule data. The single Groups dialog combines the existing
+  combobox search with the reusable ordering/removal list. Removing its last
+  selection keeps search available. The exploratory name/icon chooser has been removed.
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
   from the pure calculations in `src/lib`. Day and week views both render the
-  same `lessonBlocks` event lanes. Shared events keep one card and their full
-  participant data; lanes are allocated only for overlapping distinct events.
+  same consolidated `lessonBlocks` events. `features/schedule/model` allocates
+  vertical presentation lanes against semantic and painted bounds, then expands
+  cards only into continuously free lanes. Per-day minima and measured column
+  navigation stay outside domain calculations. The horizontal timeline keeps
+  semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
+  retaining individual bundle occurrences and participant records. Exact interval
+  grouping is a separate presentation projection; it never merges lesson
+  identities. Calendar layer visibility is local UI state. Both orientations
+  render presence/free ranges from `compareDay` through `ComparisonHighlights`;
+  URL modes remain compatible and never filter the calculation inputs.
+  Shared events keep one card and their full
+  participant data; vertical lanes separate distinct events conflicting in time
+  or painted bounds.
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
   through its public subpaths and style app layout with Tailwind utilities.
   `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
