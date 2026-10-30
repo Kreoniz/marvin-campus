@@ -19,6 +19,9 @@
 - `src/app`: React providers, theme entry and application shell/help.
 - `src/features/comparison`: page composition, comparison state, navigation,
   results and data status. It composes the independent groups and schedule UI.
+  `use-schedule-hotkeys` registers physical Vim keys with TanStack Hotkeys;
+  editable fields, composition and visible overlays retain keyboard ownership.
+  The optional shortcut preference is separate from comparison state and URLs.
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   The subgroup trigger and spotlight icon are independent controls. Multiple
   spotlight IDs live as local presentation state in `ComparisonPage`; they do
@@ -44,7 +47,9 @@
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
   from the pure calculations in `src/lib`. Day and week views both render the
   same consolidated `lessonBlocks` events. `features/schedule/model` allocates
-  vertical presentation lanes against semantic and painted bounds. Rendering uses
+  vertical presentation lanes against semantic and painted bounds. Calendar
+  display bounds are independent of domain intervals; VUC defaults to 09:00
+  while preserving real earlier events. Presence gutters clear external card outlines. Rendering uses
   fixed 160-pixel cards and 166-pixel lanes in compact Week. A free-lane source
   preference never increases concurrency. `source-layout` projects source-oriented
   Day bands from canonical blocks: 160-pixel cards, painted-bound sublanes,
@@ -109,3 +114,5 @@ same-date VUC data within academic military-preparation details; its remembered
 personal choice is presentation state, independent of comparison participants.
 Popover hover, safe pointer travel and press semantics build on Base UI;
 Campus explicitly pins an open preview on its first press.
+
+`MilitaryInline` measures its own remaining body and complete row extents with ResizeObserver; hidden rows retain measurement geometry but leave the accessibility tree. Document status and the truthful remaining count have reserved space. The preview, including shared references, never creates comparison events. Personal VUC choice uses the published unlikely-ui Select.

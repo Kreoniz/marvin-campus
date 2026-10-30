@@ -73,16 +73,13 @@ subgroup scope visible. Display settings hold layer and kind visibility and
 clearing all spotlights. Kind visibility changes cards only, not selection or
 calculation; hidden selections remain marked and can be restored directly.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
-No comparison-mode row precedes the mobile calendar. A partial-data notice
-shows the usable count and excluded names above the known lessons. The full
-included roster lives in the expandable day summary, available above all compact
-views; freshness remains available below the timetable. Mobile day and week grids
+The mobile calendar follows the date controls immediately. Its brief result, partial count, freshness and collapsed VUC documents follow the timetable. The full included/excluded roster and calculation qualifications live in a closed-by-default disclosure. Desktop result cards also show only the result and a short partial count by default; they grow naturally when details are expanded, without an internal scrollbar. Mobile day and week grids
 expand to their full time range and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
-The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. The visible thumb is four pixels thick and never covers the focus or subgroup controls. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
+The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. Soft edge fades appear only where more selections can be scrolled into view. Exclusion outlines stay inside the 44-pixel chip bounds. The visible thumb is four pixels thick and never covers the focus or subgroup controls. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
 Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
 a click or tap does not. Forced-color mode keeps scrollbars visible.
 Today stays beside the date and remains available in the date picker.
@@ -106,7 +103,7 @@ retain their stripe meaning and omit the decorative resource motif. Remote dashe
 saved clocks and individual spotlight markers remain independent.
 
 Day assigns each visible selected source a labelled stable band in user order,
-with a 12-pixel gap and an extra 12 pixels at kind transitions. Each overlap
+with a 16-pixel gap and an extra 16 pixels at kind transitions. Each overlap
 sublane keeps 160 pixels without stretching into spare viewport space. A source chooser moves to the requested band and focuses its
 first lesson or empty/status band without changing selection or calculation.
 It includes hidden sources with an explicit notice rather than silently unhiding.
@@ -247,6 +244,12 @@ The general calendar still accepts mixed VUC selections. Military-preparation
 lesson details can preview one personally chosen VUC schedule for the same date;
 this preference does not join a comparison or infer a group-to-platoon mapping.
 
-Tall military-preparation cards also show a short, read-only preview of the personally chosen VUC for that exact date. It uses a bounded summary: one entry from 320px and two from 520px, with the document status and truthful remaining count before the entries. Inline topics use at most two lines and printed intervals are compacted to one line; full original intervals remain in details. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison.
+Military-preparation cards from 240px also show the personally chosen VUC for that exact date, including tall shared references. The preview fits as many complete entries as its measured free space permits. The document status and a reserved remaining-count line cannot be pushed out by long entries. Inline topics use at most two lines; all printed intervals wrap, while complete metadata remains in details. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses the design-system Select with short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison.
 
 Where selected VUC sources share the same compact platoon name, navigation, management, membership details and calculation exclusions add document years and, if needed, an existing source description. Identical metadata falls back to the document-scoped ID. Non-colliding names stay compact; chips retain their 44px height and show the disambiguator on a secondary line. Labels never change source identity or date coverage.
+
+The VUC page puts its calendar before results and collapsed document notes. Day and Week use page scrolling vertically and keep horizontal scrolling for tracks. The display starts at 09:00 by default and ends after the latest known event; actual earlier or later times remain visible. An unknown day keeps a 09:00–18:00 display range, without implying empty coverage.
+
+A selected lecturer or room uses a full categorical fill in every view, preserving the diagonal kind pattern and readable text. Other resource cards remain neutral. Hover colors transition over 150ms unless reduced motion is requested. Amber presence brackets reserve a gutter clear of card borders and their hover/focus outlines. Date controls center their label; header action targets stay at least 44px while their gaps remain compact. The footer source link has no extra separator.
+
+Vim shortcuts are enabled by default and can be disabled persistently in Display settings. Physical keys work with Russian layouts: h/l change day, Shift+h/l move seven days, j/k scroll, gg/Shift+g reach the calendar edges, t selects today, / opens schedule search, 1/2/3 select Day/Week/List and ? opens help. These commands ignore editable fields, composition and visible dialogs/popovers; existing scoped Arrow/Home/End/Page commands remain available.
