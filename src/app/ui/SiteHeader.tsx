@@ -32,16 +32,16 @@ export default function SiteHeader({
           <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-lg compact:tracking-[-0.7px]">
             Кампус
           </span>
-          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] compact:hidden">
+          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] max-[1160px]:hidden">
             Don't Panic
           </Badge>
         </span>
       </a>
-      <span className="mr-auto text-sm text-u-muted compact:hidden">
+      <span className="mr-auto text-sm text-u-muted max-[1000px]:hidden">
         Расписание ОмГТУ
       </span>
       <div
-        className="space-doodle flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
+        className="space-doodle hidden min-[1300px]:flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
         aria-hidden="true"
       >
         <span className="rotate-[-12deg] bg-[#ffe393] px-[7px] py-[3px] text-[17px] text-[#171b18] dark:bg-[#ddc36d]">
@@ -59,9 +59,7 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="ml-auto hidden shrink-0 items-center compact:flex">
-        {viewControl}
-      </div>
+      <div className="ml-auto flex shrink-0 items-center">{viewControl}</div>
       <div className="header-actions flex shrink-0 gap-0.5 compact:[&_.icon-button]:size-11 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
         <HelpDialog />
         <IconButton

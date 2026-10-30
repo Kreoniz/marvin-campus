@@ -45,7 +45,12 @@
   from the pure calculations in `src/lib`. Day and week views both render the
   same consolidated `lessonBlocks` events. `features/schedule/model` allocates
   vertical presentation lanes against semantic and painted bounds. Rendering uses
-  fixed 160-pixel cards and 166-pixel lanes. Per-day minima and measured column
+  fixed 160-pixel cards and 166-pixel lanes in compact Week. A free-lane source
+  preference never increases concurrency. `source-layout` projects source-oriented
+  Day bands from canonical blocks: 160–240-pixel cards, painted-bound sublanes,
+  user-ordered source bands and typed-key scroll anchoring. An academic-first
+  visible presentation owner gets the full card; other member occurrences open
+  the same details. These references never enter calculation or lesson counts. Per-day minima and measured column
   navigation stay outside domain calculations. The horizontal timeline keeps
   semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
   retaining individual bundle occurrences and participant records. Exact interval
@@ -54,14 +59,14 @@
   remove calculation participants. Rooms remain occupancy overlays. Both orientations
   render presence/free ranges from `compareDay` through `ComparisonHighlights`;
   URL modes remain compatible and never filter the calculation inputs.
-  Shared events keep one card and their full
-  participant data; vertical lanes separate distinct events conflicting in time
+  Shared events retain full participant data; vertical lanes separate distinct events conflicting in time
   or painted bounds.
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
   through its public subpaths and style app layout with Tailwind utilities.
-  `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
+  `src/app/styles.css` loads Tailwind, the published DS stylesheet/adapter,
   the local font, semantic Tailwind theme aliases, the app's presence colors and
-  a short opacity entrance with typed color properties for stripe transitions.
+  a short opacity entrance with typed color properties for stripe transitions,
+  decorative resource SVG masks and a short-height search-dialog fallback.
   Subgroups use the base group color; saved-data muting is handled separately in
   lesson cards. Dynamic schedule geometry
   and categorical colors use computed styles; there are no app component

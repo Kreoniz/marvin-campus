@@ -1,4 +1,6 @@
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
+import { scheduleKey } from '../../../lib/schedule-ref.ts';
+import { eventOwner } from './event-owner.ts';
 
 export const VERTICAL_CARD_WIDTH = 160;
 export const VERTICAL_LANE_PITCH = 166;
@@ -32,14 +34,25 @@ export function verticalLayout(
     };
   });
   const result: VerticalPlacement[] = [];
+  const lastLane = new Map<string, number>();
   let cluster: typeof ordered = [];
   let until = -Infinity;
   function finish() {
     const ends: number[] = [];
     const placed = cluster.map((entry) => {
-      let column = ends.findIndex((end) => end <= entry.top);
+      const owner = eventOwner(entry.block.members);
+      const key = owner ? scheduleKey(owner) : '';
+      const preferred = lastLane.get(key);
+      // Prefer an existing free lane only; never reserve a sparse extra lane.
+      let column =
+        preferred !== undefined &&
+        preferred < ends.length &&
+        ends[preferred] <= entry.top
+          ? preferred
+          : ends.findIndex((end) => end <= entry.top);
       if (column < 0) column = ends.length;
       ends[column] = entry.reserveEnd;
+      lastLane.set(key, column);
       return { ...entry, column };
     });
     for (const entry of placed) {

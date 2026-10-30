@@ -115,7 +115,22 @@ export default function DayAgenda({
                       data-dimmed={dimmed ? '' : undefined}
                     >
                       <article
-                        className={`min-w-0 p-3 motion-safe:transition-colors motion-safe:duration-300 motion-safe:ease-out ${dimmed ? 'bg-u-surface text-u-muted' : 'bg-u-raised'} ${lesson.remote ? 'remote-lesson border-2 border-dashed border-u-muted' : ''}`}
+                        data-resource-kind={
+                          members.length === 1
+                            ? selectionKind(members[0])
+                            : undefined
+                        }
+                        style={
+                          members.length === 1
+                            ? ({
+                                '--chip': lessonColor(
+                                  colors[scheduleKey(members[0])] ?? 0,
+                                  dimmed,
+                                ),
+                              } as CSSProperties)
+                            : undefined
+                        }
+                        className={`relative min-w-0 p-3 ${members.length === 1 && ['lecturer', 'auditorium'].includes(selectionKind(members[0])) ? `resource-card resource-${selectionKind(members[0])}` : ''} motion-safe:transition-colors motion-safe:duration-300 motion-safe:ease-out ${dimmed ? 'bg-u-surface text-u-muted' : 'bg-u-raised'} ${lesson.remote ? 'remote-lesson border-2 border-dashed border-u-muted' : ''}`}
                       >
                         {spotlight && (
                           <span className="sr-only">

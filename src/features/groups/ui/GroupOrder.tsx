@@ -12,7 +12,7 @@ import IconButton from '../../../shared/ui/IconButton.tsx';
 import { selectionLabel } from '../../../lib/subgroups.ts';
 
 const moveButtonClassName =
-  'min-h-11 min-w-11 shrink-0 text-inherit hover:bg-black/7 data-disabled:cursor-default data-disabled:bg-transparent data-disabled:text-inherit data-disabled:opacity-30';
+  'min-h-11 min-w-11 shrink-0 text-u-ink hover:bg-u-well data-disabled:cursor-default data-disabled:bg-transparent data-disabled:opacity-30';
 
 interface Props {
   groups: Selection[];
@@ -54,20 +54,24 @@ export default function GroupOrder({
     <>
       <ol
         data-group-order
-        className="mt-1 flex max-h-[min(20dvh,160px)] list-none flex-col gap-1.5 overflow-y-auto p-0.5"
+        className="mt-1 mb-0 flex list-none flex-col gap-1.5 p-0.5"
         ref={list}
       >
         {groups.map((group, index) => (
           <li
             key={scheduleKey(group)}
             data-group-id={scheduleKey(group)}
-            className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
+            className="flex shrink-0 items-center gap-1.5 rounded-[var(--u-radius)] border border-u-line-soft bg-u-surface px-1.75 py-1 text-u-ink"
             style={
               {
                 '--chip': chipColor(colors[scheduleKey(group)] ?? 0),
               } as CSSProperties
             }
           >
+            <span
+              className="h-8 w-1 shrink-0 rounded-full bg-(--chip)"
+              aria-hidden="true"
+            />
             <span className="min-w-0 flex-1">
               <strong className="block text-sm wrap-anywhere">
                 {selectionLabel(group)}

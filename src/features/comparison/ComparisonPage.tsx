@@ -16,6 +16,8 @@ import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
 import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
+import SourceDayCalendar from '../schedule/ui/SourceDayCalendar.tsx';
+import ComparisonSummary from './ui/ComparisonSummary.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
 import DisplaySettings from './ui/DisplaySettings.tsx';
@@ -50,7 +52,9 @@ export default function ComparisonPage() {
     document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
-  const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
+  const [scheduleView, setScheduleView] = useState<ScheduleView>(() =>
+    matchMedia(compactQuery).matches ? 'day' : 'week',
+  );
   const [dayFormat, setDayFormat] = useState<'timeline' | 'list'>('timeline');
   const [spotlightGroupIds, setSpotlightGroupIds] = useState<string[]>([]);
   const addGroupRef = useRef<HTMLButtonElement>(null);
@@ -122,11 +126,8 @@ export default function ComparisonPage() {
     }
   }
   function selectFormat(value: ScheduleView) {
-    const current =
-      mobileView === 'week' ? 'week' : dayFormat === 'list' ? 'list' : 'day';
-    if (value === current) return;
-    setMobileView(value === 'week' ? 'week' : 'day');
-    if (value !== 'week') setDayFormat(value === 'list' ? 'list' : 'timeline');
+    if (value === scheduleView) return;
+    setScheduleView(value);
     track('mobile_view_changed', { view: value });
   }
 
@@ -230,13 +231,7 @@ export default function ComparisonPage() {
             viewControl={
               (groups.length > 0 || links.opening) && (
                 <ScheduleViewPicker
-                  value={
-                    mobileView === 'week'
-                      ? 'week'
-                      : dayFormat === 'list'
-                        ? 'list'
-                        : 'day'
-                  }
+                  value={scheduleView}
                   onChange={selectFormat}
                   disabled={links.opening}
                 />
@@ -285,7 +280,7 @@ export default function ComparisonPage() {
               <>
                 <Card.Root
                   id="comparison"
-                  className="comparison overflow-hidden compact:-mx-3 compact:rounded-none compact:border-x-0"
+                  className="comparison overflow-clip compact:-mx-3 compact:rounded-none compact:border-x-0"
                   role="region"
                   aria-label="Сравнение расписаний"
                   aria-busy={busy}
@@ -330,8 +325,12 @@ export default function ComparisonPage() {
                     />
                     {groups.length || links.opening ? (
                       <>
-                        {mobile && (
-                          <MobileDayNav view={view} opening={links.opening} />
+                        {(mobile || scheduleView !== 'week') && (
+                          <MobileDayNav
+                            view={view}
+                            opening={links.opening}
+                            showWeekControls={mobile}
+                          />
                         )}
                         {mobile ? (
                           <MobileComparisonPanel
@@ -377,9 +376,20 @@ export default function ComparisonPage() {
                           day={day}
                           onSelectDate={view.selectDate}
                         />
-                        {mobile &&
-                        mobileView === 'day' &&
-                        dayFormat === 'list' ? (
+                        {scheduleView !== 'week' && (
+                          <div className="border-t border-u-line-soft px-3 py-2">
+                            <ComparisonSummary
+                              schedules={source.schedules}
+                              hiddenKinds={hiddenKinds}
+                              day={day}
+                              mode={mode}
+                              loading={busy}
+                              placeholder={links.opening}
+                              compact
+                            />
+                          </div>
+                        )}
+                        {scheduleView === 'list' ? (
                           <DayAgenda
                             schedules={source.schedules}
                             colors={colors}
@@ -387,6 +397,19 @@ export default function ComparisonPage() {
                             day={day}
                             loading={busy}
                             placeholder={links.opening}
+                            spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
+                          />
+                        ) : scheduleView === 'day' ? (
+                          <SourceDayCalendar
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            day={day}
+                            layers={layers}
+                            loading={busy}
+                            placeholder={links.opening}
+                            compact={mobile}
                             spotlightIds={spotlightIds}
                             hiddenKinds={hiddenKinds}
                           />
@@ -402,12 +425,12 @@ export default function ComparisonPage() {
                             placeholder={links.opening}
                             onDay={view.selectDay}
                             compact={mobile}
-                            singleDay={mobile && mobileView === 'day'}
+                            singleDay={false}
                             spotlightIds={spotlightIds}
                             hiddenKinds={hiddenKinds}
                           />
                         )}
-                        {mobile && (
+                        {mobile && scheduleView === 'week' && (
                           <MobileComparisonPanel
                             hiddenKinds={hiddenKinds}
                             section="result"
@@ -451,24 +474,26 @@ export default function ComparisonPage() {
                     )}
                   </GroupPicker>
                 </Card.Root>
-                {(groups.length > 0 || links.opening) && !mobile && (
-                  <DayDetail
-                    schedules={source.schedules}
-                    hiddenKinds={hiddenKinds}
-                    colors={colors}
-                    subgroupCatalog={subgroupCatalog}
-                    day={day}
-                    mode={mode}
-                    layers={layers}
-                    loading={busy}
-                    placeholder={links.opening}
-                    dayFormat={dayFormat}
-                    onDayFormat={setDayFormat}
-                    spotlightIds={spotlightIds}
-                    spotlightLabel={spotlightLabel}
-                    onClearSpotlight={() => setSpotlightGroupIds([])}
-                  />
-                )}
+                {(groups.length > 0 || links.opening) &&
+                  !mobile &&
+                  scheduleView === 'week' && (
+                    <DayDetail
+                      schedules={source.schedules}
+                      hiddenKinds={hiddenKinds}
+                      colors={colors}
+                      subgroupCatalog={subgroupCatalog}
+                      day={day}
+                      mode={mode}
+                      layers={layers}
+                      loading={busy}
+                      placeholder={links.opening}
+                      dayFormat={dayFormat}
+                      onDayFormat={setDayFormat}
+                      spotlightIds={spotlightIds}
+                      spotlightLabel={spotlightLabel}
+                      onClearSpotlight={() => setSpotlightGroupIds([])}
+                    />
+                  )}
               </>
             )}
           </main>

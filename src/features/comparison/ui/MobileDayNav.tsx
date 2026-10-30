@@ -14,77 +14,84 @@ import Icon from '../../../shared/ui/Icon.tsx';
 interface Props {
   view: ComparisonView;
   opening: boolean;
+  showWeekControls?: boolean;
 }
-export default function MobileDayNav({ view, opening }: Props) {
+export default function MobileDayNav({
+  view,
+  opening,
+  showWeekControls = true,
+}: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(view.week, i));
   const shortWeek = weekLabel(view.week, true);
   return (
     <div className="mobile-navigation">
-      <div
-        className="mobile-view-controls flex items-center px-2"
-        inert={opening}
-      >
+      {showWeekControls && (
         <div
-          className="mobile-week-controls flex min-w-0 flex-1 items-center"
-          data-schedule-week
+          className="mobile-view-controls flex items-center px-2"
+          inert={opening}
         >
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
-            aria-label="Предыдущая неделя"
-            onClick={() => view.selectWeek(addDays(view.week, -7))}
+          <div
+            className="mobile-week-controls flex min-w-0 flex-1 items-center"
+            data-schedule-week
           >
-            <Icon name="left" size={17} />
-          </Button>
-          <Popover.Root open={dateOpen} onOpenChange={setDateOpen}>
-            <Popover.Trigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
-                  aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
+              aria-label="Предыдущая неделя"
+              onClick={() => view.selectWeek(addDays(view.week, -7))}
+            >
+              <Icon name="left" size={17} />
+            </Button>
+            <Popover.Root open={dateOpen} onOpenChange={setDateOpen}>
+              <Popover.Trigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
+                    aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
+                  />
+                }
+              >
+                <span>{shortWeek}</span>
+                <Icon name="down" size={12} />
+              </Popover.Trigger>
+              <Popover.Content
+                aria-label="Выбор даты расписания"
+                className="week-popover w-[min(340px,calc(100vw-24px))] p-3"
+                positionerProps={{ sideOffset: 6 }}
+              >
+                <DatePicker
+                  day={view.day}
+                  onSelect={(value) => {
+                    view.selectDate(value);
+                    setDateOpen(false);
+                  }}
                 />
-              }
+              </Popover.Content>
+            </Popover.Root>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
+              aria-label="Следующая неделя"
+              onClick={() => view.selectWeek(addDays(view.week, 7))}
             >
-              <span>{shortWeek}</span>
-              <Icon name="down" size={12} />
-            </Popover.Trigger>
-            <Popover.Content
-              aria-label="Выбор даты расписания"
-              className="week-popover w-[min(340px,calc(100vw-24px))] p-3"
-              positionerProps={{ sideOffset: 6 }}
+              <Icon name="right" size={17} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
+              onClick={() => view.selectDate(omskToday())}
             >
-              <DatePicker
-                day={view.day}
-                onSelect={(value) => {
-                  view.selectDate(value);
-                  setDateOpen(false);
-                }}
-              />
-            </Popover.Content>
-          </Popover.Root>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
-            aria-label="Следующая неделя"
-            onClick={() => view.selectWeek(addDays(view.week, 7))}
-          >
-            <Icon name="right" size={17} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
-            onClick={() => view.selectDate(omskToday())}
-          >
-            Сегодня
-          </Button>
+              Сегодня
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       <nav
         className="agenda-days grid grid-cols-7 gap-0 pb-1 min-[701px]:pb-0"
         data-schedule-days

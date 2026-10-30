@@ -67,12 +67,28 @@ export default function GroupPicker({
   focusScheduleKey,
 }: Props) {
   const [query, setQuery] = useState('');
+  const [managing, setManaging] = useState(false);
+  const resultScroll = useRef<HTMLElement | null>(null);
+  const savedScroll = useRef(0);
   const [debounced, setDebounced] = useState('');
   const [clock, setClock] = useState(Date.now());
   const [announcement, setAnnouncement] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const searchId = useId();
   const term = query.trim().toUpperCase();
+  const showManagement = managing || !term;
+  useEffect(() => {
+    if (!open) return;
+    setManaging(!!focusScheduleKey);
+    if (focusScheduleKey)
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLElement>(
+            `[data-group-order] [data-group-id="${focusScheduleKey}"] button:not(:disabled)`,
+          )
+          ?.focus(),
+      );
+  }, [open, focusScheduleKey]);
   const enabled = open && term.length >= 2 && term === debounced;
   const selectedKeys = new Set(selected.map(scheduleKey));
   const groups = useQuery({ ...groupOptions(debounced), enabled });
@@ -239,7 +255,10 @@ export default function GroupPicker({
             value={null}
             inputValue={query}
             onInputValueChange={(value, details) => {
-              if (details.reason !== 'item-press') setQuery(value);
+              if (details.reason !== 'item-press') {
+                setQuery(value);
+                setManaging(false);
+              }
             }}
             itemToStringLabel={(result) => result.selection.label}
             isItemEqualToValue={(a, b) =>
@@ -271,28 +290,78 @@ export default function GroupPicker({
                 autoComplete="off"
               />
             </div>
-            {selected.length > 0 && (
+            <div className="mt-1 shrink-0">
+              {managing && term ? (
+                <Button
+                  variant="ghost"
+                  className="min-h-11 text-sm"
+                  onClick={() => {
+                    setManaging(false);
+                    requestAnimationFrame(() => {
+                      input.current?.focus({ preventScroll: true });
+                      if (resultScroll.current)
+                        resultScroll.current.scrollTop = savedScroll.current;
+                    });
+                  }}
+                >
+                  <Icon name="left" size={16} />
+                  Назад к поиску
+                </Button>
+              ) : term ? (
+                <Button
+                  variant="ghost"
+                  className="min-h-11 text-sm"
+                  onClick={() => {
+                    savedScroll.current = resultScroll.current?.scrollTop ?? 0;
+                    setManaging(true);
+                  }}
+                >
+                  Управлять выбранными · {selected.length}
+                </Button>
+              ) : (
+                <p className="my-2 text-xs text-u-muted">
+                  Выбраны · {selected.length}
+                </p>
+              )}
+              {selected.length >= 30 && (
+                <p className="m-0 text-xs text-u-muted">
+                  Выбраны все 30. Убери одно, чтобы добавить другое.
+                </p>
+              )}
+            </div>
+            {showManagement && (
               <section
-                className="mt-2 shrink-0"
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
                 aria-label="Выбранные расписания"
               >
-                <h3 className="m-0 text-xs font-semibold text-u-muted">
-                  Выбраны · {selected.length}
-                  {selected.length >= 30 &&
-                    ' из 30 — убери одно, чтобы добавить другое'}
-                </h3>
-                <GroupOrder
-                  hiddenKinds={hiddenKinds}
-                  groups={selected}
-                  colors={colors}
-                  onMove={onMove}
-                  onRemove={onRemove}
-                  onEmpty={() => input.current?.focus({ preventScroll: true })}
-                />
+                {selected.length ? (
+                  <GroupOrder
+                    hiddenKinds={hiddenKinds}
+                    groups={selected}
+                    colors={colors}
+                    onMove={onMove}
+                    onRemove={onRemove}
+                    onEmpty={() => {
+                      setManaging(false);
+                      input.current?.focus({ preventScroll: true });
+                    }}
+                  />
+                ) : (
+                  <p className="my-3 text-sm text-u-muted">
+                    Начни с названия группы, фамилии или аудитории.
+                  </p>
+                )}
               </section>
             )}
-            <div className="mt-2 grid min-h-28 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
-              <Combobox.List className="h-full min-h-0 max-h-none overflow-y-auto overscroll-contain p-0">
+            <div
+              className={`mt-2 min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${showManagement ? 'hidden' : 'grid'}`}
+            >
+              <Combobox.List
+                ref={(node) => {
+                  resultScroll.current = node;
+                }}
+                className="h-full min-h-0 max-h-none overflow-y-auto overscroll-contain p-0"
+              >
                 {(result: SearchResult) => {
                   const { selection, saved } = result;
                   const added = selectedKeys.has(scheduleKey(selection));

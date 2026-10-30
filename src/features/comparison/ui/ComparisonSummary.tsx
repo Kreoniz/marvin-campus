@@ -92,17 +92,17 @@ export default function ComparisonSummary({
           )}
         </div>
         {showScope && (!loading || hasSnapshot) && (
-          <div
+          <details
+            open={excluded.length > 0 && schedules.length <= 6}
             className="comparison-scope mb-2 text-xs leading-snug"
-            role="status"
           >
-            <strong>
+            <summary className="min-h-6 cursor-pointer font-semibold">
               {comparing
                 ? excluded.length
                   ? `Частичное сравнение · ${included.length} из ${eligible.length}`
-                  : 'В расчёте'
+                  : `В расчёте · ${included.length}`
                 : `Для расчёта: ${included.length} из ${eligible.length}`}
-            </strong>
+            </summary>
             {!!included.length && (
               <p className="my-1">
                 Учтены:{' '}
@@ -128,7 +128,12 @@ export default function ComparisonSummary({
                 .
               </p>
             )}
-          </div>
+            {teachers && (
+              <p className="my-1 text-[11px] text-u-muted">
+                Для преподавателей учтены только учебные занятия.
+              </p>
+            )}
+          </details>
         )}
         {loading && !hasSnapshot ? (
           <>
@@ -217,7 +222,7 @@ export default function ComparisonSummary({
                 : 'Время занятий выбранных участников в вузе не пересекается.'}
           </p>
         )}
-        {teachers && (
+        {teachers && !showScope && (
           <p className="mt-2 text-[11px] text-u-muted">
             Для преподавателей учтены только учебные занятия.
           </p>
