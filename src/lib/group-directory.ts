@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { Group } from './types.ts';
+import type { Group, Selection } from './types.ts';
+import { isGroup } from './schedule-ref.ts';
 import { groupOptions } from './queries.ts';
 import { parseView, readableGroups } from './url.ts';
 import { resolveGroupRequests } from './group-resolution.ts';
@@ -15,6 +16,7 @@ export function knownGroups(): Group[] {
               .filter(
                 (g) =>
                   g &&
+                  (!g.kind || g.kind === 'group') &&
                   Number.isSafeInteger(g.id) &&
                   g.id > 0 &&
                   g.id <= 10000000 &&
@@ -31,7 +33,8 @@ export function knownGroups(): Group[] {
   }
 }
 
-export function rememberGroups(groups: Group[]) {
+export function rememberGroups(selection: Selection[]) {
+  const groups = selection.filter(isGroup);
   try {
     const directory = new Map(
       knownGroups().map((g) => [g.id, { id: g.id, label: g.label }]),
@@ -44,7 +47,7 @@ export function rememberGroups(groups: Group[]) {
       'campus-group-directory',
       JSON.stringify([...directory.values()].slice(-200)),
     );
-    localStorage.setItem('campus-groups', JSON.stringify(groups));
+    localStorage.setItem('campus-groups', JSON.stringify(selection));
   } catch {}
 }
 

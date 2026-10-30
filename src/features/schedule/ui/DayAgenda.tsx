@@ -5,13 +5,25 @@ import { comparisonIssue, comparisonScope } from '../../../lib/domain.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { lessonGroupLabel } from '../../../lib/subgroups.ts';
 import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
-import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
+import type {
+  GroupSchedule,
+  Subgroup,
+  ScheduleKind,
+} from '../../../lib/types.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
+import {
+  scheduleKey,
+  selectionKind,
+  isGroup,
+  kindLabel,
+  kindIcon,
+} from '../../../lib/schedule-ref.ts';
 import { participantClasses } from './participant-style.ts';
 import {
   LessonRoom,
   LessonTeachers,
 } from '../../resources/LessonResources.tsx';
+import LessonDocument from '../../resources/LessonDocument.tsx';
 
 interface Props {
   schedules: GroupSchedule[];
@@ -20,7 +32,8 @@ interface Props {
   subgroupCatalog: Record<number, Subgroup[]>;
   loading: boolean;
   placeholder?: boolean;
-  spotlightIds?: number[];
+  spotlightIds?: string[];
+  hiddenKinds?: ScheduleKind[];
 }
 
 export default function DayAgenda({
@@ -31,9 +44,22 @@ export default function DayAgenda({
   loading,
   placeholder = false,
   spotlightIds = [],
+  hiddenKinds = [],
 }: Props) {
-  const entries = dayAgenda(schedules, day);
-  const { excluded } = comparisonScope(schedules);
+  const entries = dayAgenda(schedules, day).filter((entry) =>
+    entry.members.some(
+      (member) => !hiddenKinds.includes(selectionKind(member)),
+    ),
+  );
+  const { excluded } = comparisonScope(schedules, day);
+  const missing = schedules.filter((schedule) =>
+    comparisonIssue(schedule, day),
+  );
+  const allHidden =
+    schedules.length > 0 &&
+    schedules.every((schedule) =>
+      hiddenKinds.includes(selectionKind(schedule.selection)),
+    );
   const saved = schedules.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
@@ -70,9 +96,12 @@ export default function DayAgenda({
               </h3>
               <ol className="m-0 list-none overflow-hidden rounded-u-control border border-u-line p-0">
                 {interval.entries.map((entry) => {
-                  const { lesson, members, staleMembers } = entry;
+                  const { lesson, staleMembers } = entry;
+                  const members = entry.members.filter(
+                    (member) => !hiddenKinds.includes(selectionKind(member)),
+                  );
                   const spotlights = members.filter((member) =>
-                    spotlightIds.includes(member.id),
+                    spotlightIds.includes(scheduleKey(member)),
                   );
                   const spotlight = spotlights.length > 0;
                   const dimmed = spotlightIds.length > 0 && !spotlight;
@@ -103,36 +132,48 @@ export default function DayAgenda({
                           {members.map((member) => {
                             const memberDimmed =
                               spotlightIds.length > 0 &&
-                              !spotlightIds.includes(member.id);
+                              !spotlightIds.includes(scheduleKey(member));
                             return (
                               <span
-                                key={member.id}
-                                data-member-id={member.id}
+                                key={scheduleKey(member)}
+                                data-member-id={scheduleKey(member)}
                                 data-dimmed={memberDimmed ? '' : undefined}
                                 data-spotlight={
-                                  spotlightIds.includes(member.id)
+                                  spotlightIds.includes(scheduleKey(member))
                                     ? ''
                                     : undefined
                                 }
-                                className={`inline-flex items-center gap-1 rounded-[3px] px-1 py-0.5 text-[11px] leading-tight ${participantClasses(staleMembers.includes(member.id), memberDimmed)}`}
+                                className={`inline-flex items-center gap-1 rounded-[3px] px-1 py-0.5 text-xs leading-snug ${participantClasses(staleMembers.includes(scheduleKey(member)), memberDimmed)}`}
                                 style={
                                   {
                                     '--chip': lessonColor(
-                                      colors[member.id] ?? 0,
+                                      colors[scheduleKey(member)] ?? 0,
                                       memberDimmed,
                                     ),
                                   } as CSSProperties
                                 }
                               >
-                                {spotlightIds.includes(member.id) && (
+                                {!isGroup(member) &&
+                                  selectionKind(member) !== 'vuc' && (
+                                    <>
+                                      <Icon
+                                        name={kindIcon(selectionKind(member))}
+                                        size={12}
+                                      />
+                                      {kindLabel(selectionKind(member))}:{' '}
+                                    </>
+                                  )}
+                                {spotlightIds.includes(scheduleKey(member)) && (
                                   <Icon name="tick" size={10} />
                                 )}
                                 {lessonGroupLabel(
                                   member,
-                                  entry.memberLessons[member.id],
-                                  subgroupCatalog[member.id] ?? [],
+                                  entry.memberLessons[scheduleKey(member)],
+                                  isGroup(member)
+                                    ? (subgroupCatalog[member.id] ?? [])
+                                    : [],
                                 )}
-                                {staleMembers.includes(member.id) && (
+                                {staleMembers.includes(scheduleKey(member)) && (
                                   <>
                                     <Icon name="clock" size={11} />
                                     <span className="sr-only">
@@ -145,7 +186,20 @@ export default function DayAgenda({
                             );
                           })}
                         </div>
-                        <p className="mt-1.5 mb-0 text-xs leading-relaxed text-u-muted wrap-anywhere">
+                        {(lesson.audiences?.length || lesson.audience) && (
+                          <p className="mt-1.5 mb-0 text-[13px] leading-snug wrap-anywhere">
+                            {lesson.audiences?.join('; ') || lesson.audience}
+                          </p>
+                        )}
+                        {lesson.metadataWarnings?.map((warning) => (
+                          <p
+                            className="mt-1 mb-0 text-xs text-u-muted"
+                            key={warning}
+                          >
+                            {warning}
+                          </p>
+                        ))}
+                        <p className="mt-1.5 mb-0 text-[13px] leading-relaxed text-u-muted wrap-anywhere">
                           <LessonRoom lesson={lesson} /> ·{' '}
                           {lesson.kind || 'Тип занятия не указан'}
                           {(lesson.teacher || lesson.teachers?.length) && (
@@ -155,6 +209,7 @@ export default function DayAgenda({
                             </span>
                           )}
                         </p>
+                        <LessonDocument lesson={lesson} />
                       </article>
                     </li>
                   );
@@ -165,13 +220,21 @@ export default function DayAgenda({
         </ol>
       ) : (
         <p className="my-5 text-sm text-u-muted" role="status">
-          {excluded.length
-            ? schedules.some((group) => comparisonIssue(group) === 'subgroup')
-              ? 'Подгруппа не определена; данные дня неполные.'
-              : schedules.some((group) => group.error && !group.snapshot)
-                ? 'Данные расписания недоступны.'
-                : 'Ждём данные расписания.'
-            : 'В этот день занятий нет.'}
+          {allHidden
+            ? 'Карточки выбранных видов скрыты. Включи их в настройках отображения.'
+            : missing.some(
+                  (group) => comparisonIssue(group, day) === 'coverage',
+                )
+              ? 'Нет подтверждённых данных документа на этот день.'
+              : excluded.length || missing.length
+                ? schedules.some(
+                    (group) => comparisonIssue(group, day) === 'subgroup',
+                  )
+                  ? 'Подгруппа не определена; данные дня неполные.'
+                  : schedules.some((group) => group.error && !group.snapshot)
+                    ? 'Данные расписания недоступны.'
+                    : 'Ждём данные расписания.'
+                : 'В этот день занятий нет.'}
           {saved && (
             <span className="mt-1 block text-xs">По сохранённым данным</span>
           )}

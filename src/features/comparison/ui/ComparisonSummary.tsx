@@ -1,16 +1,22 @@
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import type { GroupSchedule, Mode } from '../../../lib/types.ts';
+import type { GroupSchedule, Mode, ScheduleKind } from '../../../lib/types.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
   comparisonScope,
   lessonsFor,
 } from '../../../lib/domain.ts';
+import {
+  participates,
+  isGroup,
+  selectionKind,
+} from '../../../lib/schedule-ref.ts';
 import { selectionLabel } from '../../../lib/subgroups.ts';
 
 interface ComparisonSummaryProps {
   schedules: GroupSchedule[];
+  hiddenKinds?: ScheduleKind[];
   day: string;
   loading: boolean;
   mode: Mode;
@@ -20,6 +26,7 @@ interface ComparisonSummaryProps {
 
 export default function ComparisonSummary({
   schedules,
+  hiddenKinds = [],
   day,
   loading,
   mode,
@@ -27,7 +34,15 @@ export default function ComparisonSummary({
   placeholder = false,
 }: ComparisonSummaryProps) {
   const result = compareDay(schedules, day);
-  const { included, excluded } = comparisonScope(schedules);
+  const { included, excluded, overlays } = comparisonScope(schedules, day);
+  const eligible = schedules.filter((schedule) =>
+    participates(schedule.selection),
+  );
+  const mixed = schedules.some((schedule) => !isGroup(schedule.selection));
+  const teachers = schedules.some(
+    (schedule) => selectionKind(schedule.selection) === 'lecturer',
+  );
+  const showScope = mixed || hiddenKinds.length > 0 || excluded.length > 0;
   const comparing = included.length >= 2;
   const hasLessons = included.some((group) =>
     lessonsFor(group).some((lesson) => lesson.date === day),
@@ -76,15 +91,17 @@ export default function ComparisonSummary({
             formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })
           )}
         </div>
-        {!!excluded.length && (
+        {showScope && (!loading || hasSnapshot) && (
           <div
             className="comparison-scope mb-2 text-xs leading-snug"
             role="status"
           >
             <strong>
               {comparing
-                ? `Частичное сравнение · ${included.length} из ${schedules.length}`
-                : `Доступно расписаний: ${included.length} из ${schedules.length}`}
+                ? excluded.length
+                  ? `Частичное сравнение · ${included.length} из ${eligible.length}`
+                  : 'В расчёте'
+                : `Для расчёта: ${included.length} из ${eligible.length}`}
             </strong>
             {!!included.length && (
               <p className="my-1">
@@ -94,12 +111,23 @@ export default function ComparisonSummary({
                   .join(' + ')}
               </p>
             )}
-            <p className="my-1">
-              Не учтены:{' '}
-              {excluded
-                .map((group) => selectionLabel(group.selection))
-                .join(', ')}
-            </p>
+            {!!excluded.length && (
+              <p className="my-1">
+                Не учтены:{' '}
+                {excluded
+                  .map((group) => selectionLabel(group.selection))
+                  .join(', ')}
+              </p>
+            )}
+            {!!overlays.length && (
+              <p className="my-1 text-u-muted">
+                Аудитории показаны для справки:{' '}
+                {overlays
+                  .map((schedule) => schedule.selection.label)
+                  .join(', ')}
+                .
+              </p>
+            )}
           </div>
         )}
         {loading && !hasSnapshot ? (
@@ -113,12 +141,22 @@ export default function ComparisonSummary({
             </div>
             <span className="sr-only">Загружаем результат сравнения.</span>
           </>
-        ) : schedules.length < 2 ? (
-          <strong>Твоё расписание</strong>
+        ) : eligible.length === 0 ? (
+          <>
+            <strong>Занятость аудиторий</strong>
+            <p>
+              По учебному расписанию. Фактическую доступность нужно уточнять.
+            </p>
+          </>
+        ) : eligible.length < 2 && !excluded.length ? (
+          <strong>{teachers ? 'Учебные занятия' : 'Твоё расписание'}</strong>
         ) : !comparing ? (
           <>
             <strong>Совместный результат недоступен</strong>
-            <p>Для сравнения нужны хотя бы два доступных расписания.</p>
+            <p>
+              Для сравнения нужны хотя бы два доступных расписания групп,
+              преподавателей или взводов.
+            </p>
           </>
         ) : !hasLessons ? (
           <>
@@ -161,7 +199,7 @@ export default function ComparisonSummary({
             </p>
             {!!result.lessons.length && (
               <span className="shared-count">
-                Общих пар: {result.lessons.length}
+                Общих занятий: {result.lessons.length}
               </span>
             )}
           </>
@@ -171,8 +209,13 @@ export default function ComparisonSummary({
             {withoutOnsite.length === 1
               ? `У ${withoutOnsite[0]} в этот день нет очных занятий.`
               : withoutOnsite.length
-                ? `В этот день нет очных занятий у ${withoutOnsite.length} выбранных групп.`
-                : 'Время присутствия выбранных групп в вузе не пересекается.'}
+                ? `В этот день нет очных занятий у ${withoutOnsite.length} выбранных расписаний.`
+                : 'Время занятий выбранных участников в вузе не пересекается.'}
+          </p>
+        )}
+        {teachers && (
+          <p className="mt-2 text-[11px] text-u-muted">
+            Для преподавателей учтены только учебные занятия.
           </p>
         )}
         {(!compact || saved) && (

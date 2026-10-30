@@ -1,4 +1,11 @@
 import { useRef, useState, type CSSProperties } from 'react';
+import {
+  scheduleKey,
+  selectionKind,
+  kindLabel,
+  kindIcon,
+} from '../../../lib/schedule-ref.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
 import type { Selection } from '../../../lib/types.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
@@ -10,8 +17,8 @@ const moveButtonClassName =
 interface Props {
   groups: Selection[];
   colors: GroupColors;
-  onMove: (id: number, offset: number) => void;
-  onRemove: (id: number) => void;
+  onMove: (id: string, offset: number) => void;
+  onRemove: (id: string) => void;
   onEmpty: () => void;
 }
 export default function GroupOrder({
@@ -24,13 +31,13 @@ export default function GroupOrder({
   const [announcement, setAnnouncement] = useState('');
   const list = useRef<HTMLOListElement>(null);
   function move(group: Selection, index: number, offset: number) {
-    onMove(group.id, offset);
+    onMove(scheduleKey(group), offset);
     setAnnouncement(
       `${group.label}: позиция ${index + offset + 1} из ${groups.length}.`,
     );
     requestAnimationFrame(() => {
       const row = list.current?.querySelector<HTMLElement>(
-        `[data-group-id="${group.id}"]`,
+        `[data-group-id="${scheduleKey(group)}"]`,
       );
       const arrows = row?.querySelectorAll<HTMLButtonElement>('button');
       const preferred = arrows?.[offset < 0 ? 0 : 1];
@@ -45,23 +52,29 @@ export default function GroupOrder({
     <>
       <ol
         data-group-order
-        className="mt-2 flex max-h-[min(24dvh,220px)] list-none flex-col gap-2 overflow-y-auto p-0.5"
+        className="mt-1 flex max-h-[min(20dvh,160px)] list-none flex-col gap-1.5 overflow-y-auto p-0.5"
         ref={list}
       >
         {groups.map((group, index) => (
           <li
-            key={group.id}
-            data-group-id={group.id}
+            key={scheduleKey(group)}
+            data-group-id={scheduleKey(group)}
             className="flex items-center gap-1.5 rounded-[var(--u-radius)] border border-[color-mix(in_srgb,var(--chip)_70%,var(--u-line))] bg-[var(--chip)] px-1.75 py-1 [color:var(--u-category-ink)]"
             style={
               {
-                '--chip': chipColor(colors[group.id] ?? 0),
+                '--chip': chipColor(colors[scheduleKey(group)] ?? 0),
               } as CSSProperties
             }
           >
-            <strong className="min-w-0 flex-1 text-sm wrap-anywhere">
-              {selectionLabel(group)}
-            </strong>
+            <span className="min-w-0 flex-1">
+              <strong className="block text-sm wrap-anywhere">
+                {selectionLabel(group)}
+              </strong>
+              <span className="flex items-center gap-1 text-[11px]">
+                <Icon name={kindIcon(selectionKind(group))} size={11} />
+                {kindLabel(selectionKind(group))}
+              </span>
+            </span>
             <IconButton
               label={`Переместить ${group.label} выше`}
               name="up"
@@ -78,7 +91,7 @@ export default function GroupOrder({
             />
             <IconButton
               label={`Убрать ${group.label}`}
-              data-group-remove={group.id}
+              data-group-remove={scheduleKey(group)}
               name="close"
               className={moveButtonClassName}
               onClick={() => {
@@ -86,17 +99,17 @@ export default function GroupOrder({
                 if (next)
                   list.current
                     ?.querySelector<HTMLButtonElement>(
-                      `[data-group-remove="${next.id}"]`,
+                      `[data-group-remove="${scheduleKey(next)}"]`,
                     )
                     ?.focus({ preventScroll: true });
-                onRemove(group.id);
+                onRemove(scheduleKey(group));
                 setAnnouncement(`${group.label} убрана из сравнения.`);
                 if (!next) onEmpty();
                 else
                   requestAnimationFrame(() =>
                     list.current
                       ?.querySelector<HTMLButtonElement>(
-                        `[data-group-id="${next.id}"] button:not(:disabled)`,
+                        `[data-group-id="${scheduleKey(next)}"] button:not(:disabled)`,
                       )
                       ?.focus(),
                   );

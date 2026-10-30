@@ -1,5 +1,8 @@
 import {
   Calendar,
+  DoorOpen,
+  Shield,
+  UserRound,
   CalendarDays,
   CalendarRange,
   Check,
@@ -31,6 +34,10 @@ import {
 
 const icons: Record<string, LucideIcon> = {
   pin: MapPin,
+  teacher: UserRound,
+  room: DoorOpen,
+  shield: Shield,
+  vuc: Shield,
   plus: Plus,
   close: X,
   left: ChevronLeft,

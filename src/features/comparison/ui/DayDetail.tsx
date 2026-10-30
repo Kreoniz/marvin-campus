@@ -2,7 +2,13 @@ import type { CSSProperties } from 'react';
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
-import type { GroupSchedule, Mode, Subgroup } from '../../../lib/types.ts';
+import type {
+  GroupSchedule,
+  Mode,
+  Subgroup,
+  ScheduleKind,
+} from '../../../lib/types.ts';
+import { selectionKind } from '../../../lib/schedule-ref.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
@@ -23,6 +29,7 @@ import ComparisonHighlights, {
 
 interface DayDetailProps {
   schedules: GroupSchedule[];
+  hiddenKinds?: ScheduleKind[];
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
   day: string;
@@ -32,13 +39,14 @@ interface DayDetailProps {
   placeholder?: boolean;
   dayFormat: 'timeline' | 'list';
   onDayFormat: (format: 'timeline' | 'list') => void;
-  spotlightIds: number[];
+  spotlightIds: string[];
   spotlightLabel?: string;
   onClearSpotlight: () => void;
 }
 
 export default function DayDetail({
   schedules,
+  hiddenKinds = [],
   colors,
   subgroupCatalog = {},
   day,
@@ -53,11 +61,15 @@ export default function DayDetail({
   onClearSpotlight,
 }: DayDetailProps) {
   const result = compareDay(schedules, day);
-  const { included } = comparisonScope(schedules);
+  const { included } = comparisonScope(schedules, day);
   const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
-  const placed = lessonBlocks(schedules, day);
+  const placed = lessonBlocks(schedules, day).filter((block) =>
+    block.members.some(
+      (member) => !hiddenKinds.includes(selectionKind(member)),
+    ),
+  );
   const all = schedules.flatMap((group) => group.snapshot?.data.lessons ?? []);
   const start = Math.min(
     480,
@@ -75,7 +87,13 @@ export default function DayDetail({
   const weekRows = Math.max(
     1,
     ...[...new Set(all.map((lesson) => lesson.date))].flatMap((date) =>
-      lessonBlocks(schedules, date).map((block) => block.columns),
+      lessonBlocks(schedules, date)
+        .filter((block) =>
+          block.members.some(
+            (member) => !hiddenKinds.includes(selectionKind(member)),
+          ),
+        )
+        .map((block) => block.columns),
     ),
   );
   const rowHeight = 68;
@@ -145,6 +163,7 @@ export default function DayDetail({
               loading={loading}
               placeholder={placeholder}
               spotlightIds={spotlightIds}
+              hiddenKinds={hiddenKinds}
             />
           </div>
         ) : (
@@ -210,6 +229,7 @@ export default function DayDetail({
                           subgroupCatalog={subgroupCatalog}
                           horizontal
                           spotlightIds={spotlightIds}
+                          hiddenKinds={hiddenKinds}
                           style={{
                             left: `calc(${((block.lesson.start - start) * 100) / (end - start)}% + 2px)`,
                             width: `calc(${((block.lesson.end - block.lesson.start) * 100) / (end - start)}% - 4px)`,
@@ -220,17 +240,31 @@ export default function DayDetail({
                       ))}
                       {!placed.length && (
                         <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
-                          {schedules.some(
-                            (group) => comparisonIssue(group) === 'subgroup',
+                          {schedules.length > 0 &&
+                          schedules.every((group) =>
+                            hiddenKinds.includes(
+                              selectionKind(group.selection),
+                            ),
                           )
-                            ? 'Подгруппа не определена; сравнение ограничено.'
+                            ? 'Карточки скрыты в настройках отображения.'
                             : schedules.some(
-                                  (group) => group.error && !group.snapshot,
+                                  (group) =>
+                                    comparisonIssue(group, day) === 'coverage',
                                 )
-                              ? 'Часть расписаний недоступна.'
-                              : schedules.some((group) => !group.snapshot)
-                                ? 'Ждём данные расписания.'
-                                : 'В этот день занятий нет.'}
+                              ? 'Нет подтверждённых данных документа на этот день.'
+                              : schedules.some(
+                                    (group) =>
+                                      comparisonIssue(group, day) ===
+                                      'subgroup',
+                                  )
+                                ? 'Подгруппа не определена; сравнение ограничено.'
+                                : schedules.some(
+                                      (group) => group.error && !group.snapshot,
+                                    )
+                                  ? 'Часть расписаний недоступна.'
+                                  : schedules.some((group) => !group.snapshot)
+                                    ? 'Ждём данные расписания.'
+                                    : 'В этот день занятий нет.'}
                           {saved &&
                             schedules.every((group) => group.snapshot) && (
                               <span>По сохранённым данным</span>
@@ -250,6 +284,7 @@ export default function DayDetail({
       </div>
       <ComparisonSummary
         schedules={schedules}
+        hiddenKinds={hiddenKinds}
         day={day}
         mode={mode}
         loading={loading}

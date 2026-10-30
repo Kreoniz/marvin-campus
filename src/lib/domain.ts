@@ -1,5 +1,6 @@
 import type { DayResult, GroupSchedule, Interval, Lesson } from './types.ts';
 import { selectedSubgroup } from './subgroups.ts';
+import { isGroup, participates } from './schedule-ref.ts';
 
 export function forSelection(lessons: Lesson[], subgroup?: number): Lesson[] {
   return subgroup === undefined
@@ -19,10 +20,23 @@ export function lessonsFor(group: GroupSchedule): Lesson[] {
 
 export function comparisonIssue(
   group: GroupSchedule,
-): 'missing' | 'subgroup' | undefined {
+  date?: string,
+): 'missing' | 'subgroup' | 'coverage' | undefined {
   if (!group.snapshot) return 'missing';
+  const data = group.snapshot.data;
   if (
-    selectedSubgroup(group.selection, group.snapshot.data.subgroups) === -1 &&
+    group.selection.kind === 'vuc' &&
+    (!data.coveredDates ||
+      (date
+        ? !data.coveredDates.includes(date) ||
+          data.unresolvedDates?.includes(date)
+        : data.coveredDates.length === 0))
+  )
+    return 'coverage';
+  if (
+    isGroup(group.selection) &&
+    selectedSubgroup(group.selection, group.snapshot.data.subgroups ?? []) ===
+      -1 &&
     group.snapshot.data.lessons.some((lesson) => lesson.subgroups.length > 0)
   )
     return 'subgroup';
@@ -31,12 +45,15 @@ export function comparisonIssue(
   return undefined;
 }
 
-export function comparisonScope(schedules: GroupSchedule[]) {
+export function comparisonScope(schedules: GroupSchedule[], date?: string) {
   const included: GroupSchedule[] = [];
   const excluded: GroupSchedule[] = [];
-  for (const group of schedules)
-    (comparisonIssue(group) ? excluded : included).push(group);
-  return { included, excluded };
+  const overlays: GroupSchedule[] = [];
+  for (const group of schedules) {
+    if (!participates(group.selection)) overlays.push(group);
+    else (comparisonIssue(group, date) ? excluded : included).push(group);
+  }
+  return { included, excluded, overlays };
 }
 
 export function merge(intervals: Interval[]): Interval[] {
@@ -69,6 +86,7 @@ export function subtract(range: Interval, occupied: Interval[]): Interval[] {
 // events from different groups must never become an alleged joint lesson.
 export function lessonKey(lesson: Lesson): string {
   return JSON.stringify([
+    lesson.source ?? 'rasp',
     lesson.id,
     lesson.date,
     lesson.start,
@@ -86,7 +104,7 @@ export function compareDay(
   date: string,
 ): DayResult {
   const empty = { presence: [], free: [], lessons: [], complete: false };
-  const { included, excluded } = comparisonScope(schedules);
+  const { included, excluded } = comparisonScope(schedules, date);
   if (included.length < 2) return empty;
   const complete = excluded.length === 0;
   const days = included.map((group) =>

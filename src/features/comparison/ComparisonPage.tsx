@@ -21,6 +21,9 @@ import Icon from '../../shared/ui/Icon.tsx';
 import DisplaySettings from './ui/DisplaySettings.tsx';
 import type { CalendarLayers } from '../schedule/ui/ComparisonHighlights.tsx';
 import DayAgenda from '../schedule/ui/DayAgenda.tsx';
+import type { ScheduleKind, Selection } from '../../lib/types.ts';
+import { scheduleKey, selectionKind } from '../../lib/schedule-ref.ts';
+import VucSources, { nearestVucDate } from '../resources/VucSources.tsx';
 import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
@@ -31,8 +34,10 @@ const compactQuery =
 
 export default function ComparisonPage() {
   const manager = Toast.useToastManager();
+  const searchMutation = useRef(false);
   const notify = useCallback<Notify>(
     (message, kind = 'success') => {
+      if (searchMutation.current && kind === 'success') return;
       manager.add({ title: message, type: kind === 'error' ? 'danger' : kind });
     },
     [manager],
@@ -46,14 +51,15 @@ export default function ComparisonPage() {
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
   const [dayFormat, setDayFormat] = useState<'timeline' | 'list'>('timeline');
-  const [spotlightGroupIds, setSpotlightGroupIds] = useState<number[]>([]);
+  const [spotlightGroupIds, setSpotlightGroupIds] = useState<string[]>([]);
   const addGroupRef = useRef<HTMLButtonElement>(null);
   const [orderOpen, setOrderOpen] = useState(false);
   const [layers, setLayers] = useState<CalendarLayers>({
     presence: true,
     free: true,
   });
-  const [orderFocus, setOrderFocus] = useState(0);
+  const [orderFocus, setOrderFocus] = useState('');
+  const [hiddenKinds, setHiddenKinds] = useState<ScheduleKind[]>([]);
   const groups = view.groups,
     week = view.week,
     day = view.day,
@@ -62,23 +68,58 @@ export default function ComparisonPage() {
   const spotlightIds =
     groups.length > 1
       ? spotlightGroupIds.filter((id) =>
-          groups.some((group) => group.id === id),
+          groups.some(
+            (group) =>
+              scheduleKey(group) === id &&
+              !hiddenKinds.includes(selectionKind(group)),
+          ),
         )
       : [];
   const spotlightLabel =
     groups
-      .filter((group) => spotlightIds.includes(group.id))
+      .filter((group) => spotlightIds.includes(scheduleKey(group)))
       .map((group) => group.label)
       .join(', ') || undefined;
   useEffect(() => {
     setSpotlightGroupIds((current) => {
       const next =
         groups.length > 1
-          ? current.filter((id) => groups.some((group) => group.id === id))
+          ? current.filter((id) =>
+              groups.some((group) => scheduleKey(group) === id),
+            )
           : [];
       return next.length === current.length ? current : next;
     });
   }, [groups]);
+  function addSchedule(selection: Selection) {
+    if (
+      view.groups.some(
+        (current) => scheduleKey(current) === scheduleKey(selection),
+      )
+    ) {
+      notify(`${selection.label} уже в календаре.`, 'info');
+      return;
+    }
+    if (view.groups.length >= 30) {
+      notify(
+        'Можно выбрать до 30 расписаний. Убери одно, чтобы добавить другое.',
+        'info',
+      );
+      return;
+    }
+    view.addSchedule(
+      selection,
+      !groups.length ? nearestVucDate(selection, day) : undefined,
+    );
+  }
+  function fromSearch(action: () => void) {
+    searchMutation.current = true;
+    try {
+      action();
+    } finally {
+      searchMutation.current = false;
+    }
+  }
   function selectFormat(value: ScheduleView) {
     const current =
       mobileView === 'week' ? 'week' : dayFormat === 'list' ? 'list' : 'day';
@@ -174,7 +215,7 @@ export default function ComparisonPage() {
       className="campus-theme min-h-svh bg-u-canvas text-u-ink"
       tokens={{ '--u-accent': '#87f19d' }}
     >
-      <ResourceProvider day={day}>
+      <ResourceProvider onAdd={addSchedule}>
         <a
           className="fixed top-2 left-2 z-[200] -translate-y-[160%] rounded-u-control bg-u-accent p-2.5 text-u-accent-ink focus:translate-y-0"
           href="#comparison"
@@ -204,8 +245,8 @@ export default function ComparisonPage() {
               <DisplaySettings
                 layers={layers}
                 onLayers={setLayers}
-                theme={theme}
-                onToggleTheme={toggleTheme}
+                hiddenKinds={hiddenKinds}
+                onHiddenKinds={setHiddenKinds}
                 spotlightLabel={spotlightLabel}
                 onClearSpotlight={() => setSpotlightGroupIds([])}
               />
@@ -250,19 +291,23 @@ export default function ComparisonPage() {
                 >
                   <GroupPicker
                     selected={groups}
-                    onAdd={view.add}
-                    onError={(message) => notify(message, 'error')}
+                    onAdd={(selection) =>
+                      fromSearch(() => addSchedule(selection))
+                    }
                     returnFocus={addGroupRef}
                     open={orderOpen}
                     onOpenChange={setOrderOpen}
                     colors={colors}
-                    onMove={view.move}
-                    onRemove={view.remove}
-                    focusGroupId={orderFocus}
+                    onMove={(key, offset) =>
+                      fromSearch(() => view.move(key, offset))
+                    }
+                    onRemove={(key) => fromSearch(() => view.remove(key))}
+                    focusScheduleKey={orderFocus}
                   >
                     <ComparisonToolbar
                       view={view}
                       schedules={source.schedules}
+                      hiddenKinds={hiddenKinds}
                       subgroupCatalog={subgroupCatalog}
                       colors={colors}
                       opening={links.opening}
@@ -279,7 +324,7 @@ export default function ComparisonPage() {
                         )
                       }
                       addGroupRef={addGroupRef}
-                      onGroups={() => setOrderFocus(0)}
+                      onGroups={() => setOrderFocus('')}
                     />
                     {groups.length || links.opening ? (
                       <>
@@ -288,6 +333,7 @@ export default function ComparisonPage() {
                         )}
                         {mobile ? (
                           <MobileComparisonPanel
+                            hiddenKinds={hiddenKinds}
                             section="controls"
                             view={view}
                             schedules={source.schedules}
@@ -299,10 +345,36 @@ export default function ComparisonPage() {
                         ) : (
                           <ComparisonStatus
                             schedules={source.schedules}
+                            day={day}
                             fetching={links.opening || source.fetching}
                             links={links}
                           />
                         )}
+                        {groups.some((group) =>
+                          hiddenKinds.includes(selectionKind(group)),
+                        ) && (
+                          <div
+                            className="flex flex-wrap items-center justify-between gap-2 border-t border-u-line-soft px-3 py-1 text-xs text-u-muted"
+                            role="status"
+                          >
+                            <span>
+                              Часть карточек скрыта. Состав расчёта сохранён.
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="min-h-8 text-xs underline"
+                              onClick={() => setHiddenKinds([])}
+                            >
+                              Показать всё
+                            </Button>
+                          </div>
+                        )}
+                        <VucSources
+                          schedules={source.schedules}
+                          day={day}
+                          onSelectDate={view.selectDate}
+                        />
                         {mobile &&
                         mobileView === 'day' &&
                         dayFormat === 'list' ? (
@@ -314,6 +386,7 @@ export default function ComparisonPage() {
                             loading={busy}
                             placeholder={links.opening}
                             spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
                           />
                         ) : (
                           <Calendar
@@ -329,10 +402,12 @@ export default function ComparisonPage() {
                             compact={mobile}
                             singleDay={mobile && mobileView === 'day'}
                             spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
                           />
                         )}
                         {mobile && (
                           <MobileComparisonPanel
+                            hiddenKinds={hiddenKinds}
                             section="result"
                             view={view}
                             schedules={source.schedules}
@@ -357,9 +432,9 @@ export default function ComparisonPage() {
                             С кем пересечёмся?
                           </h2>
                           <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
-                            Добавь свою группу и группу друга.
-                            <br />С одной группой можно посмотреть своё
-                            расписание.
+                            Добавь группу, преподавателя, аудиторию или взвод.
+                            <br />
+                            Все выбранные расписания — в одном календаре.
                           </p>
                           <GroupPickerTrigger labelled />
                           <button
@@ -377,6 +452,7 @@ export default function ComparisonPage() {
                 {(groups.length > 0 || links.opening) && !mobile && (
                   <DayDetail
                     schedules={source.schedules}
+                    hiddenKinds={hiddenKinds}
                     colors={colors}
                     subgroupCatalog={subgroupCatalog}
                     day={day}

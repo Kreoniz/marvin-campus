@@ -1,12 +1,14 @@
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
 
+export const VERTICAL_CARD_WIDTH = 160;
+export const VERTICAL_LANE_PITCH = 166;
+
 export interface VerticalPlacement {
   block: LessonBlock;
   top: number;
   height: number;
   column: number;
   columns: number;
-  span: number;
 }
 
 // Presentation geometry only: painted minimum heights must not change the
@@ -41,26 +43,12 @@ export function verticalLayout(
       return { ...entry, column };
     });
     for (const entry of placed) {
-      let span = 1;
-      for (let lane = entry.column + 1; lane < ends.length; lane++) {
-        if (
-          placed.some(
-            (other) =>
-              other.column === lane &&
-              other.top < entry.reserveEnd &&
-              entry.top < other.reserveEnd,
-          )
-        )
-          break;
-        span++;
-      }
       result.push({
         block: entry.block,
         top: entry.top,
         height: entry.height,
         column: entry.column,
         columns: ends.length,
-        span,
       });
     }
     cluster = [];
@@ -79,8 +67,8 @@ export function verticalLayout(
 
 export function dayMinimum(placed: VerticalPlacement[], compactFloor = 0) {
   return Math.max(
-    166,
+    VERTICAL_LANE_PITCH,
     compactFloor,
-    ...placed.map((entry) => 134 * entry.columns),
+    ...placed.map((entry) => VERTICAL_LANE_PITCH * entry.columns),
   );
 }

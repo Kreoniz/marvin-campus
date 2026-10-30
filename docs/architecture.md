@@ -13,6 +13,9 @@
   disabled; the existing database and links are retained.
 - `src/lib`: pure schedule calculations, reversible URL encoding, query options,
   selection state, link synchronization, PWA integration and analytics policy.
+  `schedule-ref` gives group/lecturer/room/VUC selections source-scoped string
+  keys; natural canonical IDs remain at API boundaries. `ScheduleData` does not
+  pretend a room is a group. Imported coverage is checked per entity and date.
 - `src/app`: React providers, theme entry and application shell/help.
 - `src/features/comparison`: page composition, comparison state, navigation,
   results and data status. It composes the independent groups and schedule UI.
@@ -22,23 +25,33 @@
   not change schedule data. The single schedule-search dialog combines the existing
   combobox search with the reusable ordering/removal list. Removing its last
   selection keeps search available. The exploratory name/icon chooser has been removed.
-- `src/features/resources`: typed lecturer/auditorium queries and a transient
-  resource inspector. The group manager's search tabs and linked lesson metadata
-  open it without changing group selection or the comparison URL. Resource HTTP
+- `src/features/resources`: typed lecturer/auditorium queries and linked metadata
+  actions adding to the same selected set. Unified search and kind visibility
+  reuse the calendar/list, ordering and spotlight workflow. Resource HTTP
   endpoints allow only `lecturer` and `auditorium`; normalization whitelists public
   lesson fields and canonical refs, retaining legacy teacher/room strings. Cache
   and Query keys include resource kind and ID. Resource weeks reuse snapshot
   deadlines while persistent worker caching remains limited to group schedules.
+- `internal/vuc` and `scripts/import-vuc.py`: bounded configured document datasets
+  and a local importer. The API exposes a typed platoon catalogue and requested
+  weeks with per-platoon covered/unresolved dates and source evidence; it accepts
+  no public uploads or request-controlled filesystem paths. See `docs/vuc.md`.
+- `presentation-cohort` and `use-presentation-cohort`: publication policy above
+  independent query caches. A week and typed selection set define a generation;
+  cold responses wait at most two seconds, later changes coalesce for 1.2 seconds
+  while requests run. Same-week retained inputs survive selection changes.
+  Snapshot deadlines and current errors are checked independently of publication.
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
   from the pure calculations in `src/lib`. Day and week views both render the
   same consolidated `lessonBlocks` events. `features/schedule/model` allocates
-  vertical presentation lanes against semantic and painted bounds, then expands
-  cards only into continuously free lanes. Per-day minima and measured column
+  vertical presentation lanes against semantic and painted bounds. Rendering uses
+  fixed 160-pixel cards and 166-pixel lanes. Per-day minima and measured column
   navigation stay outside domain calculations. The horizontal timeline keeps
   semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
   retaining individual bundle occurrences and participant records. Exact interval
   grouping is a separate presentation projection; it never merges lesson
-  identities. Calendar layer visibility is local UI state. Both orientations
+  identities. Calendar layer and kind visibility are local UI state and never
+  remove calculation participants. Rooms remain occupancy overlays. Both orientations
   render presence/free ranges from `compareDay` through `ComparisonHighlights`;
   URL modes remain compatible and never filter the calculation inputs.
   Shared events keep one card and their full

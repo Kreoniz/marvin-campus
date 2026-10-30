@@ -5,7 +5,7 @@ import { publicSubgroup } from '../../../lib/subgroups.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
-  groupId: number;
+  groupKey: string;
   label: string;
   subgroups: Subgroup[];
   value?: number;
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function SubgroupPicker({
-  groupId,
+  groupKey,
   label,
   subgroups,
   value,
@@ -59,7 +59,7 @@ export default function SubgroupPicker({
       <Select.Trigger
         className="subgroup-trigger relative h-11 min-h-11 min-w-18 flex-1 gap-0 rounded-none border-0 bg-transparent px-1 text-inherit shadow-none [&_.u-select-icon]:hidden"
         aria-label={`Подгруппа ${label}: ${currentLabel}`}
-        data-drag-id={groupId}
+        data-drag-id={groupKey}
         aria-describedby={describedBy}
         onKeyDown={onKeyDown}
         title={currentLabel}

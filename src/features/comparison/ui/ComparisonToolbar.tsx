@@ -2,7 +2,11 @@ import { useState, type RefObject } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
 import type { ComparisonView } from '../model/use-comparison.ts';
-import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
+import type {
+  GroupSchedule,
+  Subgroup,
+  ScheduleKind,
+} from '../../../lib/types.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { addDays, weekLabel } from '../../../lib/dates.ts';
 import GroupStrip from '../../groups/ui/GroupStrip.tsx';
@@ -14,18 +18,20 @@ import DatePicker from './LazyDatePicker.tsx';
 interface Props {
   view: ComparisonView;
   schedules: GroupSchedule[];
+  hiddenKinds?: ScheduleKind[];
   subgroupCatalog: Record<number, Subgroup[]>;
   colors: GroupColors;
   opening: boolean;
-  onOrder: (id: number) => void;
-  spotlightIds: number[];
-  onSpotlight: (id: number) => void;
+  onOrder: (id: string) => void;
+  spotlightIds: string[];
+  onSpotlight: (id: string) => void;
   addGroupRef: RefObject<HTMLButtonElement | null>;
   onGroups: () => void;
 }
 export default function ComparisonToolbar({
   view,
   schedules,
+  hiddenKinds = [],
   subgroupCatalog,
   colors,
   opening,
@@ -57,6 +63,8 @@ export default function ComparisonToolbar({
         ) : (
           <GroupStrip
             groups={view.groups}
+            day={view.day}
+            hiddenKinds={hiddenKinds}
             schedules={schedules}
             subgroupCatalog={subgroupCatalog}
             colors={colors}

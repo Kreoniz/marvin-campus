@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Lesson, ResourceRef } from '../../lib/types.ts';
 import { useResourceInspector } from './ResourceInspector.tsx';
 
@@ -25,7 +26,8 @@ export function LessonRoom({
     <button
       type="button"
       className={linkClass}
-      aria-label={`Открыть расписание аудитории ${ref.label}`}
+      aria-label={`Добавить расписание аудитории ${ref.label}`}
+      title="Добавить в календарь"
       onClick={(event) =>
         (onOpen ?? openResource)(ref, event.currentTarget, lesson.date)
       }
@@ -46,20 +48,42 @@ export function LessonTeachers({
 }) {
   const { openResource } = useResourceInspector();
   const teachers = lesson.teachers ?? [];
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? teachers : teachers.slice(0, 3);
   if (!teachers.length) return <>{lesson.teacher}</>;
-  return teachers.map((ref, index) => (
-    <span key={`${ref.kind}:${ref.id}`}>
-      {index > 0 && ', '}
-      <button
-        type="button"
-        className={linkClass}
-        aria-label={`Открыть расписание преподавателя ${ref.label}`}
-        onClick={(event) =>
-          (onOpen ?? openResource)(ref, event.currentTarget, lesson.date)
-        }
-      >
-        {teachers.length === 1 ? lesson.teacher || ref.label : ref.label}
-      </button>
-    </span>
-  ));
+  return (
+    <>
+      {shown.map((ref, index) => (
+        <span key={`${ref.kind}:${ref.id}`}>
+          {index > 0 && ', '}
+          <button
+            type="button"
+            className={linkClass}
+            aria-label={`Добавить расписание преподавателя ${ref.label}`}
+            title="Добавить в календарь"
+            onClick={(event) =>
+              (onOpen ?? openResource)(ref, event.currentTarget, lesson.date)
+            }
+          >
+            {teachers.length === 1 ? lesson.teacher || ref.label : ref.label}
+          </button>
+        </span>
+      ))}
+      {teachers.length > 3 && (
+        <button
+          type="button"
+          className={`${linkClass} ml-1`}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          aria-label={
+            expanded
+              ? 'Свернуть список преподавателей'
+              : `Показать ещё ${teachers.length - 3} преподавателей`
+          }
+        >
+          {expanded ? 'Свернуть' : `+${teachers.length - 3}`}
+        </button>
+      )}
+    </>
+  );
 }

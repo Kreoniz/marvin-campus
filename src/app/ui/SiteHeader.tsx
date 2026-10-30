@@ -15,7 +15,7 @@ export default function SiteHeader({
   settingsControl: ReactNode;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0.5 compact:border-b-0 compact:py-0">
+    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:-mx-3 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0.5 compact:border-b-0 compact:px-1 compact:py-0">
       <a
         className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"
@@ -28,7 +28,7 @@ export default function SiteHeader({
           height="60"
           alt=""
         />
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-3 compact:max-[420px]:hidden">
           <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-lg compact:tracking-[-0.7px]">
             Кампус
           </span>
@@ -59,7 +59,10 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="header-actions flex gap-1 compact:hidden">
+      <div className="ml-auto hidden shrink-0 items-center compact:flex">
+        {viewControl}
+      </div>
+      <div className="header-actions flex shrink-0 gap-0.5 compact:[&_.icon-button]:size-11 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}
@@ -69,9 +72,6 @@ export default function SiteHeader({
           aria-pressed={theme === 'dark'}
           onClick={onToggleTheme}
         />
-      </div>
-      <div className="ml-auto hidden shrink-0 items-center compact:flex">
-        {viewControl}
       </div>
       {settingsControl}
     </header>

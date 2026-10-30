@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
-import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
+import type {
+  GroupSchedule,
+  Subgroup,
+  ScheduleKind,
+} from '../../../lib/types.ts';
+import { selectionKind } from '../../../lib/schedule-ref.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
@@ -11,7 +16,12 @@ import {
 import { selectionLabel } from '../../../lib/subgroups.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
-import { dayMinimum, verticalLayout } from '../model/vertical-layout.ts';
+import {
+  dayMinimum,
+  verticalLayout,
+  VERTICAL_CARD_WIDTH,
+  VERTICAL_LANE_PITCH,
+} from '../model/vertical-layout.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
@@ -31,7 +41,8 @@ interface CalendarProps {
   singleDay?: boolean;
   compact?: boolean;
   placeholder?: boolean;
-  spotlightIds?: number[];
+  spotlightIds?: string[];
+  hiddenKinds?: ScheduleKind[];
 }
 
 export default function Calendar({
@@ -47,6 +58,7 @@ export default function Calendar({
   compact = false,
   placeholder = false,
   spotlightIds = [],
+  hiddenKinds = [],
 }: CalendarProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const viewportWidth = useCalendarNavigation(
@@ -56,7 +68,6 @@ export default function Calendar({
     singleDay,
     compact,
   );
-  const [clock, setClock] = useState({ start: 480, end: 1140 });
   const dates = singleDay
     ? [day]
     : Array.from({ length: 7 }, (_, i) => addDays(week, i));
@@ -70,20 +81,8 @@ export default function Calendar({
     1140,
     ...all.map((lesson) => Math.ceil(lesson.end / 60) * 60),
   );
-  useEffect(() => {
-    if (loading) return;
-    setClock((previous) => {
-      const start = Math.min(previous.start, earliest);
-      const end = Math.max(previous.end, latest);
-      return start === previous.start && end === previous.end
-        ? previous
-        : { start, end };
-    });
-  }, [earliest, latest, loading]);
-  // Saved lessons can arrive while another group is still loading. Their full
-  // bounds must fit immediately, before the settled clock effect runs.
-  const start = Math.min(clock.start, earliest);
-  const end = Math.max(clock.end, latest);
+  const start = earliest;
+  const end = latest;
   const calendarHeight = Math.max(
     (end - start) * scale,
     ...all.map(
@@ -96,17 +95,38 @@ export default function Calendar({
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
   );
-  const { included, excluded } = comparisonScope(schedules);
-  const complete = excluded.length === 0;
+  const { included, excluded } = comparisonScope(schedules, day);
   const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
-  const layout = dates.map((date) => ({
-    date,
-    result: compareDay(schedules, date),
-    placed: verticalLayout(lessonBlocks(schedules, date), start, scale),
-  }));
+  const visible = schedules.filter(
+    (group) => !hiddenKinds.includes(selectionKind(group.selection)),
+  );
+  const layout = dates.map((date) => {
+    const blocks = lessonBlocks(schedules, date);
+    const scope = comparisonScope(schedules, date);
+    return {
+      date,
+      result: compareDay(schedules, date),
+      scope,
+      saved: scope.included.some(
+        (group) => group.snapshot && (group.snapshot.stale || group.error),
+      ),
+      complete: visible.every((group) => !comparisonIssue(group, date)),
+      hidden:
+        (schedules.length > 0 && visible.length === 0) || blocks.length > 0,
+      placed: verticalLayout(
+        blocks.filter((block) =>
+          block.members.some(
+            (member) => !hiddenKinds.includes(selectionKind(member)),
+          ),
+        ),
+        start,
+        scale,
+      ),
+    };
+  });
   const railWidth = compact ? 32 : 48;
   const minima = layout.map((column) =>
     dayMinimum(
@@ -159,7 +179,7 @@ export default function Calendar({
               {!singleDay && (
                 <>
                   <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-                  {dates.map((date) => (
+                  {layout.map(({ date, scope }) => (
                     <button
                       type="button"
                       key={date}
@@ -172,6 +192,11 @@ export default function Calendar({
                         day: 'numeric',
                         month: 'long',
                       })}
+                      title={
+                        scope.excluded.length
+                          ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
+                          : undefined
+                      }
                       onClick={() => onDay(date)}
                     >
                       {placeholder ? (
@@ -180,6 +205,16 @@ export default function Calendar({
                         <>
                           <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
                           {Number(date.slice(8))}
+                          {scope.excluded.length > 0 &&
+                            !(loading && !hasSnapshot) && (
+                              <span
+                                className="ml-1 text-[11px] font-normal"
+                                aria-label="Частичное сравнение"
+                              >
+                                · {scope.included.length}/
+                                {scope.included.length + scope.excluded.length}
+                              </span>
+                            )}
                         </>
                       )}
                     </button>
@@ -233,30 +268,24 @@ export default function Calendar({
                         <ComparisonHighlights
                           result={column.result}
                           layers={layers}
-                          saved={saved}
+                          saved={column.saved}
                           start={start}
                           scale={scale}
                         />
                         {column.placed.map(
-                          ({
-                            block,
-                            top,
-                            height,
-                            column: lane,
-                            columns,
-                            span,
-                          }) => (
+                          ({ block, top, height, column: lane }) => (
                             <LessonCard
                               key={block.identity}
                               block={block}
                               colors={colors}
                               subgroupCatalog={subgroupCatalog}
                               spotlightIds={spotlightIds}
+                              hiddenKinds={hiddenKinds}
                               style={{
                                 top,
                                 height,
-                                left: `calc(min(${(lane * 100) / columns}%, ${lane * 166}px) + 3px)`,
-                                width: `min(${span > 1 ? 320 : 160}px, calc(min(${(span * 100) / columns}%, ${span * 166}px) - 6px))`,
+                                left: lane * VERTICAL_LANE_PITCH + 3,
+                                width: VERTICAL_CARD_WIDTH,
                               }}
                             />
                           ),
@@ -264,26 +293,30 @@ export default function Calendar({
                         {!column.placed.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
-                              {!complete
+                              {!column.complete
                                 ? excluded.some(
                                     (group) =>
                                       comparisonIssue(group) === 'subgroup',
                                   )
                                   ? 'Подгруппа не определена'
-                                  : schedules.some(
+                                  : visible.some(
                                         (group) =>
                                           group.error && !group.snapshot,
                                       )
                                     ? 'Данные недоступны'
-                                    : 'Ждём данные'
-                                : 'Нет занятий'}
+                                    : visible.some((group) => group.loading)
+                                      ? 'Ждём данные'
+                                      : 'Нет данных на этот день'
+                                : column.hidden
+                                  ? 'Занятия скрыты'
+                                  : 'Нет занятий'}
                             </span>
-                            {complete && saved && (
+                            {column.complete && column.saved && (
                               <span className="empty-saved text-[11px]">
                                 По сохранённым данным
                               </span>
                             )}
-                            {complete && (
+                            {column.complete && !column.hidden && (
                               <img
                                 src="/assets/planet.webp"
                                 alt=""
@@ -324,7 +357,7 @@ export default function Calendar({
               <span className="mr-3">
                 {excluded.length
                   ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
-                  : `Для всех ${included.length} групп`}
+                  : `Для всех ${included.length} участников`}
                 {saved && ' · по сохранённым данным'}.
               </span>
             )}

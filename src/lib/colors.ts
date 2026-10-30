@@ -1,10 +1,10 @@
 const base = [1, 6, 3, 2, 4, 5];
 const count = 30;
-export type GroupColors = Record<number, number>;
+export type GroupColors = Record<string, number>;
 
 // Keep active groups' colors; resolve collisions only for newly added groups.
 export function assignColors(
-  ids: number[],
+  ids: (number | string)[],
   previous: GroupColors = {},
 ): GroupColors {
   const result: GroupColors = {};
@@ -23,7 +23,13 @@ export function assignColors(
   }
   for (const id of ids) {
     if (result[id] !== undefined) continue;
-    let color = (id + 5) % base.length;
+    const raw =
+      typeof id === 'number'
+        ? id
+        : /^rasp:group:\d+$/.test(id)
+          ? Number(id.split(':').at(-1))
+          : [...id].reduce((n, char) => (n * 31 + char.charCodeAt(0)) >>> 0, 0);
+    let color = (raw + 5) % base.length;
     if (used.has(color))
       color = Array.from({ length: count }, (_, i) => i).find(
         (i) => !used.has(i),

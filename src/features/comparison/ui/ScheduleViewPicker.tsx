@@ -1,5 +1,4 @@
 import { useId } from 'react';
-import Icon from '../../../shared/ui/Icon.tsx';
 
 export type ScheduleView = 'day' | 'week' | 'list';
 const items = [
@@ -40,7 +39,9 @@ export default function ScheduleViewPicker({
             disabled={disabled}
             onChange={() => onChange(item.value)}
           />
-          <Icon name={item.value} size={19} />
+          <span className="text-xs font-medium">
+            {item.value === 'list' ? 'Список' : item.label}
+          </span>
         </label>
       ))}
     </div>

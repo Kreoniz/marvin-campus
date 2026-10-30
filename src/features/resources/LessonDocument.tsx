@@ -1,0 +1,26 @@
+import type { Lesson } from '../../lib/types.ts';
+import { timeLabel } from '../../lib/dates.ts';
+
+export default function LessonDocument({ lesson }: { lesson: Lesson }) {
+  if (!lesson.rawText && !lesson.sourceOrigin) return null;
+  return (
+    <details className="mt-2 text-xs leading-relaxed text-u-muted">
+      <summary className="min-h-6 cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-u-ink">
+        Строка документа
+      </summary>
+      {lesson.rawText && (
+        <p className="my-1 whitespace-pre-wrap">{lesson.rawText}</p>
+      )}
+      {lesson.sourceOrigin && <p className="my-1">{lesson.sourceOrigin}</p>}
+      {!!lesson.sourceIntervals && lesson.sourceIntervals.length > 1 && (
+        <p className="my-1">
+          Интервалы в документе:{' '}
+          {lesson.sourceIntervals
+            .map((range) => `${timeLabel(range.start)}–${timeLabel(range.end)}`)
+            .join(', ')}
+          .
+        </p>
+      )}
+    </details>
+  );
+}

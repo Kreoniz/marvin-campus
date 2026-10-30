@@ -189,6 +189,7 @@ test('readable comparisons and old short links use the offline app shell', async
     '/fit-232-s2+ivt-233?d=2026-10-18&v=free',
     '/~yu-232-s2+~y_u-232+~lf_li_lt-232?d=2026-10-18&v=free',
     '/g694-sid1111',
+    '/compare?s=%7B%22kind%22%3A%22lecturer%22%2C%22id%22%3A901%7D',
     '/s/AbCd1234_-56',
   ]) {
     let response: Promise<Response> | undefined;

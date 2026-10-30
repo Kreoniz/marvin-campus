@@ -1,43 +1,47 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Dialog } from 'unlikely-ui/dialog';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
-import HelpDialog from '../../../app/ui/HelpDialog.tsx';
 import type { CalendarLayers } from '../../schedule/ui/ComparisonHighlights.tsx';
+import type { ScheduleKind } from '../../../lib/types.ts';
+
+const kinds = [
+  { kind: 'group', label: 'Группы', icon: 'groups' },
+  { kind: 'lecturer', label: 'Преподаватели', icon: 'teacher' },
+  { kind: 'auditorium', label: 'Аудитории', icon: 'room' },
+  { kind: 'vuc', label: 'ВУЦ', icon: 'vuc' },
+] as const;
 
 export default function DisplaySettings({
   layers,
   onLayers,
-  theme,
-  onToggleTheme,
+  hiddenKinds,
+  onHiddenKinds,
   spotlightLabel,
   onClearSpotlight,
 }: {
   layers: CalendarLayers;
   onLayers: (layers: CalendarLayers) => void;
-  theme: string;
-  onToggleTheme: () => void;
+  hiddenKinds: ScheduleKind[];
+  onHiddenKinds: (kinds: ScheduleKind[]) => void;
   spotlightLabel?: string;
   onClearSpotlight: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Trigger
           render={
             <IconButton
-              ref={trigger}
               name="settings"
               label="Отображение"
               className="size-11 min-h-11 min-w-11 shrink-0"
             />
           }
         />
-        <Dialog.Content className="w-[min(380px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto">
+        <Dialog.Content className="w-[min(380px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <Dialog.Title className="m-0 text-lg">Отображение</Dialog.Title>
             <Dialog.Close
@@ -51,8 +55,44 @@ export default function DisplaySettings({
             />
           </div>
           <Dialog.Description className="sr-only">
-            Слои календаря, тема и подсветка групп.
+            Видимость карточек, слои календаря и подсветка расписаний.
           </Dialog.Description>
+          <fieldset
+            className="m-0 mb-3 border-0 p-0"
+            aria-describedby="visibility-note"
+          >
+            <legend className="text-sm font-semibold">
+              Карточки расписаний
+            </legend>
+            {kinds.map(({ kind, label, icon }) => (
+              <label
+                key={kind}
+                className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  className="size-4 accent-u-selection-ink"
+                  checked={!hiddenKinds.includes(kind)}
+                  onChange={(event) =>
+                    onHiddenKinds(
+                      event.target.checked
+                        ? hiddenKinds.filter((value) => value !== kind)
+                        : [...hiddenKinds, kind],
+                    )
+                  }
+                />
+                <Icon name={icon} size={16} />
+                {label}
+              </label>
+            ))}
+            <p
+              id="visibility-note"
+              className="m-0 text-xs leading-relaxed text-u-muted"
+            >
+              Скрытие карточек не меняет состав расчёта. Аудитории показаны
+              только как занятость по расписанию.
+            </p>
+          </fieldset>
           <fieldset className="m-0 border-0 p-0">
             <legend className="text-xs font-semibold text-u-muted">
               Слои календаря
@@ -81,14 +121,6 @@ export default function DisplaySettings({
             ))}
           </fieldset>
           <div className="mt-2 border-t border-u-line-soft pt-2">
-            <Button
-              variant="ghost"
-              className="min-h-11 w-full justify-start text-sm [&>.u-button-label]:justify-start"
-              onClick={onToggleTheme}
-            >
-              <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-              {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-            </Button>
             {spotlightLabel && (
               <Button
                 variant="ghost"
@@ -100,26 +132,9 @@ export default function DisplaySettings({
                 Снять подсветку
               </Button>
             )}
-            <Button
-              variant="ghost"
-              className="min-h-11 w-full justify-start text-sm [&>.u-button-label]:justify-start"
-              onClick={() => {
-                setOpen(false);
-                setHelpOpen(true);
-              }}
-            >
-              <Icon name="info" size={18} />
-              Как пользоваться
-            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Root>
-      <HelpDialog
-        open={helpOpen}
-        onOpenChange={setHelpOpen}
-        hideTrigger
-        returnFocus={() => trigger.current ?? true}
-      />
     </>
   );
 }

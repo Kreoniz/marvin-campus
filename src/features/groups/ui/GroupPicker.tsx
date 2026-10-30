@@ -11,34 +11,50 @@ import { Button } from 'unlikely-ui/button';
 import { Combobox } from 'unlikely-ui/combobox';
 import { Dialog } from 'unlikely-ui/dialog';
 import { Field } from 'unlikely-ui/field';
-import { RadioGroup } from 'unlikely-ui/radio-group';
 import { groupOptions } from '../../../lib/queries.ts';
 import { STALE_GRACE } from '../../../lib/cache-policy.ts';
-import type { Group, Selection, ResourceKind } from '../../../lib/types.ts';
-import Icon from '../../../shared/ui/Icon.tsx';
+import {
+  kindIcon,
+  kindLabel,
+  scheduleKey,
+  selectionKind,
+  validSelection,
+} from '../../../lib/schedule-ref.ts';
+import type { Selection, ScheduleKind } from '../../../lib/types.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
+import Icon from '../../../shared/ui/Icon.tsx';
 import GroupOrder from './GroupOrder.tsx';
-import { resourceSearchOptions } from '../../resources/api.ts';
-import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
+import {
+  resourceSearchOptions,
+  vucSearchOptions,
+} from '../../resources/api.ts';
 
 interface Props {
   selected: Selection[];
-  onAdd: (group: Group) => void;
-  onError: (message: string) => void;
+  onAdd: (selection: Selection) => void;
   children: ReactNode;
   returnFocus: RefObject<HTMLButtonElement | null>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   colors: GroupColors;
-  onMove: (id: number, offset: number) => void;
-  onRemove: (id: number) => void;
-  focusGroupId: number;
+  onMove: (key: string, offset: number) => void;
+  onRemove: (key: string) => void;
+  focusScheduleKey: string;
 }
+interface SearchResult {
+  selection: Selection;
+  saved: boolean;
+}
+const plurals: Record<ScheduleKind, string> = {
+  group: 'Группы',
+  lecturer: 'Преподаватели',
+  auditorium: 'Аудитории',
+  vuc: 'ВУЦ',
+};
 
 export default function GroupPicker({
   selected,
   onAdd,
-  onError,
   children,
   returnFocus,
   open,
@@ -46,61 +62,48 @@ export default function GroupPicker({
   colors,
   onMove,
   onRemove,
-  focusGroupId,
+  focusScheduleKey,
 }: Props) {
-  const [kind, setKind] = useState<'group' | ResourceKind>('group');
-  const { openResource } = useResourceInspector();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [clock, setClock] = useState(Date.now());
+  const [announcement, setAnnouncement] = useState('');
   const input = useRef<HTMLInputElement>(null);
-  const reportedError = useRef(0);
   const searchId = useId();
   const term = query.trim().toUpperCase();
-  const search = useQuery({
-    ...groupOptions(debounced),
-    enabled: open && kind === 'group' && term.length >= 2 && term === debounced,
+  const enabled = open && term.length >= 2 && term === debounced;
+  const selectedKeys = new Set(selected.map(scheduleKey));
+  const groups = useQuery({ ...groupOptions(debounced), enabled });
+  const lecturers = useQuery({
+    ...resourceSearchOptions('lecturer', debounced),
+    enabled,
   });
-  const resourceSearch = useQuery({
-    ...resourceSearchOptions(kind === 'group' ? 'lecturer' : kind, debounced),
-    enabled: open && kind !== 'group' && term.length >= 2 && term === debounced,
+  const rooms = useQuery({
+    ...resourceSearchOptions('auditorium', debounced),
+    enabled,
   });
-  const activeSearch = kind === 'group' ? search : resourceSearch;
+  const vuc = useQuery({ ...vucSearchOptions(debounced), enabled });
+  const sources = [
+    { kind: 'group' as const, query: groups },
+    { kind: 'lecturer' as const, query: lecturers },
+    { kind: 'auditorium' as const, query: rooms },
+    { kind: 'vuc' as const, query: vuc },
+  ];
   const now = Math.max(clock, Date.now());
-  const expires = Date.parse(activeSearch.data?.expiresAt ?? '');
-  const expired =
-    !!activeSearch.data &&
-    (!Number.isFinite(expires) || now > expires + STALE_GRACE);
-  const results =
-    term === debounced && !expired ? (activeSearch.data?.data ?? []) : [];
-  const loading =
-    open &&
-    term.length >= 2 &&
-    (term !== debounced ||
-      (activeSearch.isPending && activeSearch.fetchStatus !== 'paused'));
-  const error = term === debounced ? (activeSearch.error?.message ?? '') : '';
-  const stale =
-    term === debounced &&
-    !!(
-      activeSearch.data?.stale ||
-      (activeSearch.isError && activeSearch.data) ||
-      now > expires
-    );
-  const visible = term.length < 2 ? [] : results;
-  const selectedIds = new Set(selected.map((group) => group.id));
+  const deadlines = sources.flatMap(({ query: search }) => {
+    const expires = Date.parse(search.data?.expiresAt ?? '');
+    if (!Number.isFinite(expires) || now > expires + STALE_GRACE) return [];
+    return [now <= expires ? expires + 1 : expires + STALE_GRACE + 1];
+  });
+  const changeAt = deadlines.length ? Math.min(...deadlines) : undefined;
   useEffect(() => {
-    if (!open || !Number.isFinite(expires) || now > expires + STALE_GRACE)
-      return;
-    const next = now <= expires ? expires + 1 : expires + STALE_GRACE + 1;
+    if (!open || changeAt === undefined) return;
     const timer = setTimeout(
       () => setClock(Date.now()),
-      Math.min(2_147_483_647, Math.max(1, next - Date.now())),
+      Math.min(2_147_483_647, Math.max(1, changeAt - Date.now())),
     );
     return () => clearTimeout(timer);
-  }, [open, expires, now]);
-  useEffect(() => {
-    if (open && focusGroupId) setKind('group');
-  }, [open, focusGroupId]);
+  }, [open, changeAt]);
   useEffect(() => {
     if (!open || term.length < 2) {
       setDebounced('');
@@ -109,64 +112,87 @@ export default function GroupPicker({
     const timer = setTimeout(() => setDebounced(term), 300);
     return () => clearTimeout(timer);
   }, [term, open]);
-  useEffect(() => {
-    if (
-      open &&
-      error &&
-      activeSearch.errorUpdatedAt !== reportedError.current
-    ) {
-      reportedError.current = activeSearch.errorUpdatedAt;
-      onError(error);
-    }
-  }, [open, error, activeSearch.errorUpdatedAt, onError]);
+  const visible: SearchResult[] = !enabled
+    ? []
+    : sources
+        .flatMap(({ kind, query: search }) => {
+          const snapshot = search.data;
+          const expires = Date.parse(snapshot?.expiresAt ?? '');
+          if (
+            !snapshot ||
+            !Array.isArray(snapshot.data) ||
+            !Number.isFinite(expires) ||
+            now > expires + STALE_GRACE
+          )
+            return [];
+          return snapshot.data
+            .filter(
+              (item) => validSelection(item) && selectionKind(item) === kind,
+            )
+            .map((selection) => ({
+              selection,
+              saved: snapshot.stale || search.isError || now > expires,
+            }));
+        })
+        .sort(
+          (a, b) =>
+            Number(selectedKeys.has(scheduleKey(a.selection))) -
+            Number(selectedKeys.has(scheduleKey(b.selection))),
+        );
+  const loading =
+    open &&
+    term.length >= 2 &&
+    (term !== debounced ||
+      sources.some(
+        ({ query: search }) =>
+          search.isPending && search.fetchStatus !== 'paused',
+      ));
+  const issues = !enabled
+    ? []
+    : sources.flatMap(({ kind, query: search }) => {
+        const expires = Date.parse(search.data?.expiresAt ?? '');
+        const expired =
+          !!search.data &&
+          (!Number.isFinite(expires) || now > expires + STALE_GRACE);
+        const message =
+          search.error?.message ||
+          (search.data && !Array.isArray(search.data.data)
+            ? 'Сервер вернул непонятный список.'
+            : '') ||
+          (expired
+            ? 'Срок хранения результатов истёк.'
+            : search.fetchStatus === 'paused'
+              ? 'Нет сети.'
+              : '');
+        return message ? [{ kind, message, query: search }] : [];
+      });
   const status =
-    kind === 'group' && selected.length >= 30
-      ? 'Добавлено максимум 30 групп. Убери одну из выбранных групп, чтобы добавить другую.'
-      : activeSearch.fetchStatus === 'paused' && !results.length
-        ? 'Нет сети. Поиск продолжится после подключения.'
-        : loading
-          ? kind === 'group'
-            ? 'Ищем группы…'
-            : kind === 'lecturer'
-              ? 'Ищем преподавателей…'
-              : 'Ищем аудитории…'
-          : error ||
-            (expired
-              ? 'Срок хранения результатов истёк. Повтори поиск.'
-              : stale
-                ? 'Поиск по сохранённому снимку. Данные могут измениться.'
-                : term.length >= 2 && !visible.length
-                  ? 'Ничего не найдено. Попробуй другое название.'
-                  : term.length < 2
-                    ? 'Для поиска введи хотя бы 2 символа.'
-                    : '');
+    term.length < 2
+      ? 'Группа, фамилия, аудитория или взвод — от 2 символов.'
+      : loading
+        ? 'Ищем расписания…'
+        : !visible.length && !issues.length
+          ? 'Ничего не найдено. Попробуй другое название.'
+          : '';
   return (
-    <Dialog.Root
-      open={open}
-      onOpenChange={(next) => {
-        if (next && (focusGroupId || selected.length === 0)) {
-          setKind('group');
-        }
-        onOpenChange(next);
-      }}
-    >
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {children}
       <Dialog.Content
-        className="flex h-[min(620px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto p-4"
+        className="schedule-search flex h-[min(640px,calc(100dvh-24px))] w-[min(500px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] flex-col overflow-y-auto p-4"
         initialFocus={() =>
-          (focusGroupId
+          (focusScheduleKey
             ? document.querySelector<HTMLElement>(
-                `[data-group-order] [data-group-id="${focusGroupId}"] button:not(:disabled):not([data-group-remove])`,
+                `[data-group-order] [data-group-id="${focusScheduleKey}"] button:not(:disabled):not([data-group-remove])`,
               )
             : null) ??
           input.current ??
           true
         }
         finalFocus={() =>
-          (focusGroupId
+          (focusScheduleKey
             ? Array.from(
                 document.querySelectorAll<HTMLButtonElement>(
-                  `[data-drag-id="${focusGroupId}"]`,
+                  `[data-drag-id="${focusScheduleKey}"]`,
                 ),
               ).find((button) => button.offsetParent !== null)
             : null) ??
@@ -193,42 +219,17 @@ export default function GroupPicker({
           </Dialog.Close>
         </div>
         <Dialog.Description className="sr-only">
-          Добавь группы, поменяй порядок или открой расписание преподавателя и
-          аудитории.
+          Найди группу, преподавателя, аудиторию или взвод ВУЦ. Все расписания
+          добавляются в один календарь.
         </Dialog.Description>
-        <RadioGroup.Root
-          variant="segmented"
-          className="mb-1 grid shrink-0 grid-cols-[1fr_1.5fr_1.2fr] gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:min-w-0 [&_.u-segmented-item]:px-1 [&_.u-segmented-item]:text-sm"
-          aria-label="Что найти"
-          value={kind}
-          onValueChange={(value) => {
-            if (
-              value === 'group' ||
-              value === 'lecturer' ||
-              value === 'auditorium'
-            ) {
-              setKind(value);
-              setQuery('');
-              setDebounced('');
-            }
-          }}
-        >
-          <RadioGroup.Item value="group">Группы</RadioGroup.Item>
-          <RadioGroup.Item value="lecturer">Преподаватели</RadioGroup.Item>
-          <RadioGroup.Item value="auditorium">Аудитории</RadioGroup.Item>
-        </RadioGroup.Root>
         <Field.Root className="flex min-h-0 flex-1 flex-col">
           <Field.Label
             className="mt-1 mb-1 block text-sm font-semibold"
             htmlFor={searchId}
           >
-            {kind === 'group'
-              ? 'Название группы'
-              : kind === 'lecturer'
-                ? 'Фамилия преподавателя'
-                : 'Номер аудитории'}
+            Что найти
           </Field.Label>
-          <Combobox.Root<Group>
+          <Combobox.Root<SearchResult>
             inline
             open
             items={visible}
@@ -238,16 +239,20 @@ export default function GroupPicker({
             onInputValueChange={(value, details) => {
               if (details.reason !== 'item-press') setQuery(value);
             }}
-            itemToStringLabel={(group) => group.label}
-            isItemEqualToValue={(a, b) => a.id === b.id}
-            onValueChange={(group) => {
-              if (group && kind !== 'group') {
-                onOpenChange(false);
-                openResource({ ...group, kind }, returnFocus.current);
-                return;
-              }
-              if (group && !selectedIds.has(group.id) && selected.length < 30) {
-                onAdd(group);
+            itemToStringLabel={(result) => result.selection.label}
+            isItemEqualToValue={(a, b) =>
+              scheduleKey(a.selection) === scheduleKey(b.selection)
+            }
+            onValueChange={(result) => {
+              if (
+                result &&
+                !selectedKeys.has(scheduleKey(result.selection)) &&
+                selected.length < 30
+              ) {
+                onAdd(result.selection);
+                setAnnouncement(
+                  `${result.selection.label}: расписание добавлено.`,
+                );
                 input.current?.focus({ preventScroll: true });
               }
             }}
@@ -260,20 +265,19 @@ export default function GroupPicker({
                 className="min-h-11 w-full pl-10 text-base"
                 id={searchId}
                 ref={input}
-                placeholder={
-                  kind === 'group'
-                    ? 'Например, ФИТ-232'
-                    : kind === 'lecturer'
-                      ? 'Например, Иванов'
-                      : 'Например, 8-201'
-                }
+                placeholder="ФИТ-232, Иванов, 8-201, ВУЦ"
                 autoComplete="off"
               />
             </div>
-            {kind === 'group' && selected.length > 0 && (
-              <section className="mt-3 shrink-0" aria-label="Выбранные группы">
+            {selected.length > 0 && (
+              <section
+                className="mt-2 shrink-0"
+                aria-label="Выбранные расписания"
+              >
                 <h3 className="m-0 text-xs font-semibold text-u-muted">
                   Выбраны · {selected.length}
+                  {selected.length >= 30 &&
+                    ' из 30 — убери одно, чтобы добавить другое'}
                 </h3>
                 <GroupOrder
                   groups={selected}
@@ -284,66 +288,79 @@ export default function GroupPicker({
                 />
               </section>
             )}
-            <div className="mt-3 grid min-h-24 flex-1 grid-rows-[minmax(0,1fr)_56px] overflow-hidden">
+            <div className="mt-2 grid min-h-28 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
               <Combobox.List className="h-full min-h-0 max-h-none overflow-y-auto overscroll-contain p-0">
-                {(group: Group) => (
-                  <Combobox.Item
-                    className="min-h-14 border-b border-u-line-soft px-2 py-2.5 [&>span:first-child]:w-full"
-                    key={group.id}
-                    value={group}
-                    disabled={
-                      kind === 'group' &&
-                      (selectedIds.has(group.id) || selected.length >= 30)
-                    }
-                  >
-                    <span className="flex w-full items-center justify-between gap-3">
-                      <span className="min-w-0">
-                        <strong className="block text-sm leading-5">
-                          {group.label}
-                        </strong>
-                        <small className="mt-0.5 block text-xs leading-4 text-u-muted">
-                          {group.description ?? 'ОмГТУ'}
-                        </small>
-                      </span>
-                      <span className="flex shrink-0 items-center">
-                        {kind === 'group' && selectedIds.has(group.id) ? (
-                          <span className="text-xs text-u-muted">
-                            Уже добавлена
-                          </span>
-                        ) : (
+                {(result: SearchResult) => {
+                  const { selection, saved } = result;
+                  const added = selectedKeys.has(scheduleKey(selection));
+                  return (
+                    <Combobox.Item
+                      className="min-h-14 border-b border-u-line-soft px-2 py-2 [&>span:first-child]:w-full"
+                      key={scheduleKey(selection)}
+                      value={result}
+                      disabled={added || selected.length >= 30}
+                    >
+                      <span className="flex w-full items-center gap-2.5">
+                        <span className="shrink-0 text-u-muted">
                           <Icon
-                            name={kind === 'group' ? 'plus' : 'right'}
-                            size={16}
+                            name={kindIcon(selectionKind(selection))}
+                            size={18}
                           />
-                        )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <strong className="block text-[15px] leading-5 wrap-anywhere">
+                            {selection.label}
+                          </strong>
+                          <small className="mt-0.5 block text-[13px] leading-4.5 text-u-muted">
+                            {kindLabel(selectionKind(selection))}
+                            {selection.description
+                              ? ` · ${selection.description}`
+                              : ''}
+                            {saved && ' · сохранено'}
+                          </small>
+                        </span>
+                        <span className="shrink-0">
+                          {added ? (
+                            <span className="text-xs text-u-muted">
+                              Добавлено
+                            </span>
+                          ) : (
+                            <Icon name="plus" size={16} />
+                          )}
+                        </span>
                       </span>
-                    </span>
-                  </Combobox.Item>
-                )}
+                    </Combobox.Item>
+                  );
+                }}
               </Combobox.List>
-              <Combobox.Status className="m-0 overflow-y-auto p-0 pt-3 text-xs leading-4.5 text-u-muted">
+              <Combobox.Status className="m-0 max-h-28 overflow-y-auto p-0 pt-2 text-[13px] leading-4.5 text-u-muted">
                 {status}
-                {(error || expired) && (
-                  <button
-                    type="button"
-                    className="ml-1 min-h-6 cursor-pointer rounded-sm border-0 bg-transparent p-0 text-inherit underline focus-visible:outline-2 focus-visible:outline-u-ink"
-                    disabled={
-                      activeSearch.isFetching ||
-                      activeSearch.fetchStatus === 'paused'
-                    }
-                    onClick={() => void activeSearch.refetch()}
-                  >
-                    Повторить
-                  </button>
-                )}
+                {issues.map(({ kind, message, query: search }) => (
+                  <span key={kind} className="mt-1 block">
+                    {plurals[kind]}: {message}{' '}
+                    <button
+                      type="button"
+                      className="min-h-6 cursor-pointer rounded-sm border-0 bg-transparent p-0 text-inherit underline focus-visible:outline-2 focus-visible:outline-u-ink"
+                      disabled={
+                        search.isFetching || search.fetchStatus === 'paused'
+                      }
+                      onClick={() => void search.refetch()}
+                    >
+                      Повторить
+                    </button>
+                  </span>
+                ))}
               </Combobox.Status>
             </div>
             <Combobox.Empty className="sr-only">
-              {!loading && !error && term.length >= 2
+              {!loading && !issues.length && term.length >= 2
                 ? 'Нет подходящих расписаний'
                 : null}
             </Combobox.Empty>
           </Combobox.Root>
+          <span className="sr-only" role="status">
+            {announcement}
+          </span>
         </Field.Root>
       </Dialog.Content>
     </Dialog.Root>
@@ -371,13 +388,13 @@ export function GroupPickerTrigger({
               : 'add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0'
           }
           variant="secondary"
-          aria-label={labelled ? 'Добавить группу' : 'Расписания'}
+          aria-label={labelled ? 'Добавить расписание' : 'Расписания'}
         />
       }
     >
       <Icon name={labelled ? 'plus' : 'search'} />
       <span className={labelled ? undefined : 'compact:hidden'}>
-        {labelled ? 'Добавить группу' : 'Расписания'}
+        {labelled ? 'Добавить расписание' : 'Расписания'}
       </span>
     </Dialog.Trigger>
   );
