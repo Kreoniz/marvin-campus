@@ -75,7 +75,11 @@ export function vucSearchOptions(term: string) {
   return searchOptions<VucRef>(
     ['vuc-search', term],
     `/api/vuc?term=${encodeURIComponent(term)}`,
-    (ref) => validSelection(ref) && ref.kind === 'vuc',
+    (ref) =>
+      validSelection(ref) &&
+      ref.kind === 'vuc' &&
+      (ref.originalAvailable === undefined ||
+        typeof ref.originalAvailable === 'boolean'),
   );
 }
 function validTimes(body: Snapshot<unknown>) {
@@ -143,6 +147,8 @@ export async function loadVucWeek(
   if (
     body?.data?.kind !== 'vuc' ||
     body.data.id !== resource.id ||
+    (body.data.originalAvailable !== undefined &&
+      typeof body.data.originalAvailable !== 'boolean') ||
     !validWeek(body, week) ||
     !Array.isArray(body.data.coveredDates) ||
     body.data.coveredDates.some(

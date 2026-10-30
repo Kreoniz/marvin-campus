@@ -42,6 +42,7 @@ export interface VucRef {
   coveredDates?: string[];
   sourceLabel?: string;
   sourcePeriod?: string;
+  originalAvailable?: boolean;
   warnings?: string[];
   subgroup?: undefined;
   subgroupNumber?: undefined;
@@ -56,6 +57,7 @@ export interface ScheduleData {
   unresolvedDates?: string[];
   sourceLabel?: string;
   sourcePeriod?: string;
+  originalAvailable?: boolean;
   warnings?: string[];
   importedAt?: string;
   unparsedCells?: {

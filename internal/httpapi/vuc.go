@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"bytes"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -9,6 +11,27 @@ import (
 	"marvin-campus/internal/schedule"
 	"marvin-campus/internal/vuc"
 )
+
+func (s *Server) vucOriginal(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !vuc.IDPattern.MatchString(id) {
+		fail(w, 400, "Некорректный взвод ВУЦ.")
+		return
+	}
+	if s.VUC == nil {
+		fail(w, 503, "Документы ВУЦ ещё не импортированы на этом сервере.")
+		return
+	}
+	original, ok := s.VUC.Original(id)
+	if !ok {
+		fail(w, 404, "Оригинал документа ВУЦ недоступен на этом сервере.")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", original.ContentType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": original.Filename}))
+	http.ServeContent(w, r, original.Filename, time.Time{}, bytes.NewReader(original.Data))
+}
 
 func (s *Server) vucSearch(w http.ResponseWriter, r *http.Request) {
 	term := strings.TrimSpace(r.URL.Query().Get("term"))

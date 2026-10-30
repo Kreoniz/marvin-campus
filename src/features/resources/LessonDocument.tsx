@@ -1,8 +1,17 @@
-import type { Lesson } from '../../lib/types.ts';
+import type { Lesson, VucRef } from '../../lib/types.ts';
 import { timeLabel } from '../../lib/dates.ts';
+import VucOriginalLink from './VucOriginalLink.tsx';
 
-export default function LessonDocument({ lesson }: { lesson: Lesson }) {
-  if (!lesson.rawText && !lesson.sourceOrigin) return null;
+export default function LessonDocument({
+  lesson,
+  documentRef,
+  originalAvailable,
+}: {
+  lesson: Lesson;
+  documentRef?: VucRef;
+  originalAvailable?: boolean;
+}) {
+  if (!lesson.rawText && !lesson.sourceOrigin && !documentRef) return null;
   return (
     <details className="mt-2 text-xs leading-relaxed text-u-muted">
       <summary className="min-h-6 cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-u-ink">
@@ -21,6 +30,7 @@ export default function LessonDocument({ lesson }: { lesson: Lesson }) {
           .
         </p>
       )}
+      <VucOriginalLink ref={documentRef} available={originalAvailable} />
     </details>
   );
 }

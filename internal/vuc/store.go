@@ -55,13 +55,14 @@ type UnparsedCell struct {
 }
 
 type Ref struct {
-	Kind        string   `json:"kind"`
-	ID          string   `json:"id"`
-	Label       string   `json:"label"`
-	Description string   `json:"description"`
-	FirstDate   string   `json:"firstDate"`
-	LastDate    string   `json:"lastDate"`
-	Dates       []string `json:"coveredDates"`
+	Kind              string   `json:"kind"`
+	ID                string   `json:"id"`
+	Label             string   `json:"label"`
+	Description       string   `json:"description"`
+	FirstDate         string   `json:"firstDate"`
+	LastDate          string   `json:"lastDate"`
+	Dates             []string `json:"coveredDates"`
+	OriginalAvailable bool     `json:"originalAvailable"`
 }
 
 type Entry struct {
@@ -78,16 +79,17 @@ type Entry struct {
 }
 
 type Week struct {
-	Kind            string         `json:"kind"`
-	ID              string         `json:"id"`
-	Lessons         []Lesson       `json:"lessons"`
-	CoveredDates    []string       `json:"coveredDates"`
-	UnresolvedDates []string       `json:"unresolvedDates"`
-	SourceLabel     string         `json:"sourceLabel"`
-	SourcePeriod    string         `json:"sourcePeriod"`
-	ImportedAt      string         `json:"importedAt"`
-	Warnings        []string       `json:"warnings"`
-	UnparsedCells   []UnparsedCell `json:"unparsedCells"`
+	Kind              string         `json:"kind"`
+	ID                string         `json:"id"`
+	Lessons           []Lesson       `json:"lessons"`
+	CoveredDates      []string       `json:"coveredDates"`
+	UnresolvedDates   []string       `json:"unresolvedDates"`
+	SourceLabel       string         `json:"sourceLabel"`
+	SourcePeriod      string         `json:"sourcePeriod"`
+	ImportedAt        string         `json:"importedAt"`
+	Warnings          []string       `json:"warnings"`
+	UnparsedCells     []UnparsedCell `json:"unparsedCells"`
+	OriginalAvailable bool           `json:"originalAvailable"`
 }
 
 type Dataset struct {
@@ -97,7 +99,8 @@ type Dataset struct {
 }
 
 type Store struct {
-	data Dataset
+	data      Dataset
+	originals map[string]Original
 }
 
 // Load reads only the operator-configured path. An empty path disables VUC.
@@ -246,6 +249,7 @@ func (s *Store) Search(term string) []Ref {
 	for _, entry := range s.data.Schedules {
 		if term == "" || strings.Contains(strings.ToUpper(entry.Label+" "+entry.Description), term) {
 			ref := entry.Ref
+			_, ref.OriginalAvailable = s.originals[entry.DocumentSHA256]
 			ref.Dates = append([]string{}, entry.CoveredDates...)
 			sort.Strings(ref.Dates)
 			result = append(result, ref)
@@ -266,6 +270,7 @@ func (s *Store) Week(id, start string) (Week, bool) {
 			continue
 		}
 		week := Week{Kind: "vuc", ID: id, Lessons: []Lesson{}, CoveredDates: []string{}, UnresolvedDates: []string{}, SourceLabel: entry.SourceLabel, SourcePeriod: entry.SourcePeriod, ImportedAt: s.data.ImportedAt, Warnings: []string{}, UnparsedCells: []UnparsedCell{}}
+		_, week.OriginalAvailable = s.originals[entry.DocumentSHA256]
 		if len(entry.DateWarnings) == 0 {
 			week.Warnings = append(week.Warnings, entry.Warnings...)
 		} else {
