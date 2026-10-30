@@ -23,11 +23,14 @@
   editable fields, composition and visible overlays retain keyboard ownership.
   The optional shortcut preference is separate from comparison state and URLs.
 - `src/features/groups`: group search, direct subgroup selection and ordering.
-  The subgroup trigger and spotlight icon are independent controls. Multiple
+  Compact chips open a schedule menu with subgroup, spotlight and management
+  actions; pressed spotlight state uses fill without decorative checks. Multiple
   spotlight IDs live as local presentation state in `ComparisonPage`; they do
   not change schedule data. The single schedule-search dialog combines the existing
   combobox search with the reusable ordering/removal list. Removing its last
-  selection keeps search available. The exploratory name/icon chooser has been removed.
+  selection keeps search available. Management drag passes the final typed
+  selection order through `onReorder` to `view.reorder` once; arrow/Alt moves
+  remain individual operations. The exploratory name/icon chooser has been removed.
 - `src/features/resources`: typed lecturer/auditorium queries and linked metadata
   actions adding to the same selected set. Unified search and kind visibility
   reuse the calendar/list, ordering and spotlight workflow. Resource HTTP
@@ -38,7 +41,9 @@
 - `internal/vuc` and `scripts/import-vuc.py`: bounded configured document datasets
   and a local importer. The API exposes a typed platoon catalogue and requested
   weeks with per-platoon covered/unresolved dates and source evidence; it accepts
-  no public uploads or request-controlled filesystem paths. See `docs/vuc.md`.
+  no public uploads or request-controlled filesystem paths. Optional configured
+  originals are hash-verified at startup and served as the unchanged PDF/DOCX bytes
+  by canonical VUC ID; availability is independent of date coverage. See `docs/vuc.md`.
 - `presentation-cohort` and `use-presentation-cohort`: publication policy above
   independent query caches. A week and typed selection set define a generation;
   cold responses wait at most two seconds, later changes coalesce for 1.2 seconds
@@ -58,7 +63,14 @@
   natural text height; focus reveal measures the rail and current header. An academic-first
   visible presentation owner gets the full card; other member occurrences open
   the same details. These references never enter calculation or lesson counts. Per-day minima and measured column
-  navigation stay outside domain calculations. The horizontal timeline keeps
+  navigation stay outside domain calculations. Initial/date/Today reveals remain
+  pending until the first usable cohort geometry, unless deliberate scrolling
+  cancels them; later geometry changes restore the date/offset anchor. Repeated
+  Today requests reveal without writing duplicate date history.
+  All calendars use page vertical scrolling and retain horizontal navigation.
+  The Day source chooser is a design-system Select with focus transfer to its band.
+  Desktop Week's secondary detail is always a timeline; Day/Week/List remains
+  the primary header choice. The horizontal timeline keeps
   semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
   retaining individual bundle occurrences and participant records. Exact interval
   grouping is a separate presentation projection; it never merges lesson
@@ -112,6 +124,8 @@ Its saved selection uses a separate local key; canonical source IDs and the
 existing configured-document API remain unchanged. `MilitaryPreview` reads
 same-date VUC data within academic military-preparation details; its remembered
 personal choice is presentation state, independent of comparison participants.
+Its full-entry list starts collapsed in lesson popups; tall inline entries include
+teachers when they fit. Document rows remain complete on the dedicated page.
 Popover hover, safe pointer travel and press semantics build on Base UI;
 Campus explicitly pins an open preview on its first press.
 

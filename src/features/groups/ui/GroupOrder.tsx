@@ -30,6 +30,7 @@ interface Props {
   hiddenKinds?: ScheduleKind[];
   colors: GroupColors;
   onMove: (id: string, offset: number) => void;
+  onReorder: (groups: Selection[]) => void;
   onRemove: (id: string) => void;
   onEmpty: () => void;
 }
@@ -38,6 +39,7 @@ export default function GroupOrder({
   hiddenKinds = [],
   colors,
   onMove,
+  onReorder,
   onRemove,
   onEmpty,
 }: Props) {
@@ -102,16 +104,14 @@ export default function GroupOrder({
       commit &&
       from >= 0 &&
       target >= 0 &&
+      from !== target &&
       next?.length === groups.length &&
+      new Set(next.map(scheduleKey)).size === groups.length &&
       next.every((group) =>
         groups.some((current) => scheduleKey(current) === scheduleKey(group)),
       )
     ) {
-      // The existing onMove contract swaps neighbors. Adjacent moves insert the
-      // dragged schedule without reversing the schedules between its endpoints.
-      const step = Math.sign(target - from);
-      for (let position = from; position !== target; position += step)
-        onMove(key, step);
+      onReorder(next);
       const group = groups[from];
       setAnnouncement(
         `${label(group)}: позиция ${target + 1} из ${groups.length}.`,

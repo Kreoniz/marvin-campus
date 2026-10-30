@@ -9,7 +9,7 @@ import { useComparison, type Notify } from './model/use-comparison.ts';
 import { initAnalytics, track } from '../../lib/analytics.ts';
 import { usePwa, updatePwa } from '../../lib/pwa.ts';
 import { scheduleNavigation } from '../../lib/keyboard.ts';
-import { omskToday } from '../../lib/dates.ts';
+import { monday, omskToday } from '../../lib/dates.ts';
 import useScheduleHotkeys from './model/use-schedule-hotkeys.ts';
 import SiteHeader from '../../app/ui/SiteHeader.tsx';
 import GroupPicker, { GroupPickerTrigger } from '../groups/ui/GroupPicker.tsx';
@@ -152,7 +152,9 @@ export default function ComparisonPage({
     track('mobile_view_changed', { view: value });
   }
   function selectToday() {
-    view.selectDate(omskToday());
+    const today = omskToday();
+    if (view.day !== today || view.week !== monday(today))
+      view.selectDate(today);
     // A repeated request must also reveal an already selected, offscreen day.
     setDayReveal((current) => current + 1);
   }
@@ -342,6 +344,9 @@ export default function ComparisonPage({
                     colors={colors}
                     onMove={(key, offset) =>
                       fromSearch(() => view.move(key, offset))
+                    }
+                    onReorder={(groups) =>
+                      fromSearch(() => view.reorder(groups))
                     }
                     onRemove={(key) => fromSearch(() => view.remove(key))}
                     focusScheduleKey={orderFocus}

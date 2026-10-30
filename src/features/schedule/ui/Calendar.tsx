@@ -68,17 +68,14 @@ export default function Calendar({
 }: CalendarProps) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
-  const readyReveal = useRef(0);
-  // A new week can start with narrow placeholders. Reveal Today again once
-  // its real columns are published, without resetting later refresh anchors.
-  if (!loading) readyReveal.current = dayReveal;
   const viewportWidth = useCalendarNavigation(
     scroller,
     week,
     day,
     singleDay,
     compact,
-    readyReveal.current,
+    dayReveal,
+    !placeholder && schedules.some((group) => group.snapshot),
   );
   const dates = singleDay
     ? [day]

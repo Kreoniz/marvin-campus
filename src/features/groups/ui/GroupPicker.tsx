@@ -40,6 +40,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   colors: GroupColors;
   onMove: (key: string, offset: number) => void;
+  onReorder: (groups: Selection[]) => void;
   onRemove: (key: string) => void;
   focusScheduleKey: string;
 }
@@ -65,6 +66,7 @@ export default function GroupPicker({
   onOpenChange,
   colors,
   onMove,
+  onReorder,
   onRemove,
   focusScheduleKey,
 }: Props) {
@@ -356,6 +358,7 @@ export default function GroupPicker({
                     groups={selected}
                     colors={colors}
                     onMove={onMove}
+                    onReorder={onReorder}
                     onRemove={onRemove}
                     onEmpty={() => {
                       setManaging(false);
