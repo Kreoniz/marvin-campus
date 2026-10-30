@@ -68,8 +68,8 @@ test('nonadjacent source references retain one canonical block and typed ownersh
   assert.equal(tracks[0].occurrences[0].block, tracks[3].occurrences[0].block);
   assert.notEqual(tracks[0].key, tracks[2].key);
   assert.ok(tracks.every((t) => t.width >= 160));
-  assert.equal(tracks[1].left - (tracks[0].left + tracks[0].width), 12);
-  assert.equal(tracks[2].left - (tracks[1].left + tracks[1].width), 24);
+  assert.equal(tracks[1].left - (tracks[0].left + tracks[0].width), 16);
+  assert.equal(tracks[2].left - (tracks[1].left + tracks[1].width), 32);
   const hiddenOwner = sourceTracks(blocks, [teacher, room], 480, 0.9);
   assert.equal(hiddenOwner[0].occurrences[0].reference, false);
   assert.equal(hiddenOwner[1].occurrences[0].reference, true);
@@ -110,24 +110,24 @@ test('thirty sources keep readable bands, including empty sources, with no ident
   const tracks = sourceTracks([], selections, 480, 0.9);
   assert.equal(tracks.length, 30);
   assert.equal(new Set(tracks.map((t) => t.key)).size, 30);
-  assert.equal(tracks.at(-1)!.left + tracks.at(-1)!.width + 6, 5160);
+  assert.equal(tracks.at(-1)!.left + tracks.at(-1)!.width + 10, 5284);
   assert.ok(tracks.every((t) => t.width === 160 && t.occurrences.length === 0));
 });
 
 test('source anchoring retains typed identity and pixel offset when widths or order change', () => {
   const prior = [
-    { key: scheduleKey(a), left: 6, width: 160 },
-    { key: scheduleKey(teacher), left: 190, width: 326 },
+    { key: scheduleKey(a), left: 10, width: 160 },
+    { key: scheduleKey(teacher), left: 202, width: 326 },
   ];
-  const anchor = sourceAnchor(prior, 214)!;
+  const anchor = sourceAnchor(prior, 226)!;
   assert.deepEqual(anchor, { key: scheduleKey(teacher), offset: 24 });
   const next = [
-    { key: scheduleKey(teacher), left: 6, width: 160 },
-    { key: scheduleKey(a), left: 190, width: 326 },
+    { key: scheduleKey(teacher), left: 10, width: 160 },
+    { key: scheduleKey(a), left: 202, width: 326 },
   ];
   assert.equal(
     next.find((t) => t.key === anchor.key)!.left + anchor.offset,
-    30,
+    34,
   );
 });
 
@@ -162,12 +162,12 @@ test('compact affinity uses an existing free lane without inflating depth or dep
 
 test('contracting an anchored source keeps its final complete lane clear of the rail', () => {
   const previous = [
-    { key: 'a', left: 6, width: 492 },
-    { key: 'b', left: 510, width: 160 },
+    { key: 'a', left: 10, width: 492 },
+    { key: 'b', left: 518, width: 160 },
   ];
   const tracks = [
-    { key: 'a', left: 6, width: 160 },
-    { key: 'b', left: 178, width: 160 },
+    { key: 'a', left: 10, width: 160 },
+    { key: 'b', left: 186, width: 160 },
   ];
   assert.equal(
     restoreSourceAnchor({ key: 'a', offset: 332 }, previous, tracks),
@@ -178,30 +178,30 @@ test('contracting an anchored source keeps its final complete lane clear of the 
     332,
   );
   assert.equal(
-    restoreSourceAnchor({ key: 'b', offset: -6 }, previous, tracks),
-    172,
+    restoreSourceAnchor({ key: 'b', offset: -10 }, previous, tracks),
+    176,
   );
 });
 
 test('a removed source anchors to its next surviving neighbor, then previous', () => {
   const previous = [
-    { key: 'a', left: 6, width: 160 },
-    { key: 'b', left: 178, width: 160 },
-    { key: 'c', left: 350, width: 160 },
+    { key: 'a', left: 10, width: 160 },
+    { key: 'b', left: 186, width: 160 },
+    { key: 'c', left: 362, width: 160 },
   ];
   assert.equal(
     restoreSourceAnchor({ key: 'b', offset: 40 }, previous, [
-      { key: 'a', left: 6, width: 160 },
-      { key: 'c', left: 178, width: 160 },
+      { key: 'a', left: 10, width: 160 },
+      { key: 'c', left: 186, width: 160 },
     ]),
-    172,
+    176,
   );
   assert.equal(
     restoreSourceAnchor({ key: 'c', offset: 40 }, previous, [
-      { key: 'a', left: 6, width: 160 },
-      { key: 'b', left: 178, width: 160 },
+      { key: 'a', left: 10, width: 160 },
+      { key: 'b', left: 186, width: 160 },
     ]),
-    172,
+    176,
   );
   assert.equal(
     restoreSourceAnchor({ key: 'a', offset: 40 }, previous, []),

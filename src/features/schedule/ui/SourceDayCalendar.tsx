@@ -32,6 +32,7 @@ import {
 } from '../model/vertical-layout.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import LessonCard from './LessonCard.tsx';
+import { calendarBounds } from '../model/calendar-bounds.ts';
 import ComparisonHighlights, {
   type CalendarLayers,
 } from './ComparisonHighlights.tsx';
@@ -47,6 +48,7 @@ interface Props {
   placeholder?: boolean;
   spotlightIds: string[];
   hiddenKinds: ScheduleKind[];
+  vucOnly?: boolean;
 }
 const scale = 1;
 const rail = 48;
@@ -61,6 +63,7 @@ export default function SourceDayCalendar({
   placeholder = false,
   spotlightIds,
   hiddenKinds,
+  vucOnly = false,
 }: Props) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
@@ -79,13 +82,9 @@ export default function SourceDayCalendar({
     (schedule) => !hiddenKinds.includes(selectionKind(schedule.selection)),
   );
   const blocks = lessonBlocks(schedules, day);
-  const start = Math.min(
-    480,
-    ...blocks.map((block) => Math.floor(block.lesson.start / 60) * 60),
-  );
-  const end = Math.max(
-    1140,
-    ...blocks.map((block) => Math.ceil(block.lesson.end / 60) * 60),
+  const { start, end } = calendarBounds(
+    blocks.map((block) => block.lesson),
+    vucOnly,
   );
   const tracks = sourceTracks(
     blocks,
@@ -224,7 +223,7 @@ export default function SourceDayCalendar({
       <div className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface">
         <div
           ref={header}
-          className="relative grid min-h-[78px]"
+          className="relative grid min-h-[56px]"
           style={{
             width,
             gridTemplateColumns: `${rail + SOURCE_INSET}px ${tracks
@@ -250,7 +249,7 @@ export default function SourceDayCalendar({
             return (
               <div
                 key={track.key}
-                className={`source-label flex min-h-[78px] flex-col justify-center gap-1 border-b-[3px] px-1.5 py-1 ${jumped === track.key ? 'bg-u-selection' : 'bg-u-surface'}`}
+                className={`source-label flex min-h-[56px] flex-col justify-center gap-1 border-b-[3px] px-1.5 py-1 ${jumped === track.key ? 'bg-u-selection' : 'bg-u-surface'}`}
                 style={{
                   gridColumn: 2 + index * 2,
                   gridRow: 1,
@@ -327,7 +326,7 @@ export default function SourceDayCalendar({
             if (document.activeElement === target) reveal(target);
           });
         }}
-        className={`source-scroll relative scroll-pl-14 overflow-auto overscroll-x-contain [overflow-anchor:none] ${compact ? '' : 'max-h-[560px]'}`}
+        className={`source-scroll relative scroll-pl-14 overscroll-x-contain [overflow-anchor:none] ${compact || vucOnly ? 'overflow-x-auto overflow-y-hidden' : 'max-h-[560px] overflow-auto'}`}
         role="region"
         tabIndex={0}
         aria-label="Дорожки расписаний. Прокручивай вправо или используй «Перейти»."
@@ -367,6 +366,7 @@ export default function SourceDayCalendar({
                     saved={saved}
                     start={start}
                     scale={scale}
+                    outside
                   />
                 )}
                 {loading && !hasSnapshot ? (

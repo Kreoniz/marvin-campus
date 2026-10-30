@@ -4,6 +4,7 @@ import { eventOwner } from './event-owner.ts';
 
 export const VERTICAL_CARD_WIDTH = 160;
 export const VERTICAL_LANE_PITCH = 166;
+export const VERTICAL_DAY_INSET = 10;
 
 export interface VerticalPlacement {
   block: LessonBlock;
@@ -80,8 +81,8 @@ export function verticalLayout(
 
 export function dayMinimum(placed: VerticalPlacement[], compactFloor = 0) {
   return Math.max(
-    VERTICAL_LANE_PITCH,
+    VERTICAL_LANE_PITCH + 8,
     compactFloor,
-    ...placed.map((entry) => VERTICAL_LANE_PITCH * entry.columns),
+    ...placed.map((entry) => VERTICAL_LANE_PITCH * entry.columns + 8),
   );
 }

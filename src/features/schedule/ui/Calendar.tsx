@@ -21,7 +21,9 @@ import {
   verticalLayout,
   VERTICAL_CARD_WIDTH,
   VERTICAL_LANE_PITCH,
+  VERTICAL_DAY_INSET,
 } from '../model/vertical-layout.ts';
+import { calendarBounds } from '../model/calendar-bounds.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
@@ -43,6 +45,7 @@ interface CalendarProps {
   placeholder?: boolean;
   spotlightIds?: string[];
   hiddenKinds?: ScheduleKind[];
+  vucOnly?: boolean;
 }
 
 export default function Calendar({
@@ -59,6 +62,7 @@ export default function Calendar({
   placeholder = false,
   spotlightIds = [],
   hiddenKinds = [],
+  vucOnly = false,
 }: CalendarProps) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
@@ -74,16 +78,7 @@ export default function Calendar({
     : Array.from({ length: 7 }, (_, i) => addDays(week, i));
   const scale = singleDay ? 0.65 : 0.72;
   const all = schedules.flatMap((group) => group.snapshot?.data.lessons ?? []);
-  const earliest = Math.min(
-    480,
-    ...all.map((lesson) => Math.floor(lesson.start / 60) * 60),
-  );
-  const latest = Math.max(
-    1140,
-    ...all.map((lesson) => Math.ceil(lesson.end / 60) * 60),
-  );
-  const start = earliest;
-  const end = latest;
+  const { start, end } = calendarBounds(all, vucOnly);
   const calendarHeight = Math.max(
     (end - start) * scale,
     ...all.map(
@@ -139,13 +134,13 @@ export default function Calendar({
     <>
       <AutoHideScrollArea
         className={
-          compact
+          compact || vucOnly
             ? 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]'
             : 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]'
         }
         style={
           {
-            '--calendar-viewport': `${compact ? calendarHeight : 660 * scale}px`,
+            '--calendar-viewport': `${compact || vucOnly ? calendarHeight : 660 * scale}px`,
             '--calendar-header': singleDay ? '0px' : '44px',
           } as CSSProperties
         }
@@ -308,7 +303,9 @@ export default function Calendar({
                               style={{
                                 top,
                                 height,
-                                left: lane * VERTICAL_LANE_PITCH + 3,
+                                left:
+                                  lane * VERTICAL_LANE_PITCH +
+                                  VERTICAL_DAY_INSET,
                                 width: VERTICAL_CARD_WIDTH,
                               }}
                             />
@@ -359,7 +356,7 @@ export default function Calendar({
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        {!compact && <ScrollArea.Scrollbar className="z-[6]" />}
+        {!compact && !vucOnly && <ScrollArea.Scrollbar className="z-[6]" />}
         <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
         <ScrollArea.Corner />
       </AutoHideScrollArea>

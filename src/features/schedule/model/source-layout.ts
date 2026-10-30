@@ -9,8 +9,8 @@ import {
   type VerticalPlacement,
 } from './vertical-layout.ts';
 
-export const SOURCE_GAP = 12;
-export const SOURCE_INSET = 6;
+export const SOURCE_GAP = 16;
+export const SOURCE_INSET = 10;
 export interface SourceOccurrence extends VerticalPlacement {
   member: Selection;
   reference: boolean;
