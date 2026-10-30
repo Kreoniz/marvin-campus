@@ -9,7 +9,11 @@ import Icon from '../../../shared/ui/Icon.tsx';
 import type { Selection, ScheduleKind } from '../../../lib/types.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import {
+  scheduleLabels,
+  selectionLabels,
+} from '../../../lib/selection-labels.ts';
+import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 
 const moveButtonClassName =
   'min-h-11 min-w-11 shrink-0 text-u-ink hover:bg-u-well data-disabled:cursor-default data-disabled:bg-transparent data-disabled:opacity-30';
@@ -30,12 +34,16 @@ export default function GroupOrder({
   onRemove,
   onEmpty,
 }: Props) {
+  const { schedules } = useResourceInspector();
+  const label = schedules.length
+    ? scheduleLabels(schedules)
+    : selectionLabels(groups);
   const [announcement, setAnnouncement] = useState('');
   const list = useRef<HTMLOListElement>(null);
   function move(group: Selection, index: number, offset: number) {
     onMove(scheduleKey(group), offset);
     setAnnouncement(
-      `${group.label}: позиция ${index + offset + 1} из ${groups.length}.`,
+      `${label(group)}: позиция ${index + offset + 1} из ${groups.length}.`,
     );
     requestAnimationFrame(() => {
       const row = list.current?.querySelector<HTMLElement>(
@@ -74,7 +82,7 @@ export default function GroupOrder({
             />
             <span className="min-w-0 flex-1">
               <strong className="block text-sm wrap-anywhere">
-                {selectionLabel(group)}
+                {label(group)}
               </strong>
               <span className="flex items-center gap-1 text-[11px]">
                 <Icon name={kindIcon(selectionKind(group))} size={11} />
@@ -87,21 +95,21 @@ export default function GroupOrder({
               </span>
             </span>
             <IconButton
-              label={`Переместить ${group.label} выше`}
+              label={`Переместить ${label(group)} выше`}
               name="up"
               className={moveButtonClassName}
               disabled={index === 0}
               onClick={() => move(group, index, -1)}
             />
             <IconButton
-              label={`Переместить ${group.label} ниже`}
+              label={`Переместить ${label(group)} ниже`}
               name="down"
               className={moveButtonClassName}
               disabled={index === groups.length - 1}
               onClick={() => move(group, index, 1)}
             />
             <IconButton
-              label={`Убрать ${group.label}`}
+              label={`Убрать ${label(group)}`}
               data-group-remove={scheduleKey(group)}
               name="close"
               className={moveButtonClassName}
@@ -114,7 +122,7 @@ export default function GroupOrder({
                     )
                     ?.focus({ preventScroll: true });
                 onRemove(scheduleKey(group));
-                setAnnouncement(`${group.label} убрана из сравнения.`);
+                setAnnouncement(`${label(group)} убрана из сравнения.`);
                 if (!next) onEmpty();
                 else
                   requestAnimationFrame(() =>

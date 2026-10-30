@@ -35,6 +35,7 @@ import {
 } from '../../resources/LessonResources.tsx';
 import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import MilitaryPreview from '../../resources/MilitaryPreview.tsx';
 import MilitaryInline from '../../resources/MilitaryInline.tsx';
 
@@ -63,6 +64,7 @@ export default function LessonCard({
 }: LessonCardProps) {
   const { lesson } = block;
   const { openResource, schedules } = useResourceInspector();
+  const sourceLabel = scheduleLabels(schedules);
   const order = new Map(
     schedules.map((row, index) => [scheduleKey(row.selection), index]),
   );
@@ -124,7 +126,7 @@ export default function LessonCard({
   const labels = members
     .map(
       (group) =>
-        `${groupLabel(group)}${savedMember(group) ? ' (сохранённые данные)' : ''}`,
+        `${group.kind === 'vuc' ? sourceLabel(group) : groupLabel(group)}${savedMember(group) ? ' (сохранённые данные)' : ''}`,
     )
     .join(', ');
   const saved = block.staleMembers.length > 0;
@@ -134,7 +136,68 @@ export default function LessonCard({
   );
   const spotlight = spotlights.length > 0;
   const long = lesson.end - lesson.start >= 240;
-  const visibleMembers = surfaceMembers.slice(0, long ? 6 : 3);
+  const [memberCapacity, setMemberCapacity] = useState(1);
+  const [wrapMembers, setWrapMembers] = useState(false);
+  const memberMetrics = surfaceMembers.map((member) => ({
+    label: groupLabel(member),
+    saved: savedMember(member),
+    spotlight: spotlightIds.includes(scheduleKey(member)),
+  }));
+  const metricsKey = JSON.stringify(memberMetrics);
+  useLayoutEffect(() => {
+    const trigger = cardTrigger.current;
+    if (!trigger) return;
+    const metrics: typeof memberMetrics = JSON.parse(metricsKey);
+    // Measure only this surface. Duration is not a proxy for the 62px
+    // horizontal row, and labels must leave room for the remainder/markers.
+    const context = document.createElement('canvas').getContext('2d');
+    const measure = () => {
+      if (!trigger.isConnected) return;
+      const width = trigger.clientWidth - 10;
+      const height = trigger.clientHeight;
+      const wrap = !horizontal && height >= 240;
+      setWrapMembers(wrap);
+      if (wrap) {
+        setMemberCapacity(height >= 440 ? 6 : 3);
+        return;
+      }
+      if (context)
+        context.font = `600 10px ${getComputedStyle(trigger).fontFamily}`;
+      const widths = metrics.map(
+        (member) =>
+          Math.ceil(
+            context?.measureText(member.label).width ?? member.label.length * 7,
+          ) +
+          4 +
+          (member.saved ? 12 : 0) +
+          (member.spotlight ? 11 : 0),
+      );
+      let capacity = 1;
+      for (let count = 1; count <= Math.min(3, widths.length); count++) {
+        const hidden = metrics.slice(count);
+        const remainder = hidden.length
+          ? 8 +
+            String(hidden.length).length * 7 +
+            (hidden.some((member) => member.saved) ? 10 : 0) +
+            (hidden.some((member) => member.spotlight) ? 10 : 0)
+          : 0;
+        if (
+          widths.slice(0, count).reduce((sum, value) => sum + value, 0) +
+            count * 3 +
+            remainder <=
+          width
+        )
+          capacity = count;
+      }
+      setMemberCapacity(capacity);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(trigger);
+    void document.fonts.ready.then(measure);
+    return () => observer.disconnect();
+  }, [horizontal, metricsKey]);
+  const visibleMembers = surfaceMembers.slice(0, memberCapacity);
   const dimmed = spotlightIds.length > 0 && !spotlight;
   const hiddenMembers = surfaceMembers.filter(
     (member) => !visibleMembers.includes(member),
@@ -237,7 +300,10 @@ export default function LessonCard({
             style={chipStyle(group)}
           >
             <Icon name={kindIcon(selectionKind(group))} size={12} />
-            {kindLabel(selectionKind(group))}: {groupLabel(group, event)}
+            {kindLabel(selectionKind(group))}:{' '}
+            {group.kind === 'vuc'
+              ? sourceLabel(group)
+              : groupLabel(group, event)}
             {savedMember(group) && (
               <>
                 <Icon name="clock" size={12} />
@@ -287,8 +353,7 @@ export default function LessonCard({
           if (next) {
             resourceAction.current = false;
             focusLeft.current = false;
-          }
-          else {
+          } else {
             setHovering(false);
             pinned.current = false;
           }
@@ -364,14 +429,14 @@ export default function LessonCard({
             </>
           ) : (
             <>
-              {(long || trackMember) && (
+              {!horizontal && (long || trackMember) && (
                 <span className="card-time relative z-[1] text-[10px] [@container(height<38px)]:hidden">
                   {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
                 </span>
               )}
               {(!trackMember || shared) && (
                 <span
-                  className={`participant-sectors relative z-[1] flex min-w-0 flex-none items-center gap-[3px] [@container(height<42px)]:hidden ${long ? 'flex-wrap' : ''} ${shared ? '' : 'font-semibold'}`}
+                  className={`participant-sectors relative z-[1] flex min-w-0 flex-none items-center gap-[3px] [@container(height<42px)]:hidden ${wrapMembers ? 'flex-wrap' : ''} ${shared ? '' : 'font-semibold'}`}
                 >
                   {(shared ? visibleMembers : [primaryMember]).map((member) => (
                     <span
@@ -383,7 +448,7 @@ export default function LessonCard({
                           ? ''
                           : undefined
                       }
-                      className={`participant-sector inline-flex min-w-0 items-center gap-0.5 rounded-[2px] px-0.5 py-px text-[10px] leading-3 ${shared ? participantBackground(member, true) : ''}`}
+                      className={`participant-sector inline-flex min-w-0 max-w-full items-center gap-0.5 rounded-[2px] px-0.5 py-px text-[10px] leading-3 ${wrapMembers ? 'shrink-0' : ''} ${shared ? participantBackground(member, true) : ''}`}
                       style={chipStyle(member, true)}
                       title={groupLabel(member)}
                     >
@@ -436,7 +501,9 @@ export default function LessonCard({
               ))}
             </span>
           </span>
-          {military && <MilitaryInline date={lesson.date} />}
+          {military && !horizontal && !reference && (
+            <MilitaryInline date={lesson.date} />
+          )}
           {shared && !horizontal && (
             <span
               className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<42px)]:flex"

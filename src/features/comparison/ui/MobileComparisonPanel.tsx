@@ -1,5 +1,5 @@
 import { comparisonScope } from '../../../lib/domain.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { GroupSchedule } from '../../../lib/types.ts';
 import type { ComparisonView } from '../model/use-comparison.ts';
 
@@ -14,6 +14,7 @@ export default function MobileComparisonPanel({
   loading: boolean;
   opening: boolean;
 }) {
+  const label = scheduleLabels(schedules);
   const { included, excluded } = comparisonScope(schedules, view.day);
   if (
     opening ||
@@ -29,8 +30,7 @@ export default function MobileComparisonPanel({
       {included.length >= 2
         ? `Частичное сравнение · ${included.length} из ${included.length + excluded.length}. `
         : `Совместный результат недоступен · учтены ${included.length} из ${included.length + excluded.length}. `}
-      Не учтены:{' '}
-      {excluded.map((group) => selectionLabel(group.selection)).join(', ')}.
+      Не учтены: {excluded.map((group) => label(group.selection)).join(', ')}.
     </p>
   );
 }

@@ -20,6 +20,7 @@ import {
   kindLabel,
   kindIcon,
 } from '../../../lib/schedule-ref.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import { mergeSubgroups, selectionLabel } from '../../../lib/subgroups.ts';
 import { comparisonIssue } from '../../../lib/domain.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
@@ -80,6 +81,7 @@ export default function GroupStrip(props: Props) {
     spotlightIds,
     onSpotlight,
   } = props;
+  const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   latest.current = props;
@@ -254,7 +256,9 @@ export default function GroupStrip(props: Props) {
     next.splice(target, 0, group);
     const control = event.currentTarget;
     onReorder(next);
-    setAnnouncement(`${group.label}: позиция ${target + 1} из ${next.length}.`);
+    setAnnouncement(
+      `${label(group)}: позиция ${target + 1} из ${next.length}.`,
+    );
     requestAnimationFrame(() => control.focus({ preventScroll: true }));
   }
   function renderChip(group: Selection, ghost = false) {
@@ -310,7 +314,7 @@ export default function GroupStrip(props: Props) {
           className="flex min-h-11 w-5 shrink-0 touch-none cursor-grab items-center justify-center border-0 bg-transparent p-0 text-inherit group-data-dragging/groups:cursor-grabbing compact:hidden"
           type="button"
           data-drag-id={scheduleKey(group)}
-          aria-label={`Переместить ${group.label}`}
+          aria-label={`Переместить ${label(group)}`}
           aria-describedby="group-drag-help"
           onPointerDown={(event) => start(event, group)}
           onKeyDown={(event) => keyboard(event, group)}
@@ -346,8 +350,8 @@ export default function GroupStrip(props: Props) {
             data-drag-id={scheduleKey(group)}
             onClick={() => onOrder(scheduleKey(group))}
             onKeyDown={(event) => keyboard(event, group)}
-            title={`${kindLabel(selectionKind(group))}: ${group.label}`}
-            aria-label={`Управлять расписанием ${group.label}`}
+            title={`${kindLabel(selectionKind(group))}: ${label(group)}`}
+            aria-label={`Управлять расписанием ${label(group)}`}
           >
             {selectionKind(group) !== 'vuc' && (
               <span
@@ -359,6 +363,11 @@ export default function GroupStrip(props: Props) {
             )}
             <strong className="resource-name block min-w-0 text-left text-xs leading-4 font-semibold whitespace-normal wrap-anywhere">
               {selectionLabel(group)}
+              {label(group) !== selectionLabel(group) && (
+                <span className="block max-w-40 truncate text-[10px] leading-3 font-normal">
+                  {label(group).slice(selectionLabel(group).length + 3)}
+                </span>
+              )}
             </strong>
             {hiddenKinds.includes(selectionKind(group)) && (
               <Icon name="hidden" size={11} />
@@ -370,7 +379,7 @@ export default function GroupStrip(props: Props) {
             type="button"
             className="group-spotlight cursor-pointer flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-r-[var(--u-radius)] border-0 bg-transparent p-0 text-inherit shadow-[inset_1px_0_#14201633] hover:bg-[color-mix(in_srgb,var(--chip)_80%,white)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink) aria-pressed:bg-[color-mix(in_srgb,var(--chip)_70%,white)] aria-pressed:[&_svg]:stroke-[2.5]"
             data-drag-id={scheduleKey(group)}
-            aria-label={`Выделить ${group.label}`}
+            aria-label={`Выделить ${label(group)}`}
             aria-pressed={spotlightIds.includes(scheduleKey(group))}
             onClick={() => onSpotlight(scheduleKey(group))}
             onKeyDown={(event) => keyboard(event, group)}

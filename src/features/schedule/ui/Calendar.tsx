@@ -13,7 +13,7 @@ import {
   comparisonIssue,
   comparisonScope,
 } from '../../../lib/domain.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import {
@@ -60,6 +60,7 @@ export default function Calendar({
   spotlightIds = [],
   hiddenKinds = [],
 }: CalendarProps) {
+  const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
   const viewportWidth = useCalendarNavigation(
     scroller,
@@ -214,10 +215,10 @@ export default function Calendar({
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long',
-                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => selectionLabel(group.selection)).join(', ')}` : ''}`}
+                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}` : ''}`}
                       title={
                         scope.excluded.length
-                          ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
+                          ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}`
                           : undefined
                       }
                       onClick={() => onDay(date)}
@@ -381,7 +382,7 @@ export default function Calendar({
             {singleDay && (layers.presence || layers.free) && (
               <span className="mr-3">
                 {excluded.length
-                  ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
+                  ? `Частичное сравнение: ${included.map((group) => label(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => label(group.selection)).join(', ')}`
                   : `Для всех ${included.length} участников`}
                 {saved && ' · по сохранённым данным'}.
               </span>

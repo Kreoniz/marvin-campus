@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { monday, formatDay } from '../../lib/dates.ts';
-import { compactVucLabel } from '../../lib/schedule-ref.ts';
+import { vucOptionLabel } from '../../lib/selection-labels.ts';
 import { viewURL } from '../../lib/url.ts';
 import type { VucRef } from '../../lib/types.ts';
 import useMilitarySchedule from './use-military-schedule.ts';
@@ -32,21 +32,6 @@ export default function MilitaryPreview({ date }: { date: string }) {
     times,
     selectMilitary,
   } = useMilitarySchedule(date);
-  const caption = (item: VucRef) => {
-    const years = [
-      ...new Set(
-        item.sourcePeriod?.match(/\b(?:19|20)\d{2}\b/g) ??
-          [item.firstDate?.slice(0, 4), item.lastDate?.slice(0, 4)].filter(
-            Boolean,
-          ),
-      ),
-    ].sort();
-    return `${compactVucLabel(item.label)}${years.length ? ` · ${years[0]}${years.length > 1 ? `–${years.at(-1)}` : ''}` : ''}`;
-  };
-  const optionLabel = (item: VucRef) =>
-    available.filter((other) => caption(other) === caption(item)).length > 1
-      ? `${caption(item)} · ${item.sourceLabel || item.description || item.id}`
-      : caption(item);
   return (
     <section
       className="military-preview mt-3 border-t border-u-line-soft pt-3"
@@ -64,7 +49,7 @@ export default function MilitaryPreview({ date }: { date: string }) {
         <option value="">Выбрать ВУЦ</option>
         {available.map((item) => (
           <option key={item.id} value={item.id}>
-            {optionLabel(item)}
+            {vucOptionLabel(item, available)}
           </option>
         ))}
       </select>

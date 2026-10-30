@@ -4,7 +4,7 @@ import { Popover } from 'unlikely-ui/popover';
 import type { GroupSchedule } from '../../../lib/types.ts';
 import { scheduleKey } from '../../../lib/schedule-ref.ts';
 import { comparisonIssue } from '../../../lib/domain.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { ComparisonLinks } from '../model/use-comparison.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
@@ -28,6 +28,7 @@ export default function ComparisonStatus({
   fetching: boolean;
   links: ComparisonLinks;
 }) {
+  const label = scheduleLabels(schedules);
   const checked = schedules
     .flatMap((g) => (g.snapshot ? [g.snapshot.checkedAt] : []))
     .sort()[0];
@@ -148,7 +149,7 @@ export default function ComparisonStatus({
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                         <strong className="text-sm font-semibold">
-                          {selectionLabel(group.selection)}
+                          {label(group.selection)}
                         </strong>
                         <span className="text-xs text-u-muted">{state}</span>
                       </div>

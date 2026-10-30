@@ -5,6 +5,7 @@ import { nearestVucDate } from '../../lib/vuc-navigation.ts';
 import type { GroupSchedule } from '../../lib/types.ts';
 import { formatDay } from '../../lib/dates.ts';
 import { scheduleKey } from '../../lib/schedule-ref.ts';
+import { scheduleLabels } from '../../lib/selection-labels.ts';
 import VucDocumentNotes from './VucDocumentNotes.tsx';
 
 export default function VucSources({
@@ -16,6 +17,7 @@ export default function VucSources({
   day: string;
   onSelectDate: (date: string) => void;
 }) {
+  const label = scheduleLabels(schedules);
   const sources = schedules.filter(
     (schedule) => schedule.selection.kind === 'vuc',
   );
@@ -70,7 +72,7 @@ export default function VucSources({
             key={scheduleKey(schedule.selection)}
           >
             <span>
-              {schedule.selection.label}:{' '}
+              {label(schedule.selection)}:{' '}
               {schedule.snapshot.data.unresolvedDates?.includes(day)
                 ? 'часть ячеек требует сверки'
                 : 'нет данных на этот день'}
@@ -108,7 +110,7 @@ export default function VucSources({
               className="mt-2 border-t border-u-line-soft pt-2"
               key={scheduleKey(schedule.selection)}
             >
-              <strong>{schedule.selection.label}</strong>
+              <strong>{label(schedule.selection)}</strong>
               <p className="my-1 text-u-muted">
                 {data?.sourceLabel ||
                   (schedule.selection.kind === 'vuc' &&

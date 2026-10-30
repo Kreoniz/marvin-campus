@@ -12,7 +12,7 @@ import {
   isGroup,
   selectionKind,
 } from '../../../lib/schedule-ref.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 
 interface ComparisonSummaryProps {
   schedules: GroupSchedule[];
@@ -33,6 +33,7 @@ export default function ComparisonSummary({
   compact = false,
   placeholder = false,
 }: ComparisonSummaryProps) {
+  const label = scheduleLabels(schedules);
   const result = compareDay(schedules, day);
   const { included, excluded, overlays } = comparisonScope(schedules, day);
   const eligible = schedules.filter((schedule) =>
@@ -58,7 +59,7 @@ export default function ComparisonSummary({
           (lesson) => lesson.date === day && !lesson.remote,
         ),
     )
-    .map((group) => selectionLabel(group.selection));
+    .map((group) => label(group.selection));
   const times = (intervals: typeof result.presence) =>
     intervals
       .map(
@@ -106,17 +107,13 @@ export default function ComparisonSummary({
             {!!included.length && (
               <p className="my-1">
                 Учтены:{' '}
-                {included
-                  .map((group) => selectionLabel(group.selection))
-                  .join(' + ')}
+                {included.map((group) => label(group.selection)).join(' + ')}
               </p>
             )}
             {!!excluded.length && (
               <p className="my-1">
                 Не учтены:{' '}
-                {excluded
-                  .map((group) => selectionLabel(group.selection))
-                  .join(', ')}
+                {excluded.map((group) => label(group.selection)).join(', ')}
               </p>
             )}
             {!!overlays.length && (

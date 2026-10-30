@@ -25,6 +25,8 @@ import {
   LessonTeacherSources,
 } from '../../resources/LessonResources.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
+import MilitaryPreview from '../../resources/MilitaryPreview.tsx';
 
 interface Props {
   schedules: GroupSchedule[];
@@ -47,6 +49,7 @@ export default function DayAgenda({
   spotlightIds = [],
   hiddenKinds = [],
 }: Props) {
+  const label = scheduleLabels(schedules);
   const order = new Map(
     schedules.map((row, index) => [scheduleKey(row.selection), index]),
   );
@@ -196,13 +199,15 @@ export default function DayAgenda({
                                 {spotlightIds.includes(scheduleKey(member)) && (
                                   <Icon name="tick" size={10} />
                                 )}
-                                {lessonGroupLabel(
-                                  member,
-                                  entry.memberLessons[scheduleKey(member)],
-                                  isGroup(member)
-                                    ? (subgroupCatalog[member.id] ?? [])
-                                    : [],
-                                )}
+                                {member.kind === 'vuc'
+                                  ? label(member)
+                                  : lessonGroupLabel(
+                                      member,
+                                      entry.memberLessons[scheduleKey(member)],
+                                      isGroup(member)
+                                        ? (subgroupCatalog[member.id] ?? [])
+                                        : [],
+                                    )}
                                 {staleMembers.includes(scheduleKey(member)) && (
                                   <>
                                     <Icon name="clock" size={11} />
@@ -241,6 +246,15 @@ export default function DayAgenda({
                         </p>
                         <LessonTeacherSources entry={entry} />
                         <LessonDocument lesson={lesson} />
+                        {entry.members.some(isGroup) &&
+                          /военная\s+подготовка/iu.test(lesson.subject) && (
+                            <details className="agenda-military mt-2">
+                              <summary className="min-h-11 cursor-pointer rounded-sm py-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-u-ink">
+                                Моё расписание ВУЦ · подробнее
+                              </summary>
+                              <MilitaryPreview date={lesson.date} />
+                            </details>
+                          )}
                       </article>
                     </li>
                   );

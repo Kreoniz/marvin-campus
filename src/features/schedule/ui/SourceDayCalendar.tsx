@@ -17,7 +17,7 @@ import {
   kindLabel,
   kindIcon,
 } from '../../../lib/schedule-ref.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import {
@@ -62,6 +62,7 @@ export default function SourceDayCalendar({
   spotlightIds,
   hiddenKinds,
 }: Props) {
+  const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLDivElement>(null);
   const anchor = useRef<ReturnType<typeof sourceAnchor>>(undefined);
@@ -72,7 +73,7 @@ export default function SourceDayCalendar({
   );
   const notice =
     requested && hiddenKinds.includes(selectionKind(requested.selection))
-      ? `${selectionLabel(requested.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`
+      ? `${label(requested.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`
       : '';
   const visible = schedules.filter(
     (schedule) => !hiddenKinds.includes(selectionKind(schedule.selection)),
@@ -257,7 +258,7 @@ export default function SourceDayCalendar({
                 }}
               >
                 <strong className="text-xs leading-4 wrap-anywhere">
-                  {selectionLabel(track.selection)}
+                  {label(track.selection)}
                 </strong>
                 <span className="flex min-w-0 items-center gap-1 text-[10px] leading-3 text-u-muted">
                   <Icon name={kindIcon(kind)} size={11} />
@@ -295,7 +296,7 @@ export default function SourceDayCalendar({
                 key={scheduleKey(schedule.selection)}
                 value={scheduleKey(schedule.selection)}
               >
-                {selectionLabel(schedule.selection)} ·{' '}
+                {label(schedule.selection)} ·{' '}
                 {kindLabel(selectionKind(schedule.selection))}
                 {hiddenKinds.includes(selectionKind(schedule.selection))
                   ? ' · скрыто'
@@ -355,7 +356,7 @@ export default function SourceDayCalendar({
                 data-lesson-region
                 tabIndex={-1}
                 role="group"
-                aria-label={`${selectionLabel(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
+                aria-label={`${label(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
                 className="source-band absolute top-0 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] focus-visible:outline-2 focus-visible:outline-u-ink"
                 style={{ left: rail + track.left, width: track.width, height }}
               >
