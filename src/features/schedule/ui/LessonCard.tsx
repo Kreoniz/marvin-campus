@@ -66,7 +66,7 @@ export default function LessonCard({
   const { openResource } = useResourceInspector();
   const cardTrigger = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
-  const preferredFocusKey = useRef<string | undefined>(undefined);
+  const resourceAction = useRef(false);
   const surfaceMembers = block.members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
@@ -201,13 +201,13 @@ export default function LessonCard({
     return () => {
       if (
         !trigger ||
+        resourceAction.current ||
         (document.activeElement !== trigger &&
           !content?.contains(document.activeElement))
       )
         return;
       const region = trigger.closest<HTMLElement>('[role="region"]');
       const keys: string[] = JSON.parse(trigger.dataset.lessonKeys ?? '[]');
-      const preferred = preferredFocusKey.current;
       requestAnimationFrame(() => {
         if (
           trigger.isConnected ||
@@ -223,9 +223,9 @@ export default function LessonCard({
           (JSON.parse(card.dataset.lessonKeys ?? '[]') as string[]).includes(
             key,
           );
-        const next =
-          (preferred && cards.find((card) => matches(card, preferred))) ||
-          cards.find((card) => keys.some((key) => matches(card, key)));
+        const next = cards.find((card) =>
+          keys.some((key) => matches(card, key)),
+        );
         (
           next ??
           region ??
@@ -281,7 +281,13 @@ export default function LessonCard({
       data-spotlight={spotlight ? '' : undefined}
       data-dimmed={dimmed ? '' : undefined}
     >
-      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Root
+        open={open}
+        onOpenChange={(next) => {
+          if (next) resourceAction.current = false;
+          setOpen(next);
+        }}
+      >
         <Popover.Trigger
           ref={cardTrigger}
           data-lesson-keys={JSON.stringify(
@@ -306,7 +312,7 @@ export default function LessonCard({
                 : {}),
             } as CSSProperties
           }
-          className={`lesson-card relative motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? `shared-card gap-0 p-0 ${dimmed ? 'text-u-ink' : 'text-u-ink'}` : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${dimmed ? 'text-u-ink' : allSaved ? 'text-u-ink' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
+          className={`lesson-card relative motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? `shared-card gap-0 p-0 [@container(height<36px)]:pb-[3px] ${dimmed ? 'text-u-ink' : 'text-u-ink'}` : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${dimmed ? 'text-u-ink' : allSaved ? 'text-u-ink' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
           onClick={() => {
@@ -314,6 +320,25 @@ export default function LessonCard({
             track('lesson_opened', { remote: lesson.remote });
           }}
         >
+          {shared && !horizontal && (
+            <span
+              className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<36px)]:flex"
+              aria-hidden="true"
+            >
+              {surfaceMembers.map((group) => (
+                <span
+                  key={scheduleKey(group)}
+                  data-short-member={scheduleKey(group)}
+                  data-dimmed={memberDimmed(group, true) ? '' : undefined}
+                  data-spotlight={
+                    spotlightIds.includes(scheduleKey(group)) ? '' : undefined
+                  }
+                  className={`flex-1 ${participantBackground(group, true)}`}
+                  style={chipStyle(group, true)}
+                />
+              ))}
+            </span>
+          )}
           {shared && long && (
             <span
               className="participant-stripe absolute inset-x-0 top-0 flex h-[5px]"
@@ -329,7 +354,7 @@ export default function LessonCard({
             </span>
           )}
           <span
-            className={`card-heading flex min-w-0 flex-none items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px' : ''}`}
+            className={`card-heading flex min-w-0 flex-none items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px [@container(height<36px)]:py-0' : ''}`}
           >
             {!horizontal && (shared || !isGroup(primaryMember)) && (
               <span
@@ -503,6 +528,9 @@ export default function LessonCard({
           className="lesson-popover max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{ sideOffset: 7 }}
           initialFocus={hovering.current ? false : undefined}
+          finalFocus={() =>
+            resourceAction.current ? false : (cardTrigger.current ?? true)
+          }
           onPointerEnter={cancel}
           onPointerLeave={leave}
         >
@@ -553,11 +581,18 @@ export default function LessonCard({
                 <LessonRoom
                   lesson={event}
                   onOpen={(resource, _trigger, date) => {
-                    preferredFocusKey.current = lessonKey(event);
+                    resourceAction.current = true;
                     cancel();
                     hovering.current = false;
                     setOpen(false);
-                    openResource(resource, cardTrigger.current, date);
+                    openResource(resource, cardTrigger.current, date, {
+                      eventKey: lessonKey(event),
+                      region:
+                        cardTrigger.current?.closest<HTMLElement>(
+                          '[role="region"]',
+                        ) ?? null,
+                      popup: popover.current,
+                    });
                   }}
                 />
               </p>
@@ -566,11 +601,18 @@ export default function LessonCard({
                   <LessonTeachers
                     lesson={event}
                     onOpen={(resource, _trigger, date) => {
-                      preferredFocusKey.current = lessonKey(event);
+                      resourceAction.current = true;
                       cancel();
                       hovering.current = false;
                       setOpen(false);
-                      openResource(resource, cardTrigger.current, date);
+                      openResource(resource, cardTrigger.current, date, {
+                        eventKey: lessonKey(event),
+                        region:
+                          cardTrigger.current?.closest<HTMLElement>(
+                            '[role="region"]',
+                          ) ?? null,
+                        popup: popover.current,
+                      });
                     }}
                   />
                 </p>

@@ -2,36 +2,111 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from 'react';
-import type { ResourceRef, Selection } from '../../lib/types.ts';
-import { validSelection } from '../../lib/schedule-ref.ts';
+import type { GroupSchedule, ResourceRef, Selection } from '../../lib/types.ts';
+import { scheduleKey, validSelection } from '../../lib/schedule-ref.ts';
 
+type Continuation = {
+  eventKey: string;
+  region: HTMLElement | null;
+  popup: HTMLElement | null;
+};
 type AddResource = (
   resource: ResourceRef,
   trigger?: HTMLElement | null,
   date?: string,
+  continuation?: Continuation,
 ) => void;
 const ResourceContext = createContext<{ openResource: AddResource }>({
   openResource: () => {},
 });
-
 export function useResourceInspector() {
   return useContext(ResourceContext);
 }
 
-// Linked metadata adds to the same calendar instead of opening another view.
+type PendingFocus = { key: string; restore: () => void; dispose: () => void };
+
+// This owner outlives a card that splits during a source join. Popover return
+// focus is disabled for this action; there is no competing search fallback.
 export function ResourceProvider({
   onAdd,
+  schedules,
   children,
 }: {
   onAdd: (selection: Selection) => void;
+  schedules: GroupSchedule[];
   children: ReactNode;
 }) {
+  const pending = useRef<PendingFocus | undefined>(undefined);
+  const [request, setRequest] = useState(0);
+  const clear = useCallback(() => {
+    pending.current?.dispose();
+    pending.current = undefined;
+  }, []);
+  useEffect(() => clear, [clear]);
   const openResource = useCallback<AddResource>(
-    (resource, trigger) => {
+    (resource, trigger, _date, continuation) => {
       if (!validSelection(resource)) return;
+      clear();
+      if (continuation?.region && trigger) {
+        const { eventKey, region, popup } = continuation;
+        const matches = (element: Element) =>
+          (
+            JSON.parse(
+              (element as HTMLElement).dataset.lessonKeys ?? '[]',
+            ) as string[]
+          ).includes(eventKey);
+        const owns = (element: Element | null) =>
+          element === trigger ||
+          element === region ||
+          !!(
+            element &&
+            (popup?.contains(element) ||
+              (region.contains(element) && matches(element)))
+          );
+        const focus = (event: FocusEvent) => {
+          if (event.target instanceof Element && !owns(event.target)) clear();
+        };
+        const pointer = (event: PointerEvent) => {
+          if (
+            event.target instanceof Element &&
+            !popup?.contains(event.target) &&
+            !trigger.contains(event.target)
+          )
+            clear();
+        };
+        const keyboard = () => clear();
+        document.addEventListener('focusin', focus, true);
+        document.addEventListener('pointerdown', pointer, true);
+        document.addEventListener('keydown', keyboard, true);
+        pending.current = {
+          key: scheduleKey(resource),
+          restore: () => {
+            if (!region.isConnected) {
+              clear();
+              return;
+            }
+            const next = Array.from(
+              region.querySelectorAll<HTMLButtonElement>('[data-lesson-keys]'),
+            ).find(matches);
+            (next ?? region).focus({ preventScroll: true });
+          },
+          dispose: () => {
+            document.removeEventListener('focusin', focus, true);
+            document.removeEventListener('pointerdown', pointer, true);
+            document.removeEventListener('keydown', keyboard, true);
+          },
+        };
+        setRequest((value) => value + 1);
+        onAdd(resource);
+        return;
+      }
       onAdd(resource);
       requestAnimationFrame(() => {
         const active = document.activeElement;
@@ -48,8 +123,17 @@ export function ResourceProvider({
         )?.focus({ preventScroll: true });
       });
     },
-    [onAdd],
+    [clear, onAdd],
   );
+  useLayoutEffect(() => {
+    const action = pending.current;
+    if (!action) return;
+    action.restore();
+    const source = schedules.find(
+      (schedule) => scheduleKey(schedule.selection) === action.key,
+    );
+    if (source && !source.loading && (source.snapshot || source.error)) clear();
+  }, [request, schedules, clear]);
   const value = useMemo(() => ({ openResource }), [openResource]);
   return (
     <ResourceContext.Provider value={value}>

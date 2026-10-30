@@ -216,7 +216,7 @@ export default function ComparisonPage() {
       className="campus-theme min-h-svh bg-u-canvas text-u-ink"
       tokens={{ '--u-accent': '#87f19d' }}
     >
-      <ResourceProvider onAdd={addSchedule}>
+      <ResourceProvider onAdd={addSchedule} schedules={source.schedules}>
         <a
           className="fixed top-2 left-2 z-[200] -translate-y-[160%] rounded-u-control bg-u-accent p-2.5 text-u-accent-ink focus:translate-y-0"
           href="#comparison"

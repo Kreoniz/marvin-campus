@@ -18,11 +18,7 @@ interface Props {
 export default function MobileDayNav({ view, opening }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(view.week, i));
-  const last = addDays(view.week, 6);
-  const shortWeek =
-    view.week.slice(0, 7) === last.slice(0, 7)
-      ? `${Number(view.week.slice(8))}–${formatDay(last, { day: 'numeric', month: 'short' })}`
-      : `${formatDay(view.week, { day: 'numeric', month: 'short' })}–${formatDay(last, { day: 'numeric', month: 'short' })}`;
+  const shortWeek = weekLabel(view.week, true);
   return (
     <div className="mobile-navigation">
       <div
@@ -48,7 +44,7 @@ export default function MobileDayNav({ view, opening }: Props) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-nowrap [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
+                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }
