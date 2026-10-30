@@ -22,6 +22,7 @@ import (
 	"marvin-campus/internal/schedule"
 	"marvin-campus/internal/share"
 	"marvin-campus/internal/upstream"
+	"marvin-campus/internal/vuc"
 )
 
 type Server struct {
@@ -32,6 +33,7 @@ type Server struct {
 	UmamiID        string
 	Shares         *share.Store
 	TrustedProxies []netip.Prefix
+	VUC            *vuc.Store
 }
 
 func (s *Server) Handler() http.Handler {
@@ -44,6 +46,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/timetable/groups", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
 	mux.Handle("GET /api/v1/timetable/weeks/{id}", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
 	mux.Handle("GET /api/groups", limits.wrap(http.HandlerFunc(s.groups), s.TrustedProxies))
+	mux.Handle("GET /api/vuc", limits.wrap(http.HandlerFunc(s.vucSearch), s.TrustedProxies))
+	mux.Handle("GET /api/vuc/{id}", limits.wrap(http.HandlerFunc(s.vucWeek), s.TrustedProxies))
 	mux.Handle("GET /api/resources/{kind}", limits.wrap(http.HandlerFunc(s.resources), s.TrustedProxies))
 	mux.Handle("GET /api/resources/{kind}/{id}", limits.wrap(http.HandlerFunc(s.resourceWeek), s.TrustedProxies))
 	mux.Handle("GET /api/schedule/{id}", limits.wrap(http.HandlerFunc(s.week), s.TrustedProxies))

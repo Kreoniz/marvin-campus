@@ -17,6 +17,7 @@ import (
 	"marvin-campus/internal/httpapi"
 	"marvin-campus/internal/share"
 	"marvin-campus/internal/upstream"
+	"marvin-campus/internal/vuc"
 )
 
 func main() {
@@ -46,7 +47,12 @@ func main() {
 		}
 		proxies = append(proxies, prefix)
 	}
-	app := &httpapi.Server{Cache: db, Shares: shares, Source: upstream.New(env("UPSTREAM_URL", "https://rasp.omgtu.ru")), Location: location, StaticDir: env("STATIC_DIR", "./dist"), UmamiID: os.Getenv("UMAMI_WEBSITE_ID"), TrustedProxies: proxies}
+	vucData, err := vuc.Load(os.Getenv("VUC_DATA_PATH"))
+	if err != nil {
+		slog.Error("invalid VUC dataset", "error", err)
+		os.Exit(1)
+	}
+	app := &httpapi.Server{Cache: db, Shares: shares, Source: upstream.New(env("UPSTREAM_URL", "https://rasp.omgtu.ru")), Location: location, StaticDir: env("STATIC_DIR", "./dist"), UmamiID: os.Getenv("UMAMI_WEBSITE_ID"), TrustedProxies: proxies, VUC: vucData}
 	server := &http.Server{Addr: env("LISTEN_ADDR", ":8080"), Handler: app.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 55 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
