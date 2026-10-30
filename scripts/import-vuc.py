@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 import tempfile
 from xml.etree import ElementTree as ET
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 MAX_INPUT = 16 * 1024 * 1024
 MAX_XML = 16 * 1024 * 1024
@@ -361,7 +361,7 @@ def main():
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
         print(f"Imported {len(schedules)} platoon schedules, {sum(len(s['lessons']) for s in schedules)} lessons; {sum(len(s['unresolvedDates']) for s in schedules)} unresolved platoon/dates.")
-    except (ValueError, OSError, KeyError, ET.ParseError) as error:
+    except (ValueError, OSError, KeyError, ET.ParseError, BadZipFile) as error:
         parser.exit(1, f"Import failed: {error}\n")
 
 

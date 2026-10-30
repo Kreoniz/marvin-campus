@@ -1,6 +1,7 @@
 """Synthetic contract tests; no university documents or identities are embedded."""
 
 import importlib.util
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -41,6 +42,38 @@ def make_document(path, sections):
 
 
 class ImportTests(unittest.TestCase):
+    def test_empty_printed_row_and_absent_platoon_date_are_distinct(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "fixture.docx"
+            empty = [("03\n09", 1), ("101", 1)] + [("", 1)] * 6
+            other = [("10\n09", 1), ("102", 1), ("Предмет", 1)] + [("", 1)] * 5
+            make_document(path, [("с 03 сентября по 10 сентября 2026 г.", [100] * 8, [1] * 8, [empty, other])])
+            results = vuc.import_document(path)
+            first, second = results
+            self.assertEqual(first["coveredDates"], ["2026-09-03"])
+            self.assertEqual(first["lessons"], [])
+            self.assertEqual(first["unresolvedDates"], [])
+            self.assertNotIn("2026-09-10", first["coveredDates"])
+            self.assertNotIn("2026-09-03", second["coveredDates"])
+            self.assertEqual(first["documentSHA256"], hashlib.sha256(path.read_bytes()).hexdigest())
+
+    def test_ambiguity_and_evidence_stay_with_their_own_platoon_and_date(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "fixture.docx"
+            merged = [("03\n09", 1), ("101", 1), ("Исходный\nтекст", 2)] + [("", 1)] * 4
+            single = [("03\n09", 1), ("102", 1), ("Предмет", 1)] + [("", 1)] * 5
+            make_document(path, [("с 03 сентября по 10 сентября 2026 г.", [100] * 8, [1] * 8, [merged, single])])
+            first, second = vuc.import_document(path)
+            self.assertEqual(first["coveredDates"], [])
+            self.assertEqual(first["unresolvedDates"], ["2026-09-03"])
+            self.assertEqual(list(first["dateWarnings"]), ["2026-09-03"])
+            self.assertEqual(first["lessons"][0]["rawText"], "Исходный\nтекст")
+            self.assertEqual(first["lessons"][0]["sourceOrigin"], "table-1:row-1:cell-2")
+            self.assertEqual(first["lessons"][0]["sourceIntervals"], [{"start": 540, "end": 630}, {"start": 645, "end": 735}])
+            self.assertEqual(second["coveredDates"], ["2026-09-03"])
+            self.assertEqual(second["unresolvedDates"], [])
+            self.assertEqual(second["warnings"], [])
+
     def test_grid_units_are_mapped_to_printed_periods(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "fixture.docx"
