@@ -76,6 +76,7 @@ export default function LessonCard({
   const cardTrigger = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
   const resourceAction = useRef(false);
+  const focusLeft = useRef(false);
   const surfaceMembers = members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
@@ -261,6 +262,7 @@ export default function LessonCard({
       <Popover.Root
         open={open}
         onOpenChange={(next, details) => {
+          if (details.reason === 'focus-out') focusLeft.current = true;
           if (details.reason === 'trigger-press') {
             // The first click on a hover preview pins it; the second closes it.
             if (!next && !pinned.current) {
@@ -282,7 +284,10 @@ export default function LessonCard({
               pinned.current = false;
             }
           }
-          if (next) resourceAction.current = false;
+          if (next) {
+            resourceAction.current = false;
+            focusLeft.current = false;
+          }
           else {
             setHovering(false);
             pinned.current = false;
@@ -325,7 +330,7 @@ export default function LessonCard({
             track('lesson_opened', { remote: lesson.remote });
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Tab' && open && hovering) {
+            if (event.key === 'Tab' && !event.shiftKey && open && hovering) {
               // A hover preview has no focus manager until it is activated.
               event.preventDefault();
               event.currentTarget.click();
@@ -462,7 +467,9 @@ export default function LessonCard({
             setHovering(false);
           }}
           finalFocus={() =>
-            resourceAction.current ? false : (cardTrigger.current ?? true)
+            resourceAction.current || focusLeft.current
+              ? false
+              : (cardTrigger.current ?? true)
           }
         >
           <div className="popover-heading mb-[5px] flex items-center justify-between gap-2.5">
