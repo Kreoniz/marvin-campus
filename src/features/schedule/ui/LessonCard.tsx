@@ -247,6 +247,17 @@ export default function LessonCard({
   const participantBackground = (group: Selection, inCard = false) =>
     participantClasses(savedMember(group), memberDimmed(group, inCard));
   const [open, setOpen] = useState(false);
+  const [compactPopup, setCompactPopup] = useState(false);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const size = matchMedia(
+      '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)',
+    );
+    const resize = () => setCompactPopup(size.matches);
+    resize();
+    size.addEventListener('change', resize);
+    return () => size.removeEventListener('change', resize);
+  }, [open]);
   // A bundle may split when another source joins one of its events. Keep the
   // user's logical event focused, unless they have moved to another control.
   useLayoutEffect(() => {
@@ -581,8 +592,15 @@ export default function LessonCard({
         </Popover.Trigger>
         <Popover.Content
           ref={popover}
-          className="lesson-popover motion-safe:duration-100 max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
-          positionerProps={{ sideOffset: 7 }}
+          className="lesson-popover motion-safe:duration-100 max-h-[min(calc(100dvh-24px),var(--available-height))] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
+          positionerProps={{
+            sideOffset: 7,
+            // Compact popups may overlap tall anchors to keep useful space.
+            // Desktop retains side flipping and the hover-to-trigger path.
+            collisionAvoidance: compactPopup
+              ? { side: 'shift', align: 'shift' }
+              : undefined,
+          }}
           initialFocus={hovering ? false : undefined}
           onPointerDownCapture={() => {
             pinned.current = true;
