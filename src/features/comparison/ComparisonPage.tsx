@@ -10,7 +10,6 @@ import { initAnalytics, track } from '../../lib/analytics.ts';
 import { usePwa, updatePwa } from '../../lib/pwa.ts';
 import { scheduleNavigation } from '../../lib/keyboard.ts';
 import SiteHeader from '../../app/ui/SiteHeader.tsx';
-import GroupOrder from '../groups/ui/GroupOrder.tsx';
 import GroupPicker, { GroupPickerTrigger } from '../groups/ui/GroupPicker.tsx';
 import ComparisonToolbar from './ui/ComparisonToolbar.tsx';
 import ComparisonStatus from './ui/ComparisonStatus.tsx';
@@ -19,6 +18,12 @@ import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
+import DisplaySettings from './ui/DisplaySettings.tsx';
+import type { CalendarLayers } from '../schedule/ui/ComparisonHighlights.tsx';
+import DayAgenda from '../schedule/ui/DayAgenda.tsx';
+import ScheduleViewPicker, {
+  type ScheduleView,
+} from './ui/ScheduleViewPicker.tsx';
 
 const compactQuery =
   '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
@@ -39,14 +44,48 @@ export default function ComparisonPage() {
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
   const [mobileView, setMobileView] = useState<'day' | 'week'>('day');
+  const [dayFormat, setDayFormat] = useState<'timeline' | 'list'>('timeline');
+  const [spotlightGroupIds, setSpotlightGroupIds] = useState<number[]>([]);
   const addGroupRef = useRef<HTMLButtonElement>(null);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [layers, setLayers] = useState<CalendarLayers>({
+    presence: true,
+    free: true,
+  });
   const [orderFocus, setOrderFocus] = useState(0);
   const groups = view.groups,
     week = view.week,
     day = view.day,
     mode = view.mode;
   const busy = links.opening || source.pending;
+  const spotlightIds =
+    groups.length > 1
+      ? spotlightGroupIds.filter((id) =>
+          groups.some((group) => group.id === id),
+        )
+      : [];
+  const spotlightLabel =
+    groups
+      .filter((group) => spotlightIds.includes(group.id))
+      .map((group) => group.label)
+      .join(', ') || undefined;
+  useEffect(() => {
+    setSpotlightGroupIds((current) => {
+      const next =
+        groups.length > 1
+          ? current.filter((id) => groups.some((group) => group.id === id))
+          : [];
+      return next.length === current.length ? current : next;
+    });
+  }, [groups]);
+  function selectFormat(value: ScheduleView) {
+    const current =
+      mobileView === 'week' ? 'week' : dayFormat === 'list' ? 'list' : 'day';
+    if (value === current) return;
+    setMobileView(value === 'week' ? 'week' : 'day');
+    if (value !== 'week') setDayFormat(value === 'list' ? 'list' : 'timeline');
+    track('mobile_view_changed', { view: value });
+  }
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -140,16 +179,36 @@ export default function ComparisonPage() {
       >
         Перейти к расписанию
       </a>
-      <GroupOrder
-        groups={groups}
-        colors={colors}
-        open={orderOpen}
-        onOpenChange={setOrderOpen}
-        onMove={view.move}
-        returnFocus={orderFocus}
-      />
       <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
-        <SiteHeader theme={theme} onToggleTheme={toggleTheme} />
+        <SiteHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          viewControl={
+            (groups.length > 0 || links.opening) && (
+              <ScheduleViewPicker
+                value={
+                  mobileView === 'week'
+                    ? 'week'
+                    : dayFormat === 'list'
+                      ? 'list'
+                      : 'day'
+                }
+                onChange={selectFormat}
+                disabled={links.opening}
+              />
+            )
+          }
+          settingsControl={
+            <DisplaySettings
+              layers={layers}
+              onLayers={setLayers}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              spotlightLabel={spotlightLabel}
+              onClearSpotlight={() => setSpotlightGroupIds([])}
+            />
+          }
+        />
         <main>
           {pwa.offline && (
             <p className="my-2 text-xs text-u-muted" role="status">
@@ -190,6 +249,12 @@ export default function ComparisonPage() {
                   onAdd={view.add}
                   onError={(message) => notify(message, 'error')}
                   returnFocus={addGroupRef}
+                  open={orderOpen}
+                  onOpenChange={setOrderOpen}
+                  colors={colors}
+                  onMove={view.move}
+                  onRemove={view.remove}
+                  focusGroupId={orderFocus}
                 >
                   <ComparisonToolbar
                     view={view}
@@ -201,17 +266,21 @@ export default function ComparisonPage() {
                       setOrderFocus(id);
                       setOrderOpen(true);
                     }}
+                    spotlightIds={spotlightIds}
+                    onSpotlight={(id) =>
+                      setSpotlightGroupIds((current) =>
+                        current.includes(id)
+                          ? current.filter((value) => value !== id)
+                          : [...current, id],
+                      )
+                    }
                     addGroupRef={addGroupRef}
+                    onGroups={() => setOrderFocus(0)}
                   />
                   {groups.length || links.opening ? (
                     <>
                       {mobile && (
-                        <MobileDayNav
-                          view={view}
-                          opening={links.opening}
-                          mobileView={mobileView}
-                          onMobileViewChange={setMobileView}
-                        />
+                        <MobileDayNav view={view} opening={links.opening} />
                       )}
                       {mobile ? (
                         <MobileComparisonPanel
@@ -230,19 +299,34 @@ export default function ComparisonPage() {
                           links={links}
                         />
                       )}
-                      <Calendar
-                        schedules={source.schedules}
-                        colors={colors}
-                        subgroupCatalog={subgroupCatalog}
-                        week={week}
-                        day={day}
-                        mode={mode}
-                        loading={busy}
-                        placeholder={links.opening}
-                        onDay={view.selectDay}
-                        compact={mobile}
-                        singleDay={mobile && mobileView === 'day'}
-                      />
+                      {mobile &&
+                      mobileView === 'day' &&
+                      dayFormat === 'list' ? (
+                        <DayAgenda
+                          schedules={source.schedules}
+                          colors={colors}
+                          subgroupCatalog={subgroupCatalog}
+                          day={day}
+                          loading={busy}
+                          placeholder={links.opening}
+                          spotlightIds={spotlightIds}
+                        />
+                      ) : (
+                        <Calendar
+                          schedules={source.schedules}
+                          colors={colors}
+                          subgroupCatalog={subgroupCatalog}
+                          week={week}
+                          day={day}
+                          layers={layers}
+                          loading={busy}
+                          placeholder={links.opening}
+                          onDay={view.selectDay}
+                          compact={mobile}
+                          singleDay={mobile && mobileView === 'day'}
+                          spotlightIds={spotlightIds}
+                        />
+                      )}
                       {mobile && (
                         <MobileComparisonPanel
                           section="result"
@@ -293,8 +377,14 @@ export default function ComparisonPage() {
                   subgroupCatalog={subgroupCatalog}
                   day={day}
                   mode={mode}
+                  layers={layers}
                   loading={busy}
                   placeholder={links.opening}
+                  dayFormat={dayFormat}
+                  onDayFormat={setDayFormat}
+                  spotlightIds={spotlightIds}
+                  spotlightLabel={spotlightLabel}
+                  onClearSpotlight={() => setSpotlightGroupIds([])}
                 />
               )}
             </>

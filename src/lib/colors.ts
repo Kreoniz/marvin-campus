@@ -35,7 +35,15 @@ export function assignColors(
 }
 
 export function chipColor(color: number): string {
-  if (color < base.length) return `var(--u-category-${base[color]})`;
   const hue = Math.round((color - base.length) * 137.508) % 360;
-  return `light-dark(hsl(${hue} 55% 82%),hsl(${hue} 38% 69%))`;
+  return color < base.length
+    ? `var(--u-category-${base[color]})`
+    : `light-dark(hsl(${hue} 55% 82%),hsl(${hue} 38% 69%))`;
+}
+
+export function lessonColor(color: number, subdued: boolean): string {
+  const value = chipColor(color);
+  return subdued
+    ? `light-dark(color-mix(in srgb,${value} 50%,var(--u-surface)),color-mix(in srgb,${value} 45%,var(--u-well)))`
+    : value;
 }

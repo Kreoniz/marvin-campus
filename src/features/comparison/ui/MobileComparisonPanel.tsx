@@ -1,7 +1,6 @@
-import { RadioGroup } from 'unlikely-ui/radio-group';
 import { comparisonScope } from '../../../lib/domain.ts';
 import { selectionLabel } from '../../../lib/subgroups.ts';
-import type { GroupSchedule, Mode } from '../../../lib/types.ts';
+import type { GroupSchedule } from '../../../lib/types.ts';
 import type {
   ComparisonLinks,
   ComparisonView,
@@ -33,19 +32,6 @@ export default function MobileComparisonPanel({
   if (section === 'controls') {
     return (
       <div className="mobile-comparison-controls">
-        {comparing && (
-          <RadioGroup.Root
-            className="mobile-modes mx-3 my-2 flex [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:flex-1 [&_.u-segmented-item]:text-xs"
-            variant="segmented"
-            aria-label="Режим сравнения"
-            value={view.mode}
-            disabled={opening}
-            onValueChange={(value) => view.selectMode(value as Mode)}
-          >
-            <RadioGroup.Item value="presence">В вузе</RadioGroup.Item>
-            <RadioGroup.Item value="free">Без занятий</RadioGroup.Item>
-          </RadioGroup.Root>
-        )}
         {!opening && excluded.length > 0 && (
           <p
             className="m-0 border-t border-(--u-line-soft) px-3 py-2 text-xs leading-snug"
@@ -80,7 +66,6 @@ export default function MobileComparisonPanel({
             loading={loading}
             placeholder={opening}
             compact
-            showHeading={false}
           />
         </div>
       )}

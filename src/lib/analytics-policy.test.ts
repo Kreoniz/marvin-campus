@@ -74,8 +74,8 @@ test('unknown events, arbitrary text and invalid values cannot enter analytics',
   );
 });
 
-test('mobile view events accept only the two supported views', () => {
-  for (const view of ['day', 'week'])
+test('mobile view events accept only the supported reading formats', () => {
+  for (const view of ['day', 'week', 'list'])
     assert.deepEqual(
       analyticsData('mobile_view_changed', { view, date: '2026-10-19' }),
       { view },

@@ -1,0 +1,6 @@
+name: omgtu-timetable
+version: 0.1.0
+description: Owner-only public planned timetable through the Campus service API.
+provides_tools:
+  - omgtu_timetable_groups
+  - omgtu_timetable_week

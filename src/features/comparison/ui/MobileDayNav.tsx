@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Button } from 'unlikely-ui/button';
 import { Popover } from 'unlikely-ui/popover';
-import { RadioGroup } from 'unlikely-ui/radio-group';
-import { track } from '../../../lib/analytics.ts';
 import type { ComparisonView } from '../model/use-comparison.ts';
 import {
   addDays,
@@ -16,15 +14,8 @@ import Icon from '../../../shared/ui/Icon.tsx';
 interface Props {
   view: ComparisonView;
   opening: boolean;
-  mobileView?: 'day' | 'week';
-  onMobileViewChange: (value: 'day' | 'week') => void;
 }
-export default function MobileDayNav({
-  view,
-  opening,
-  mobileView = 'day',
-  onMobileViewChange,
-}: Props) {
+export default function MobileDayNav({ view, opening }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(view.week, i));
   const last = addDays(view.week, 6);
@@ -32,16 +23,10 @@ export default function MobileDayNav({
     view.week.slice(0, 7) === last.slice(0, 7)
       ? `${Number(view.week.slice(8))}–${formatDay(last, { day: 'numeric', month: 'short' })}`
       : `${formatDay(view.week, { day: 'numeric', month: 'short' })}–${formatDay(last, { day: 'numeric', month: 'short' })}`;
-  function selectView(value: 'day' | 'week') {
-    if (value !== mobileView) {
-      onMobileViewChange(value);
-      track('mobile_view_changed', { view: value });
-    }
-  }
   return (
-    <div className="mobile-navigation min-[701px]:grid min-[701px]:grid-cols-2 min-[701px]:items-center">
+    <div className="mobile-navigation">
       <div
-        className="mobile-view-controls flex items-center gap-1.5 px-1.5"
+        className="mobile-view-controls flex items-center px-2"
         inert={opening}
       >
         <div
@@ -63,7 +48,7 @@ export default function MobileDayNav({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:text-balance [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
+                  className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-nowrap [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }
@@ -97,25 +82,15 @@ export default function MobileDayNav({
           <Button
             variant="ghost"
             size="sm"
-            className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs max-[360px]:hidden underline underline-offset-[3px]"
+            className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
             onClick={() => view.selectDate(omskToday())}
           >
             Сегодня
           </Button>
         </div>
-        <RadioGroup.Root
-          className="view-toggle shrink-0 gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:px-[7px] [&_.u-segmented-item]:text-xs"
-          variant="segmented"
-          aria-label="Представление расписания"
-          value={mobileView}
-          onValueChange={(value) => selectView(value as 'day' | 'week')}
-        >
-          <RadioGroup.Item value="day">День</RadioGroup.Item>
-          <RadioGroup.Item value="week">Неделя</RadioGroup.Item>
-        </RadioGroup.Root>
       </div>
       <nav
-        className="agenda-days grid grid-cols-7 gap-0.5 px-2 pb-1 min-[701px]:pb-0"
+        className="agenda-days grid grid-cols-7 gap-0 pb-1 min-[701px]:pb-0"
         data-schedule-days
         aria-label="Дни недели"
         inert={opening}

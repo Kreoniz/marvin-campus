@@ -27,9 +27,28 @@ Lesson labels describe source membership, independently of that filter. A
 whole-group lesson keeps the base group name when a subgroup is selected; shared
 events retain each participant's own subgroup membership.
 
-Desktop uses a week grid and a detailed selected day. Mobile starts with a
-compact day grid; its summary and freshness follow the grid. Mobile group chips open subgroup,
-order and removal controls. Group search starts empty, without suggested groups.
+Desktop uses a week grid and a detailed selected day. The detail can switch
+between a timeline and a chronological list. Mobile starts with a compact day
+grid; three 44×44 px header icons switch directly between Day, Week and Day list without another toolbar row.
+The list replaces the grid, preserves exact intervals and full subjects, shows
+known shared lessons once and expands parallel bundles into separate lessons.
+An interval heading appears once for lessons with exactly equal start and end
+times; equal starts with different ends remain separate sections. Entries use
+dividers rather than separate card frames. Teacher names are visible beside the
+other metadata and wrap naturally; there is no repeated teacher disclosure or
+left-hand time column.
+Its summary and freshness retain the same data semantics as the grid.
+Group chips use two non-overlapping targets: the main two-line label opens
+subgroups and a separate 44×44 px focus icon toggles only that group's spotlight.
+Active focus uses a lighter categorical icon surface and a check mark instead
+of an underline; the whole chip keeps its categorical color without a heavy frame.
+The whole-group option and unresolved selections retain their labels. A single
+group uses the whole chip for subgroup selection. Scope captions never ellipsize;
+the whole-group caption is “Все” and short subgroup numbers retain a separate
+chevron. One Groups icon opens a dialog combining search and the complete
+selection with move-up/down and removal; desktop drag handles and Alt+arrows
+remain available. Removing the last group keeps the search open and focuses its
+input. Group search starts empty, without suggested groups.
 Its reserved results area keeps the search field still while typing and loading.
 Adding a group keeps the same search dialog, query and results open, including
 the first addition from the welcome screen. Added rows are marked “Уже добавлена”
@@ -37,36 +56,69 @@ and cannot be added twice. Focus returns to the search input; Escape, outside
 click or Close dismisses the dialog. The 30-group cap disables further additions
 and explains how to make space without closing the dialog.
 The mobile calendar spans the available screen width, while controls and card
-content keep their internal spacing. Day/week views use a two-button toggle.
+content keep their internal spacing. The compact header keeps group names and
+subgroup scope visible. Display settings hold layer visibility, theme, help and
+clearing all spotlights; common view and group actions are directly available.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
-Comparison modes stay above the mobile calendar. A partial-data notice names
-included and excluded selections beside those controls. Mobile day and week grids
+No comparison-mode row precedes the mobile calendar. A partial-data notice
+continues to name included and excluded selections above the known lessons. Mobile day and week grids
 expand to their full time range and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
+The compact group strip uses an overlay thumb without a reserved lower row.
 Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
 a click or tap does not. Forced-color mode keeps scrollbars visible.
-On screens up to 360 pixels wide, Today remains available in the date picker.
+Today stays beside the date and remains available in the date picker.
 Compact hour labels omit `:00`; full times remain available to assistive technology
 and in lesson details. The time scale and event durations stay proportional.
 Online lessons use a contrasting two-pixel dashed outline.
-Comparison modes appear after a second group is added: “В вузе” and “Без занятий”.
+Both comparison layers are enabled by default and require at least two usable
+groups: shared presence is an amber rail, and shared free windows are green
+bands. Their independent visibility is transient presentation state in Display
+settings; it does not alter comparison inputs or links. Compact summaries show
+both results. The existing URL mode remains readable and selects summary order
+for old links; it no longer limits the visible calendar to one layer.
 Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
 Ordinary cards use the group color. In both calendar views, each shared event appears once with a common
 subject and room, and colored participant sections in stable group-ID order.
-Group names and subgroup numbers occupy two lines; more than three participants
-show the first two and a count, with the full list in the popover. Lesson-kind
-badges sit beside the room. Day and week lanes belong to overlapping events,
+Group names and subgroup numbers occupy two lines. More than three participants
+show two and a count, with the full list in the popover. Spotlighted participants
+take priority for those two places; otherwise use the first two in group-ID order.
+The displayed pair remains sorted by group ID. When hidden participants include
+saved data, the count retains a clock marker and its saved-data description.
+Lesson-kind badges sit beside the room. Day and week lanes belong to overlapping events,
 so empty groups reserve no space. Distinct concurrent events use separate lanes;
 a shared event keeps all its participants in one card. Missing group data remains
 explicit in the comparison result and data status; known lessons never establish
 an empty schedule for an unavailable group. Reordering selected groups keeps
 event placement and colors stable.
-Cards in the vertical calendar are at most 160 pixels wide in
-both day and week views; an isolated lesson does not stretch across the day.
+Each group spotlight can be toggled independently; several groups can be active.
+A shared event matches if any participant is selected, retaining its normal
+subject and metadata. Each participant sector or list badge is emphasized
+independently: selected participants retain their categorical fill and gain a
+check; other participants are muted even within a matching shared event.
+Other events keep their group hues with a quieter fill and readable text;
+they remain interactive and retain their positions. Remote dashed
+outlines, parallel-event stripes and saved-data clock markers remain explicit.
+Opening lesson details retains the full participant colors and information.
+Spotlight survives date, subgroup and view changes. Removing a group drops only
+that group from the spotlight set. Fewer than two remaining groups clears the
+set. Display settings and day detail can clear all spotlights together.
+Spotlight and day format are transient presentation state, not comparison URL
+parameters or changes to the presence/free calculation.
+
+Each vertical calendar day has its own minimum width, derived from that day's
+rendered concurrency. Navigation measures actual date columns and preserves
+the visible date/offset across geometry changes. Lane allocation reserves both
+the true interval and the minimum painted height, so short events cannot collide.
+Ordinary vertical cards remain capped at 160 pixels; a card may expand right
+through contiguous lanes free throughout its interval, capped at 320 pixels.
+The six-pixel gap and the 166-pixel lane pitch cap remain. Empty dates keep their
+columns, and unavailable data is not treated as an empty day.
+An isolated lesson does not stretch across the day.
 Their horizontal pitch is capped too, keeping a six-pixel gap instead of
 spreading narrow cards across a wide day. Pressing a card highlights it without
 moving it on the time scale.
@@ -75,9 +127,11 @@ Simultaneous distinct lessons of one group use stripes. The selected-day timelin
 reserves the week's peak row count to keep its panel height stable.
 Long events in the horizontal day timeline keep their temporal length, but their
 participant labels stay compact; the time range is available in the popover.
-Presence uses amber highlights and free windows use green, including their
-legends. Saved ranges retain the mode color with a weaker fill and dashed edge
-in both views.
+Presence uses a thin amber rail along the time axis and free windows use green
+bands, including separate legends. Both layers can coexist in vertical calendars
+and the selected-day timeline. Saved ranges retain their color with dashed edges
+and a weaker free fill in both views. All layers use the same usable comparison
+subset and are independent of the spotlight selection.
 
 Subgroups use their group's unchanged base color and retain their visible public
 numbers. There is no subgroup shade setting. The side-index concept (03) is

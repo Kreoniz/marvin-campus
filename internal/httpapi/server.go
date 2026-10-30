@@ -41,6 +41,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]string{"umamiWebsiteId": s.UmamiID})
 	})
+	mux.Handle("GET /api/v1/timetable/groups", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
+	mux.Handle("GET /api/v1/timetable/weeks/{id}", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
 	mux.Handle("GET /api/groups", limits.wrap(http.HandlerFunc(s.groups), s.TrustedProxies))
 	mux.Handle("GET /api/schedule/{id}", limits.wrap(http.HandlerFunc(s.week), s.TrustedProxies))
 	mux.HandleFunc("POST /api/share", func(w http.ResponseWriter, r *http.Request) {

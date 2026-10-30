@@ -16,7 +16,6 @@ interface ComparisonSummaryProps {
   mode: Mode;
   compact?: boolean;
   placeholder?: boolean;
-  showHeading?: boolean;
 }
 
 export default function ComparisonSummary({
@@ -26,7 +25,6 @@ export default function ComparisonSummary({
   mode,
   compact = false,
   placeholder = false,
-  showHeading = true,
 }: ComparisonSummaryProps) {
   const result = compareDay(schedules, day);
   const { included, excluded } = comparisonScope(schedules);
@@ -34,7 +32,6 @@ export default function ComparisonSummary({
   const hasLessons = included.some((group) =>
     lessonsFor(group).some((lesson) => lesson.date === day),
   );
-  const ranges = mode === 'free' ? result.free : result.presence;
   const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
@@ -47,7 +44,7 @@ export default function ComparisonSummary({
         ),
     )
     .map((group) => selectionLabel(group.selection));
-  const times = (intervals: typeof ranges) =>
+  const times = (intervals: typeof result.presence) =>
     intervals
       .map(
         (interval) => `${timeLabel(interval.start)}–${timeLabel(interval.end)}`,
@@ -130,23 +127,23 @@ export default function ComparisonSummary({
           </>
         ) : compact ? (
           <>
-            {showHeading && (
-              <strong>
-                {mode === 'free'
-                  ? 'Общий перерыв в вузе'
-                  : 'Общее время в вузе'}
-              </strong>
-            )}
-            <p className="result-time text-base leading-snug font-extrabold tracking-[-0.3px]">
-              {ranges.length
-                ? times(ranges)
-                : mode === 'free'
-                  ? 'Общего перерыва в вузе нет'
-                  : 'Нет общего времени'}
-            </p>
-            {mode === 'presence' && !!result.free.length && (
-              <p>Без занятий: {times(result.free)}</p>
-            )}
+            {(mode === 'free'
+              ? (['free', 'presence'] as const)
+              : (['presence', 'free'] as const)
+            ).map((layer) => (
+              <p key={layer} className="result-time text-xs leading-relaxed">
+                <span className="text-u-muted">
+                  {layer === 'presence' ? 'В вузе' : 'Без занятий'}:{' '}
+                </span>
+                <strong className="font-semibold">
+                  {result[layer].length
+                    ? times(result[layer])
+                    : layer === 'presence'
+                      ? 'Нет общего времени'
+                      : 'Общих окон нет'}
+                </strong>
+              </p>
+            ))}
           </>
         ) : (
           <>
