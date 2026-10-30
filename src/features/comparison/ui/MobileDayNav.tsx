@@ -12,11 +12,13 @@ import DatePicker from './LazyDatePicker.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
 
 interface Props {
+  vucOnly?: boolean;
   view: ComparisonView;
   opening: boolean;
   showWeekControls?: boolean;
 }
 export default function MobileDayNav({
+  vucOnly = false,
   view,
   opening,
   showWeekControls = true,
@@ -89,6 +91,13 @@ export default function MobileDayNav({
             >
               Сегодня
             </Button>
+            <a
+              href={vucOnly ? '/' : '/vuc'}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-sm text-xs underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-u-ink"
+              aria-label={vucOnly ? 'Все расписания' : 'Расписания ВУЦ'}
+            >
+              {vucOnly ? 'Все' : 'ВУЦ'}
+            </a>
           </div>
         </div>
       )}

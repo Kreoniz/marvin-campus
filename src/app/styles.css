@@ -142,7 +142,31 @@
 .resource-chip .group-spotlight[aria-pressed='true']:focus-visible {
   outline-color: var(--u-category-ink);
 }
+.group-spotlight:hover {
+  background: color-mix(in srgb, var(--chip) 80%, white);
+  color: var(--u-category-ink);
+}
+.resource-chip .group-spotlight[aria-pressed='true']:hover {
+  background: color-mix(in srgb, var(--chip) 60%, white);
+}
+.group-selection-scroll > .u-scrollbar[data-orientation='horizontal'] {
+  height: 8px;
+  bottom: 0;
+}
+.group-selection-scroll .u-scroll-thumb::before {
+  inset: 2px 0;
+  background: var(--u-muted);
+}
+.group-selection-scroll .u-scroll-thumb:is(:hover, :active)::before {
+  background: var(--u-accent-text);
+}
+.drag-chip {
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.25));
+}
 @media (forced-colors: active) {
+  .group-selection-scroll .u-scroll-thumb::before {
+    background: Highlight;
+  }
   .resource-card {
     box-shadow: none;
   }

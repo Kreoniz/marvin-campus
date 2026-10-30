@@ -281,6 +281,9 @@ export function useComparison(notify: Notify, vucOnly = false) {
     }
     function change(value: Partial<ViewState>) {
       apply({ ...stateRef.current, ...value });
+      // Explicit links are temporary views. Only an intentional selection edit
+      // adopts their VUC set as the saved workspace; dates and copying do not.
+      if (vucOnly && value.groups) rememberSelection(value.groups, true);
       changedRef.current();
     }
     function reorder(groups: Selection[]) {
@@ -462,7 +465,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
     function canonicalize() {
       if (linkRef.current.opening || linkRef.current.error) return;
       const value = view.current();
-      rememberSelection(value.groups, vucOnly);
+      if (!vucOnly) rememberSelection(value.groups, false);
       history.replaceState(
         { campusView: value },
         '',
@@ -492,7 +495,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
       sync() {
         update({ manual: '' });
         const value = view.current();
-        rememberSelection(value.groups, vucOnly);
+        if (!vucOnly) rememberSelection(value.groups, false);
         history.pushState(
           { campusView: value },
           '',

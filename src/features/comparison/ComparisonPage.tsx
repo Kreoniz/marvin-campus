@@ -351,6 +351,7 @@ export default function ComparisonPage({
                       <>
                         {(mobile || scheduleView !== 'week') && (
                           <MobileDayNav
+                            vucOnly={vucOnly}
                             view={view}
                             opening={links.opening}
                             showWeekControls={mobile}
@@ -461,9 +462,11 @@ export default function ComparisonPage({
                       </>
                     ) : vucOnly ? (
                       <VucCatalogue
-                        onAdd={(selection) =>
-                          fromSearch(() => addSchedule(selection))
-                        }
+                        onAdd={(selection) => {
+                          addSchedule(selection);
+                          setOrderFocus('');
+                          setOrderOpen(true);
+                        }}
                       />
                     ) : (
                       <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
@@ -484,6 +487,12 @@ export default function ComparisonPage({
                             Все выбранные расписания — в одном календаре.
                           </p>
                           <GroupPickerTrigger labelled />
+                          <a
+                            href="/vuc"
+                            className="ml-3 inline-flex min-h-11 items-center text-sm underline underline-offset-2"
+                          >
+                            Расписания ВУЦ →
+                          </a>
                           <button
                             className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
                             onClick={view.example}

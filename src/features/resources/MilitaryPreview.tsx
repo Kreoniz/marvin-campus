@@ -1,18 +1,13 @@
 import { useId } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import { vucWeekOptions } from './api.ts';
-import { useResourceInspector } from './ResourceInspector.tsx';
-import { usableSnapshot } from '../../lib/cache-policy.ts';
-import { monday, formatDay, timeLabel } from '../../lib/dates.ts';
+import { monday, formatDay } from '../../lib/dates.ts';
 import { compactVucLabel } from '../../lib/schedule-ref.ts';
 import { viewURL } from '../../lib/url.ts';
-import { nearestVucDate } from '../../lib/vuc-navigation.ts';
-import type { Lesson, VucRef } from '../../lib/types.ts';
-import LessonDocument from './LessonDocument.tsx';
-import useVucCatalogue from './use-vuc-catalogue.ts';
+import type { VucRef } from '../../lib/types.ts';
+import useMilitarySchedule from './use-military-schedule.ts';
+import VucDocumentNotes from './VucDocumentNotes.tsx';
 
-export function vucPageURL(refs: VucRef[], date: string) {
+function vucPageURL(refs: VucRef[], date: string) {
   const url = viewURL(
     { groups: refs, day: date, week: monday(date), mode: 'free' },
     new URL('/vuc', location.origin),
@@ -21,45 +16,37 @@ export function vucPageURL(refs: VucRef[], date: string) {
 }
 export default function MilitaryPreview({ date }: { date: string }) {
   const id = useId();
-  const { schedules, militaryId, selectMilitary } = useResourceInspector();
   const {
-    query: catalogue,
-    entries: catalogueEntries,
+    catalogue,
     expired,
-  } = useVucCatalogue();
-  const selected = schedules.filter((row) => row.selection.kind === 'vuc');
-  const available = [
-    ...new Map(
-      [
-        ...catalogueEntries,
-        ...selected.map((row) => row.selection as VucRef),
-      ].map((ref) => [ref.id, ref]),
-    ).values(),
-  ];
-  const preferred =
-    militaryId || (selected.length === 1 ? selected[0].selection.id : '');
-  const ref = available.find((item) => item.id === preferred);
-  const result = useQuery({
-    ...vucWeekOptions(
-      ref ?? { kind: 'vuc', id: 'unselected', label: 'ВУЦ' },
-      monday(date),
-    ),
-    enabled: !!ref,
-  });
-  const snapshot = usableSnapshot(result.data, monday(date), Date.now());
-  const data = snapshot?.data;
-  const lessons = (data?.lessons ?? [])
-    .filter((lesson) => lesson.date === date)
-    .sort(
-      (a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id),
-    );
-  const covered = data?.coveredDates.includes(date);
-  const unresolved = data?.unresolvedDates?.includes(date);
-  const nearest = ref && nearestVucDate(ref, date, data?.coveredDates);
-  const times = (lesson: Lesson) =>
-    (lesson.sourceIntervals?.length ? lesson.sourceIntervals : [lesson])
-      .map((range) => `${timeLabel(range.start)}–${timeLabel(range.end)}`)
-      .join(', ');
+    available,
+    ref,
+    result,
+    snapshot,
+    data,
+    lessons,
+    covered,
+    unresolved,
+    nearest,
+    hasNotes,
+    times,
+    selectMilitary,
+  } = useMilitarySchedule(date);
+  const caption = (item: VucRef) => {
+    const years = [
+      ...new Set(
+        item.sourcePeriod?.match(/\b(?:19|20)\d{2}\b/g) ??
+          [item.firstDate?.slice(0, 4), item.lastDate?.slice(0, 4)].filter(
+            Boolean,
+          ),
+      ),
+    ].sort();
+    return `${compactVucLabel(item.label)}${years.length ? ` · ${years[0]}${years.length > 1 ? `–${years.at(-1)}` : ''}` : ''}`;
+  };
+  const optionLabel = (item: VucRef) =>
+    available.filter((other) => caption(other) === caption(item)).length > 1
+      ? `${caption(item)} · ${item.sourceLabel || item.description || item.id}`
+      : caption(item);
   return (
     <section
       className="military-preview mt-3 border-t border-u-line-soft pt-3"
@@ -77,10 +64,7 @@ export default function MilitaryPreview({ date }: { date: string }) {
         <option value="">Выбрать ВУЦ</option>
         {available.map((item) => (
           <option key={item.id} value={item.id}>
-            {compactVucLabel(item.label)} ·{' '}
-            {item.sourcePeriod ||
-              item.description ||
-              `${item.firstDate}–${item.lastDate}`}
+            {optionLabel(item)}
           </option>
         ))}
       </select>
@@ -119,8 +103,7 @@ export default function MilitaryPreview({ date }: { date: string }) {
               month: 'long',
               year: 'numeric',
             })}{' '}
-            · Документ{data?.sourcePeriod ? ` · ${data.sourcePeriod}` : ''}.
-            Актуальность на сайте ВУЦ не проверена.
+            · Документ. Актуальность на сайте ВУЦ не проверена.
           </p>
           {result.isPending && !snapshot ? (
             <Skeleton className="h-16 w-full" />
@@ -161,10 +144,24 @@ export default function MilitaryPreview({ date }: { date: string }) {
                     <time className="font-semibold">{times(lesson)}</time>
                     <strong className="block text-sm">{lesson.subject}</strong>
                     {[lesson.room, lesson.teacher].filter(Boolean).join(' · ')}
-                    <LessonDocument lesson={lesson} />
                   </li>
                 ))}
               </ol>
+              {hasNotes && (
+                <details className="mt-2 text-xs leading-relaxed">
+                  <summary className="min-h-8 cursor-pointer rounded-sm py-1.5 focus-visible:outline-2 focus-visible:outline-u-ink">
+                    Примечания документа
+                  </summary>
+                  {data?.sourcePeriod && (
+                    <p className="my-1 text-u-muted">{data.sourcePeriod}</p>
+                  )}
+                  <VucDocumentNotes
+                    date={date}
+                    warnings={data?.warnings}
+                    cells={data?.unparsedCells}
+                  />
+                </details>
+              )}
             </>
           )}
         </>

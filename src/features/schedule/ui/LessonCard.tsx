@@ -19,7 +19,6 @@ import type {
 import {
   isGroup,
   scheduleKey,
-  compareScheduleRefs,
   selectionKind,
   kindLabel,
   kindIcon,
@@ -37,6 +36,7 @@ import {
 import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
 import MilitaryPreview from '../../resources/MilitaryPreview.tsx';
+import MilitaryInline from '../../resources/MilitaryInline.tsx';
 
 interface LessonCardProps {
   block: LessonBlock;
@@ -62,11 +62,21 @@ export default function LessonCard({
   reference = false,
 }: LessonCardProps) {
   const { lesson } = block;
-  const { openResource } = useResourceInspector();
+  const { openResource, schedules } = useResourceInspector();
+  const order = new Map(
+    schedules.map((row, index) => [scheduleKey(row.selection), index]),
+  );
+  const members = block.members
+    .slice()
+    .sort(
+      (a, b) =>
+        (order.get(scheduleKey(a)) ?? Infinity) -
+        (order.get(scheduleKey(b)) ?? Infinity),
+    );
   const cardTrigger = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
   const resourceAction = useRef(false);
-  const surfaceMembers = block.members.filter(
+  const surfaceMembers = members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
   const primaryMember =
@@ -75,8 +85,8 @@ export default function LessonCard({
   const resourceSurface =
     resourceKind === 'lecturer' || resourceKind === 'auditorium';
   const shared = surfaceMembers.length > 1;
-  const sharedEvent = block.members.length > 1;
-  const allGroups = block.members.every(isGroup);
+  const sharedEvent = members.length > 1;
+  const allGroups = members.every(isGroup);
   const events = block.parallel ?? [lesson];
   const badges = [
     ...new Map(
@@ -110,7 +120,7 @@ export default function LessonCard({
       ),
     } as CSSProperties;
   }
-  const labels = block.members
+  const labels = members
     .map(
       (group) =>
         `${groupLabel(group)}${savedMember(group) ? ' (сохранённые данные)' : ''}`,
@@ -122,21 +132,15 @@ export default function LessonCard({
     spotlightIds.includes(scheduleKey(member)),
   );
   const spotlight = spotlights.length > 0;
-  const visibleMembers =
-    surfaceMembers.length > 2
-      ? [
-          ...spotlights,
-          ...surfaceMembers.filter((member) => !spotlights.includes(member)),
-        ]
-          .slice(0, 2)
-          .sort(compareScheduleRefs)
-      : surfaceMembers;
+  const long = lesson.end - lesson.start >= 240;
+  const visibleMembers = surfaceMembers.slice(0, long ? 6 : 3);
   const dimmed = spotlightIds.length > 0 && !spotlight;
   const hiddenMembers = surfaceMembers.filter(
     (member) => !visibleMembers.includes(member),
   );
   const hiddenSaved = hiddenMembers.some(savedMember);
-  const long = lesson.end - lesson.start >= 240;
+  const military =
+    members.some(isGroup) && /военная\s+подготовка/iu.test(lesson.subject);
   const remote = events.every((event) => event.remote);
   const accessibleLabel = `${reference ? `Ссылка на общее занятие в расписании ${primaryMember.label}. ` : ''}${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${sharedEvent ? (allGroups ? 'Общая пара: ' : 'Одно занятие в нескольких расписаниях: ') : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одного расписания.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
   const background = dimmed
@@ -220,12 +224,12 @@ export default function LessonCard({
     };
   }, [open]);
 
-  const hovering = useRef(false);
+  const [hovering, setHovering] = useState(false);
   const pinned = useRef(false);
   function participants(event?: Lesson) {
     return (
       <div className="popover-participants my-2 flex flex-wrap items-center gap-[3px]">
-        {block.members.map((group) => (
+        {members.map((group) => (
           <span
             key={scheduleKey(group)}
             className={`participant-chip inline-flex items-center gap-[3px] rounded-[3px] px-[3px] py-px text-xs leading-[1.2] font-[650] whitespace-nowrap ${participantBackground(group)}`}
@@ -260,26 +264,27 @@ export default function LessonCard({
           if (details.reason === 'trigger-press') {
             // The first click on a hover preview pins it; the second closes it.
             if (!next && !pinned.current) {
-              details.cancel();
               pinned.current = true;
-              hovering.current = false;
+              setHovering(false);
+              // Keep controlled open, but accept the press interaction so Base
+              // UI enables its focus manager after a patient hover click.
               return;
             }
             pinned.current = next;
-            hovering.current = false;
+            setHovering(false);
           } else if (details.reason === 'trigger-hover') {
             if (!next && pinned.current) {
               details.cancel();
               return;
             }
             if (next) {
-              hovering.current = true;
+              setHovering(true);
               pinned.current = false;
             }
           }
           if (next) resourceAction.current = false;
           else {
-            hovering.current = false;
+            setHovering(false);
             pinned.current = false;
           }
           setOpen(next);
@@ -316,8 +321,15 @@ export default function LessonCard({
           className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) p-[5px] [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''} ${reference ? 'shared-reference' : ''}`}
 
           onClick={() => {
-            hovering.current = false;
+            setHovering(false);
             track('lesson_opened', { remote: lesson.remote });
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Tab' && open && hovering) {
+              // A hover preview has no focus manager until it is activated.
+              event.preventDefault();
+              event.currentTarget.click();
+            }
           }}
         >
           <span className="card-heading relative z-[1] flex min-w-0 flex-none items-start gap-1">
@@ -354,7 +366,7 @@ export default function LessonCard({
               )}
               {(!trackMember || shared) && (
                 <span
-                  className={`participant-sectors relative z-[1] flex min-w-0 flex-none items-center gap-[3px] [@container(height<42px)]:hidden ${shared ? '' : 'font-semibold'}`}
+                  className={`participant-sectors relative z-[1] flex min-w-0 flex-none items-center gap-[3px] [@container(height<42px)]:hidden ${long ? 'flex-wrap' : ''} ${shared ? '' : 'font-semibold'}`}
                 >
                   {(shared ? visibleMembers : [primaryMember]).map((member) => (
                     <span
@@ -383,6 +395,9 @@ export default function LessonCard({
                       title={labels}
                     >
                       +{hiddenMembers.length}
+                      {hiddenMembers.some((member) =>
+                        spotlightIds.includes(scheduleKey(member)),
+                      ) && <Icon name="tick" size={10} />}
                       {hiddenSaved && (
                         <>
                           <Icon name="clock" size={10} />
@@ -416,6 +431,7 @@ export default function LessonCard({
               ))}
             </span>
           </span>
+          {military && <MilitaryInline date={lesson.date} />}
           {shared && !horizontal && (
             <span
               className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<42px)]:flex"
@@ -440,10 +456,10 @@ export default function LessonCard({
           ref={popover}
           className="lesson-popover motion-safe:duration-100 max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{ sideOffset: 7 }}
-          initialFocus={hovering.current ? false : undefined}
+          initialFocus={hovering ? false : undefined}
           onPointerDownCapture={() => {
             pinned.current = true;
-            hovering.current = false;
+            setHovering(false);
           }}
           finalFocus={() =>
             resourceAction.current ? false : (cardTrigger.current ?? true)
@@ -497,7 +513,7 @@ export default function LessonCard({
                   lesson={event}
                   onOpen={(resource, _trigger, date) => {
                     resourceAction.current = true;
-                    hovering.current = false;
+                    setHovering(false);
                     setOpen(false);
                     openResource(resource, cardTrigger.current, date, {
                       eventKey: lessonKey(event),
@@ -516,7 +532,7 @@ export default function LessonCard({
                     lesson={event}
                     onOpen={(resource, _trigger, date) => {
                       resourceAction.current = true;
-                      hovering.current = false;
+                      setHovering(false);
                       setOpen(false);
                       openResource(resource, cardTrigger.current, date, {
                         eventKey: lessonKey(event),
@@ -543,7 +559,7 @@ export default function LessonCard({
                 }}
               />
               <LessonDocument lesson={event} />
-              {block.members.some(isGroup) &&
+              {members.some(isGroup) &&
                 /военная\s+подготовка/iu.test(event.subject) && (
                   <MilitaryPreview date={event.date} />
                 )}

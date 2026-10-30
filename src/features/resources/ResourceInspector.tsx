@@ -26,12 +26,12 @@ type AddResource = (
 const ResourceContext = createContext<{
   openResource: AddResource;
   schedules: GroupSchedule[];
-  militaryId: string;
+  militaryId: string | null;
   selectMilitary: (id: string) => void;
 }>({
   openResource: () => {},
   schedules: [],
-  militaryId: '',
+  militaryId: null,
   selectMilitary: () => {},
 });
 export function useResourceInspector() {
@@ -51,12 +51,14 @@ export function ResourceProvider({
   schedules: GroupSchedule[];
   children: ReactNode;
 }) {
-  const [militaryId, setMilitaryId] = useState(() => {
+  const [militaryId, setMilitaryId] = useState<string | null>(() => {
     try {
-      const id = localStorage.getItem('campus-vuc-preview') ?? '';
-      return /^[a-z0-9][a-z0-9._-]{0,99}$/.test(id) ? id : '';
+      const id = localStorage.getItem('campus-vuc-preview');
+      return id === '' || (id && /^[a-z0-9][a-z0-9._-]{0,99}$/.test(id))
+        ? id
+        : null;
     } catch {
-      return '';
+      return null;
     }
   });
   const selectMilitary = useCallback((id: string) => {

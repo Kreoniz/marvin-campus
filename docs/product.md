@@ -82,7 +82,7 @@ overlap lanes can still scroll horizontally. Only the day selector shows the dat
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
-The compact group strip uses an overlay thumb without a reserved lower row.
+The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. The visible thumb is four pixels thick and never covers the focus or subgroup controls. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
 Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
 a click or tap does not. Forced-color mode keeps scrollbars visible.
 Today stays beside the date and remains available in the date picker.
@@ -121,9 +121,7 @@ One full shared card belongs to the academically preferred visible typed source.
 Other member bands carry an explicit actionable reference to the same complete
 details, at the original time, never spanning unrelated bands. Hidden owner kinds
 promote the next visible member. References never enter counts or calculations.
-Week and List show each proven shared event once. Shared cards use two compact
-named members plus a count, with full membership in details; saved collapsed
-members retain a clock. Spotlighted members take priority for those places.
+Week and List show each proven shared event once. Shared cards follow the selected-source order in every view and in details. Ordinary cards show up to three compact named members; long cards can wrap up to six, followed by a count. Full membership remains in details; saved or spotlighted collapsed members retain their clock or check marker. Presentation ordering does not alter canonical event merging or geometry.
 Long vertical event text starts at the top. Short free intervals keep true height;
 inline text appears only when it fits, and exact ranges are visible in the day
 summary outside horizontal scrolling. Long calculation membership is collapsible.
@@ -244,7 +242,9 @@ selection-chip text. VUC chips show the compact source label without a shield
 or repeated “взвод” caption and keep the same 44px height.
 
 The dedicated `/vuc` page compares VUC sources only, using the same calendar,
-list, scope and data-status components with a separate saved selected set.
+list, scope and data-status components with a separate saved selected set. Opening an explicit VUC link is a temporary view: only a subsequent selection edit adopts that set as the saved VUC workspace. The first catalogue addition opens the existing picker and keeps choosing available. A compact VUC link shares the existing date row; the empty main welcome also links to the page.
 The general calendar still accepts mixed VUC selections. Military-preparation
 lesson details can preview one personally chosen VUC schedule for the same date;
 this preference does not join a comparison or infer a group-to-platoon mapping.
+
+Tall military-preparation cards also show a short, read-only preview of the personally chosen VUC for that exact date. It uses spare card height, with two entries at 320px and up to four at 520px, and explicit remaining counts. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison.

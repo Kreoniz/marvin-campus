@@ -47,11 +47,25 @@ export default function DayAgenda({
   spotlightIds = [],
   hiddenKinds = [],
 }: Props) {
-  const entries = dayAgenda(schedules, day).filter((entry) =>
-    entry.members.some(
-      (member) => !hiddenKinds.includes(selectionKind(member)),
-    ),
+  const order = new Map(
+    schedules.map((row, index) => [scheduleKey(row.selection), index]),
   );
+  const entries = dayAgenda(schedules, day)
+    .map((entry) => ({
+      ...entry,
+      members: entry.members
+        .slice()
+        .sort(
+          (a, b) =>
+            (order.get(scheduleKey(a)) ?? Infinity) -
+            (order.get(scheduleKey(b)) ?? Infinity),
+        ),
+    }))
+    .filter((entry) =>
+      entry.members.some(
+        (member) => !hiddenKinds.includes(selectionKind(member)),
+      ),
+    );
   const { excluded } = comparisonScope(schedules, day);
   const missing = schedules.filter((schedule) =>
     comparisonIssue(schedule, day),

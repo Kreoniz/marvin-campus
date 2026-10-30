@@ -250,8 +250,9 @@ export default function GroupPicker({
           </a>
         )}
         <Dialog.Description className="sr-only">
-          Найди группу, преподавателя, аудиторию или взвод ВУЦ. Все расписания
-          добавляются в один календарь.
+          {vucOnly
+            ? 'Найди расписание ВУЦ по номеру. Можно выбрать несколько.'
+            : 'Найди группу, преподавателя, аудиторию или ВУЦ. Все расписания добавляются в один календарь.'}
         </Dialog.Description>
         <Field.Root className="flex min-h-0 flex-1 flex-col">
           <Field.Label
@@ -363,7 +364,9 @@ export default function GroupPicker({
                   />
                 ) : (
                   <p className="my-3 text-sm text-u-muted">
-                    Начни с названия группы, фамилии или аудитории.
+                    {vucOnly
+                      ? 'Найди расписание ВУЦ по номеру.'
+                      : 'Начни с названия группы, фамилии или аудитории.'}
                   </p>
                 )}
               </section>

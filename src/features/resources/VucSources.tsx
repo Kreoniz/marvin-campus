@@ -5,6 +5,7 @@ import { nearestVucDate } from '../../lib/vuc-navigation.ts';
 import type { GroupSchedule } from '../../lib/types.ts';
 import { formatDay } from '../../lib/dates.ts';
 import { scheduleKey } from '../../lib/schedule-ref.ts';
+import VucDocumentNotes from './VucDocumentNotes.tsx';
 
 export default function VucSources({
   schedules,
@@ -102,8 +103,6 @@ export default function VucSources({
           const covered = data?.coveredDates?.includes(day);
           const unresolved = data?.unresolvedDates?.includes(day);
           const first = nearest(schedule);
-          const cells =
-            data?.unparsedCells?.filter((cell) => cell.date === day) ?? [];
           return (
             <div
               className="mt-2 border-t border-u-line-soft pt-2"
@@ -140,36 +139,16 @@ export default function VucSources({
                   })}
                 </Button>
               )}
-              {(
-                data?.warnings ||
-                (schedule.selection.kind === 'vuc' &&
-                  schedule.selection.warnings) ||
-                []
-              ).map((warning) => (
-                <p className="my-1 text-u-muted" key={warning}>
-                  {warning}
-                </p>
-              ))}
-              {cells.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer">
-                    Ячейки без определённого времени · {cells.length}
-                  </summary>
-                  <ul className="my-2 pl-5">
-                    {cells.map((cell, index) => (
-                      <li
-                        className="mb-2"
-                        key={`${cell.sourceOrigin}:${index}`}
-                      >
-                        <p className="my-0">{cell.rawText}</p>
-                        <p className="my-0 text-xs text-u-muted">
-                          {cell.reason} · {cell.sourceOrigin}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+              <VucDocumentNotes
+                date={day}
+                warnings={
+                  data?.warnings ||
+                  (schedule.selection.kind === 'vuc'
+                    ? schedule.selection.warnings
+                    : undefined)
+                }
+                cells={data?.unparsedCells}
+              />
             </div>
           );
         })}
