@@ -47,7 +47,7 @@
   vertical presentation lanes against semantic and painted bounds. Rendering uses
   fixed 160-pixel cards and 166-pixel lanes in compact Week. A free-lane source
   preference never increases concurrency. `source-layout` projects source-oriented
-  Day bands from canonical blocks: 160–240-pixel cards, painted-bound sublanes,
+  Day bands from canonical blocks: 160-pixel cards, painted-bound sublanes,
   user-ordered source bands and typed-key scroll anchoring. An academic-first
   visible presentation owner gets the full card; other member occurrences open
   the same details. These references never enter calculation or lesson counts. Per-day minima and measured column

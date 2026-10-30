@@ -96,15 +96,16 @@ for old links; it no longer limits the visible calendar to one layer.
 Sunday defaults to next Monday,
 unless a date was explicitly selected. Group colors remain stable when reordered.
 Ordinary group cards use the group color. Lecturer and auditorium cards use a
-neutral surface, a categorical inset edge and distinct decorative cap/door glyphs
-repeated diagonally. Visible kind text/icons also identify them. Parallel bundles
+lightly tinted neutral surface, a categorical inset edge and distinct cap/door glyphs
+repeated diagonally. Text strokes are painted behind the fill to keep labels
+legible over the stronger motif. Resource selection chips use the same grammar;
+lecturer names wrap without ellipsis and redundant role captions are omitted. Visible kind text/icons also identify them. Parallel bundles
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.
 
 Day assigns each visible selected source a labelled stable band in user order,
 with a 12-pixel gap and an extra 12 pixels at kind transitions. Each overlap
-sublane keeps at least 160 pixels; available spare space grows cards uniformly
-up to 240 pixels. A source chooser moves to the requested band and focuses its
+sublane keeps 160 pixels without stretching into spare viewport space. A source chooser moves to the requested band and focuses its
 first lesson or empty/status band without changing selection or calculation.
 It includes hidden sources with an explicit notice rather than silently unhiding.
 All 30 schedules remain available; there is no automatic mode change or collapse.

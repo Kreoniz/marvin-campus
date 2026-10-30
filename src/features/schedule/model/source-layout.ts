@@ -28,7 +28,6 @@ export function sourceTracks(
   selections: Selection[],
   origin: number,
   scale: number,
-  cardWidth = VERTICAL_CARD_WIDTH,
 ): SourceTrack[] {
   const visible = new Set(selections.map(scheduleKey));
   const owners = new Map(
@@ -57,7 +56,7 @@ export function sourceTracks(
     );
     const lanes = Math.max(1, ...placed.map((entry) => entry.columns));
     const width =
-      cardWidth * lanes +
+      VERTICAL_CARD_WIDTH * lanes +
       (lanes - 1) * (VERTICAL_LANE_PITCH - VERTICAL_CARD_WIDTH);
     const track = {
       key,

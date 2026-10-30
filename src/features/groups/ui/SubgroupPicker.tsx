@@ -59,7 +59,7 @@ export default function SubgroupPicker({
       }}
     >
       <Select.Trigger
-        className="subgroup-trigger relative h-11 min-h-11 min-w-18 flex-1 gap-0 rounded-none border-0 bg-transparent px-1 text-inherit shadow-none [&_.u-select-icon]:hidden"
+        className="subgroup-trigger relative h-11 min-h-11 min-w-16 flex-1 gap-0 rounded-none border-0 bg-transparent px-1 text-inherit shadow-none [&_.u-select-icon]:hidden"
         aria-label={`Подгруппа ${label}: ${currentLabel}`}
         data-drag-id={groupKey}
         aria-describedby={describedBy}

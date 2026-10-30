@@ -67,16 +67,6 @@ export default function SourceDayCalendar({
   const oldDay = useRef(day);
   const [jumped, setJumped] = useState('');
   const [notice, setNotice] = useState('');
-  const [viewportWidth, setViewportWidth] = useState(0);
-  useLayoutEffect(() => {
-    const viewport = scroller.current;
-    if (!viewport) return;
-    const observer = new ResizeObserver(() =>
-      setViewportWidth(viewport.clientWidth),
-    );
-    observer.observe(viewport);
-    return () => observer.disconnect();
-  }, []);
   const visible = schedules.filter(
     (schedule) => !hiddenKinds.includes(selectionKind(schedule.selection)),
   );
@@ -89,33 +79,11 @@ export default function SourceDayCalendar({
     1140,
     ...blocks.map((block) => Math.ceil(block.lesson.end / 60) * 60),
   );
-  const baseTracks = sourceTracks(
-    blocks,
-    visible.map((schedule) => schedule.selection),
-    start,
-    scale,
-  );
-  const lanes = baseTracks.reduce(
-    (sum, track) =>
-      sum + Math.max(1, ...track.occurrences.map((entry) => entry.columns)),
-    0,
-  );
-  const naturalWidth =
-    rail +
-    (baseTracks.at(-1)?.left ?? 0) +
-    (baseTracks.at(-1)?.width ?? 160) +
-    SOURCE_INSET;
-  const cardWidth = Math.min(
-    240,
-    VERTICAL_CARD_WIDTH +
-      Math.max(0, viewportWidth - naturalWidth) / Math.max(1, lanes),
-  );
   const tracks = sourceTracks(
     blocks,
     visible.map((schedule) => schedule.selection),
     start,
     scale,
-    cardWidth,
   );
   const width = Math.max(
     rail + 172,
@@ -205,15 +173,38 @@ export default function SourceDayCalendar({
     ).find((element) => element.dataset.sourceKey === key);
     const target = band?.querySelector<HTMLElement>('button') ?? band;
     target?.focus({ preventScroll: true });
-    if (target) {
-      viewport.scrollTop = Math.max(0, target.offsetTop - 8);
-      if (compact) {
-        const bounds = target.getBoundingClientRect();
-        if (bounds.bottom > window.innerHeight || bounds.top < 88)
-          window.scrollBy({ top: bounds.top - 88, behavior: 'instant' });
-      }
-    }
+    if (target) reveal(target);
   }
+  function reveal(target: HTMLElement) {
+    const viewport = scroller.current;
+    if (!viewport || !target.isConnected) return;
+    const card = target.matches('.lesson-card');
+    if (!card) viewport.scrollTop = 0;
+    let box = target.getBoundingClientRect();
+    const bounds = viewport.getBoundingClientRect();
+    if (box.left < bounds.left + rail + SOURCE_INSET)
+      viewport.scrollLeft += box.left - bounds.left - rail - SOURCE_INSET;
+    else if (box.right > bounds.right - SOURCE_INSET)
+      viewport.scrollLeft += box.right - bounds.right + SOURCE_INSET;
+    if (!compact && card) {
+      if (box.top < bounds.top + 8)
+        viewport.scrollTop += box.top - bounds.top - 8;
+      else if (box.bottom > bounds.bottom - 8)
+        viewport.scrollTop += box.bottom - bounds.bottom + 8;
+    }
+    syncScroll();
+    box = target.getBoundingClientRect();
+    const headerBottom = Math.max(
+      0,
+      header.current?.parentElement?.getBoundingClientRect().bottom ?? 0,
+    );
+    if (
+      box.top < headerBottom + 8 ||
+      (card ? box.bottom : box.top + 32) > window.innerHeight - 8
+    )
+      window.scrollBy({ top: box.top - headerBottom - 8, behavior: 'instant' });
+  }
+
   const hours = Array.from(
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
@@ -275,7 +266,7 @@ export default function SourceDayCalendar({
           <select
             aria-label={`Перейти к расписанию (${schedules.length})`}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            value={jumped}
+            value=""
             onChange={(event) => jump(event.target.value)}
             disabled={placeholder}
           >
@@ -307,7 +298,18 @@ export default function SourceDayCalendar({
       <div
         ref={scroller}
         onScroll={syncScroll}
-        className={`source-scroll relative overflow-auto overscroll-x-contain [overflow-anchor:none] ${compact ? '' : 'max-h-[560px]'}`}
+        onFocusCapture={(event) => {
+          const target = event.target;
+          if (
+            !(target instanceof HTMLElement) ||
+            !target.matches('.lesson-card')
+          )
+            return;
+          requestAnimationFrame(() => {
+            if (document.activeElement === target) reveal(target);
+          });
+        }}
+        className={`source-scroll relative scroll-pl-14 overflow-auto overscroll-x-contain [overflow-anchor:none] ${compact ? '' : 'max-h-[560px]'}`}
         role="region"
         tabIndex={0}
         aria-label="Дорожки расписаний. Прокручивай вправо или используй «Перейти»."
@@ -373,12 +375,8 @@ export default function SourceDayCalendar({
                         style={{
                           top,
                           height: cardHeight,
-                          left:
-                            column *
-                            (cardWidth +
-                              VERTICAL_LANE_PITCH -
-                              VERTICAL_CARD_WIDTH),
-                          width: cardWidth,
+                          left: column * VERTICAL_LANE_PITCH,
+                          width: VERTICAL_CARD_WIDTH,
                         }}
                       />
                     ),

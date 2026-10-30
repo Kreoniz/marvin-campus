@@ -61,8 +61,10 @@ const chipClassName =
   'group-chip flex rounded-[var(--u-radius)] bg-[var(--chip)] [color:var(--u-category-ink)] compact:max-w-44 compact:flex-1';
 const chipWidth = (selection: Selection) =>
   selectionKind(selection) === 'lecturer'
-    ? 'w-44 min-w-44 compact:w-40 compact:min-w-40'
-    : 'w-36 min-w-36 compact:w-29 compact:min-w-29';
+    ? 'w-max min-w-40 max-w-64 compact:flex-none'
+    : isGroup(selection)
+      ? 'w-34 min-w-34 compact:w-29 compact:min-w-29'
+      : 'w-max min-w-32 max-w-64 compact:flex-none';
 
 export default function GroupStrip(props: Props) {
   const {
@@ -269,7 +271,7 @@ export default function GroupStrip(props: Props) {
           role="region"
           aria-label="Прокрутка выбранных расписаний"
         >
-          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2 p-0.5 pb-1 [&>*]:shrink-0 compact:gap-1.5 compact:p-0">
+          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2 p-0.5 [&>*]:shrink-0 compact:gap-1.5 compact:p-0">
             {shown.map((group) => {
               const loaded = schedules.find(
                 (s) => scheduleKey(s.selection) === scheduleKey(group),
@@ -294,7 +296,7 @@ export default function GroupStrip(props: Props) {
               );
               return (
                 <div
-                  className={`${chipClassName} ${chipWidth(group)} overflow-hidden ${issue ? 'outline-2 outline-(--u-danger)' : ''} ${drag?.id === scheduleKey(group) ? 'opacity-35' : ''}`}
+                  className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue ? 'outline-2 outline-(--u-danger)' : ''} ${drag?.id === scheduleKey(group) ? 'opacity-35' : ''}`}
                   key={scheduleKey(group)}
                   data-group-id={scheduleKey(group)}
                   data-comparison-excluded={issue || undefined}
@@ -306,7 +308,7 @@ export default function GroupStrip(props: Props) {
                   style={chipStyle(colors[scheduleKey(group)] ?? 0)}
                 >
                   <button
-                    className="flex min-h-11 w-7 shrink-0 touch-none cursor-grab items-center justify-center border-0 bg-transparent p-0 text-inherit group-data-dragging/groups:cursor-grabbing compact:hidden"
+                    className="flex min-h-11 w-5 shrink-0 touch-none cursor-grab items-center justify-center border-0 bg-transparent p-0 text-inherit group-data-dragging/groups:cursor-grabbing compact:hidden"
                     type="button"
                     data-drag-id={scheduleKey(group)}
                     aria-label={`Переместить ${group.label}`}
@@ -343,31 +345,27 @@ export default function GroupStrip(props: Props) {
                   ) : (
                     <button
                       type="button"
-                      className="flex min-h-11 min-w-18 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
+                      className="flex min-h-11 min-w-0 max-w-48 flex-auto cursor-pointer items-center justify-center gap-1.5 border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
                       data-drag-id={scheduleKey(group)}
                       onClick={() => onOrder(scheduleKey(group))}
                       onKeyDown={(event) => keyboard(event, group)}
                       title={`${kindLabel(selectionKind(group))}: ${group.label}`}
                       aria-label={`Управлять расписанием ${group.label}`}
                     >
-                      <strong className="block max-w-full truncate text-[13px]">
+                      <span
+                        className="shrink-0"
+                        title={kindLabel(selectionKind(group))}
+                      >
+                        <Icon name={kindIcon(selectionKind(group))} size={14} />
+                      </span>
+                      <strong className="resource-name block min-w-0 text-left text-[13px] leading-4 whitespace-normal wrap-anywhere">
                         {selectionKind(group) === 'vuc'
                           ? group.label.replace(/^ВУЦ\s*·\s*/iu, '')
                           : group.label}
                       </strong>
-                      <span className="flex items-center gap-1 text-[11px]">
-                        <Icon name={kindIcon(selectionKind(group))} size={11} />
-                        {selectionKind(group) === 'lecturer'
-                          ? 'Преп.'
-                          : selectionKind(group) === 'auditorium'
-                            ? 'Ауд.'
-                            : 'ВУЦ'}
-                        {hiddenKinds.includes(selectionKind(group)) && (
-                          <span title="Карточки этого вида скрыты">
-                            <Icon name="hidden" size={11} />
-                          </span>
-                        )}
-                      </span>
+                      {hiddenKinds.includes(selectionKind(group)) && (
+                        <Icon name="hidden" size={11} />
+                      )}
                     </button>
                   )}
                   {groups.length > 1 && (

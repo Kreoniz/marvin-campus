@@ -250,7 +250,7 @@ export default function GroupPicker({
           <Combobox.Root<SearchResult>
             inline
             open
-            items={visible}
+            items={showManagement ? [] : visible}
             filter={null}
             value={null}
             inputValue={query}
