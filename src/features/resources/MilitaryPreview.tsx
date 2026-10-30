@@ -7,6 +7,7 @@ import { viewURL } from '../../lib/url.ts';
 import type { VucRef } from '../../lib/types.ts';
 import useMilitarySchedule from './use-military-schedule.ts';
 import VucDocumentNotes from './VucDocumentNotes.tsx';
+import VucOriginalLink from './VucOriginalLink.tsx';
 
 function vucPageURL(refs: VucRef[], date: string) {
   const url = viewURL(
@@ -15,7 +16,13 @@ function vucPageURL(refs: VucRef[], date: string) {
   );
   return url.pathname + url.search;
 }
-export default function MilitaryPreview({ date }: { date: string }) {
+export default function MilitaryPreview({
+  date,
+  collapseEntries = false,
+}: {
+  date: string;
+  collapseEntries?: boolean;
+}) {
   const id = useId();
   const {
     catalogue,
@@ -25,6 +32,7 @@ export default function MilitaryPreview({ date }: { date: string }) {
     result,
     snapshot,
     data,
+    originalAvailable,
     lessons,
     covered,
     unresolved,
@@ -40,13 +48,27 @@ export default function MilitaryPreview({ date }: { date: string }) {
       label: vucOptionLabel(item, available),
     })),
   ];
+  const entries = (
+    <ol className="m-0 list-none space-y-2 p-0">
+      {lessons.map((lesson) => (
+        <li
+          key={lesson.id}
+          className="border-t border-u-line-soft pt-2 text-xs leading-relaxed"
+        >
+          <time className="font-semibold">{times(lesson)}</time>
+          <strong className="block text-sm">{lesson.subject}</strong>
+          {[lesson.room, lesson.teacher].filter(Boolean).join(' · ')}
+        </li>
+      ))}
+    </ol>
+  );
   return (
     <section
       className="military-preview mt-3 border-t border-u-line-soft pt-3"
       aria-label="Расписание ВУЦ в этот день"
     >
       <label htmlFor={id} className="mb-1 block text-sm font-semibold">
-        Моё расписание ВУЦ
+        Расписание ВУЦ
       </label>
       <Select.Root
         items={choices}
@@ -131,18 +153,16 @@ export default function MilitaryPreview({ date }: { date: string }) {
               {covered && !unresolved && !lessons.length && (
                 <p className="text-xs">По документу занятий нет.</p>
               )}
-              <ol className="m-0 list-none space-y-2 p-0">
-                {lessons.map((lesson) => (
-                  <li
-                    key={lesson.id}
-                    className="border-t border-u-line-soft pt-2 text-xs leading-relaxed"
-                  >
-                    <time className="font-semibold">{times(lesson)}</time>
-                    <strong className="block text-sm">{lesson.subject}</strong>
-                    {[lesson.room, lesson.teacher].filter(Boolean).join(' · ')}
-                  </li>
-                ))}
-              </ol>
+              {collapseEntries && lessons.length > 0 ? (
+                <details className="military-full-entries mt-2">
+                  <summary className="min-h-9 cursor-pointer rounded-sm py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-u-ink">
+                    Все занятия на этот день · {lessons.length}
+                  </summary>
+                  {entries}
+                </details>
+              ) : (
+                entries
+              )}
               {hasNotes && (
                 <details className="mt-2 text-xs leading-relaxed">
                   <summary className="min-h-8 cursor-pointer rounded-sm py-1.5 focus-visible:outline-2 focus-visible:outline-u-ink">
@@ -163,6 +183,7 @@ export default function MilitaryPreview({ date }: { date: string }) {
         </>
       )}
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs">
+        <VucOriginalLink ref={ref} available={originalAvailable} />
         <a
           className="inline-flex min-h-8 items-center underline"
           href={vucPageURL(ref ? [ref] : [], date)}

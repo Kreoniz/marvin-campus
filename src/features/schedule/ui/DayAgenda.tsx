@@ -126,7 +126,7 @@ export default function DayAgenda({
                   return (
                     <li
                       key={entry.identity}
-                      className="agenda-entry border-t border-u-line-soft first:border-t-0 motion-safe:animate-lesson-appear"
+                      className={`agenda-entry border-t border-u-line-soft first:border-t-0 ${entry.members.every((member) => member.kind === 'vuc') ? '' : 'motion-safe:animate-lesson-appear'}`}
                       data-agenda-id={entry.identity}
                       data-spotlight={spotlight ? '' : undefined}
                       data-dimmed={dimmed ? '' : undefined}
@@ -196,9 +196,6 @@ export default function DayAgenda({
                                       {kindLabel(selectionKind(member))}:{' '}
                                     </>
                                   )}
-                                {spotlightIds.includes(scheduleKey(member)) && (
-                                  <Icon name="tick" size={10} />
-                                )}
                                 {member.kind === 'vuc'
                                   ? label(member)
                                   : lessonGroupLabel(
@@ -250,7 +247,7 @@ export default function DayAgenda({
                           /военная\s+подготовка/iu.test(lesson.subject) && (
                             <details className="agenda-military mt-2">
                               <summary className="min-h-11 cursor-pointer rounded-sm py-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-u-ink">
-                                Моё расписание ВУЦ · подробнее
+                                Расписание ВУЦ
                               </summary>
                               <MilitaryPreview date={lesson.date} />
                             </details>

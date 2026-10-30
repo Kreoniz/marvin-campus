@@ -36,40 +36,50 @@ export default function HelpDialog({
           Добавь группы, преподавателей, аудитории или взводы ВУЦ. Для группы
           выбери подгруппу. Время — по Омску.
         </Dialog.Description>
-        <dl className="my-3.5">
-          <dt className="mt-3 text-sm font-bold">В вузе</dt>
-          <dd className="mt-1 text-[13px] leading-relaxed text-u-muted">
-            Общее время участников расчёта: от первой до последней очной пары
-            каждого, включая перерывы.
-          </dd>
-          <dt className="mt-3 text-sm font-bold">Без занятий</dt>
-          <dd className="mt-1 text-[13px] leading-relaxed text-u-muted">
-            Общие перерывы в это время. Онлайн-пары тоже учитываем.
-          </dd>
+        <dl className="my-3 space-y-2 text-[13px] leading-relaxed">
+          <div>
+            <dt className="inline font-bold">В вузе</dt>{' '}
+            <dd className="inline text-u-muted">
+              — янтарная линия: общее время от первой до последней очной пары.
+            </dd>
+          </div>
+          <div>
+            <dt className="inline font-bold">Общие окна</dt>{' '}
+            <dd className="inline text-u-muted">
+              — зелёные полосы: в это время ни у кого нет занятий.
+            </dd>
+          </div>
         </dl>
         <p className="my-3 text-xs leading-relaxed text-u-muted">
-          У каждого расписания свой цвет. Значок фокуса рядом с ним выделяет его
-          занятия; можно выделить несколько расписаний. Нажми на пару, чтобы
-          открыть подробности.
-        </p>
-        <p className="my-3 text-xs leading-relaxed text-u-muted">
-          Янтарная линия — общее время в вузе, зелёные полосы — общие окна без
-          занятий. Видимость обоих слоёв меняется в настройках отображения.
-        </p>
-        <p className="my-3 text-xs leading-relaxed text-u-muted">
-          Для преподавателей учтены только учебные занятия. Аудитории не
-          участвуют в расчёте. ВУЦ — из документов: неизвестные и неоднозначные
-          даты исключаются из расчёта, а не считаются пустыми.
-        </p>
-        <p className="my-3 text-xs leading-relaxed text-u-muted">
-          Расписание ОмГТУ на текущую неделю проверяем при обращении, не чаще
-          раза в 30 минут. Значок часов означает сохранённые данные.
-        </p>
-        <p className="my-3 text-xs leading-relaxed text-u-muted">
-          Сравниваем расписания — корпуса могут различаться.
+          Нажми на занятие, чтобы открыть подробности. В меню расписания можно
+          выделить его пары; в «Отображение» — скрыть слои или виды карточек.
+          Часы отмечают сохранённые данные.
         </p>
         <details className="my-3 text-xs leading-relaxed text-u-muted">
-          <summary className="cursor-pointer rounded-u-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-u-focus">
+          <summary className="min-h-9 cursor-pointer rounded-u-control py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-u-focus">
+            Расчёты и источники
+          </summary>
+          <p className="mt-2">
+            Присутствие включает перерывы между очными парами. Онлайн-пары
+            занимают время, но не расширяют присутствие. Корпуса могут
+            различаться.
+          </p>
+          <p className="mt-2">
+            Для преподавателей учтены только учебные занятия. Аудитории
+            показывают занятость и не участвуют в расчёте общих окон.
+          </p>
+          <p className="mt-2">
+            ВУЦ — из документов за указанный период. Неизвестные даты и
+            неоднозначные строки не считаются пустым расписанием.
+          </p>
+          <p className="mt-2">
+            Текущую неделю ОмГТУ проверяем при обращении, не чаще раза в 30
+            минут. Недоступные расписания исключаются из расчёта; состав
+            неполного сравнения указан рядом с результатом.
+          </p>
+        </details>
+        <details className="my-3 text-xs leading-relaxed text-u-muted">
+          <summary className="min-h-9 cursor-pointer rounded-u-control py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-u-focus">
             Клавиатура и Vim-шорткаты
           </summary>
           <p className="mt-2">
@@ -99,7 +109,12 @@ export default function HelpDialog({
             Отключаются в настройках отображения.
           </p>
         </details>
-        <PwaHelp />
+        <details className="mt-3 text-xs leading-relaxed text-u-muted">
+          <summary className="min-h-9 cursor-pointer rounded-u-control py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-u-focus">
+            Приложение и офлайн
+          </summary>
+          <PwaHelp />
+        </details>
       </Dialog.Content>
     </Dialog.Root>
   );

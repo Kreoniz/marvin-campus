@@ -22,7 +22,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         size="icon"
         aria-label={label}
         title={label}
-        className={`icon-button motion-safe:transition-colors motion-safe:duration-150 ${className}`}
+        className={`icon-button size-11 min-h-11 min-w-11 shrink-0 motion-safe:transition-colors motion-safe:duration-150 ${className}`}
         {...props}
       >
         <Icon name={name} size={size} />

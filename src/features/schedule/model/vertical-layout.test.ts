@@ -60,8 +60,8 @@ test('a long overlap chain reserves its peak lanes without changing domain event
       ['F', 2, 4],
     ],
   );
-  assert.equal(dayMinimum(placed), 672);
-  assert.equal(dayMinimum([]), 174);
+  assert.equal(dayMinimum(placed), 671);
+  assert.equal(dayMinimum([]), 173);
   assert.deepEqual(input, before);
   assert.deepEqual(
     placed.map((p) => p.block),

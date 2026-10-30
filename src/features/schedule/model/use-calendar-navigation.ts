@@ -13,6 +13,7 @@ export default function useCalendarNavigation(
   day: string,
   singleDay: boolean,
   compact: boolean,
+  dayReveal = 0,
 ) {
   const [viewportWidth, setViewportWidth] = useState(0);
   const previous = useRef<{
@@ -24,7 +25,7 @@ export default function useCalendarNavigation(
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const key = `${week}:${day}:${singleDay}:${compact}`;
+    const key = `${week}:${day}:${singleDay}:${compact}:${dayReveal}`;
     const bodies = Array.from(
       element.querySelectorAll<HTMLElement>('[data-calendar-date]'),
     );
@@ -106,6 +107,6 @@ export default function useCalendarNavigation(
       observer.disconnect();
       element.removeEventListener('scroll', captureAnchor);
     };
-  }, [ref, week, day, singleDay, compact]);
+  }, [ref, week, day, singleDay, compact, dayReveal]);
   return viewportWidth;
 }

@@ -4,7 +4,8 @@ import { eventOwner } from './event-owner.ts';
 
 export const VERTICAL_CARD_WIDTH = 160;
 export const VERTICAL_LANE_PITCH = 166;
-export const VERTICAL_DAY_INSET = 10;
+// Five-pixel presence bracket + one clear pixel + three-pixel card outline.
+export const VERTICAL_DAY_INSET = 9;
 
 export interface VerticalPlacement {
   block: LessonBlock;
@@ -81,8 +82,10 @@ export function verticalLayout(
 
 export function dayMinimum(placed: VerticalPlacement[], compactFloor = 0) {
   return Math.max(
-    VERTICAL_LANE_PITCH + 8,
+    VERTICAL_LANE_PITCH + VERTICAL_DAY_INSET - 2,
     compactFloor,
-    ...placed.map((entry) => VERTICAL_LANE_PITCH * entry.columns + 8),
+    ...placed.map(
+      (entry) => VERTICAL_LANE_PITCH * entry.columns + VERTICAL_DAY_INSET - 2,
+    ),
   );
 }

@@ -8,7 +8,7 @@ import type {
   ScheduleKind,
 } from '../../../lib/types.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
-import { addDays, weekLabel } from '../../../lib/dates.ts';
+import { addDays, omskToday, weekLabel } from '../../../lib/dates.ts';
 import GroupStrip from '../../groups/ui/GroupStrip.tsx';
 import { GroupPickerTrigger } from '../../groups/ui/GroupPicker.tsx';
 import IconButton from '../../../shared/ui/IconButton.tsx';
@@ -27,6 +27,7 @@ interface Props {
   onSpotlight: (id: string) => void;
   addGroupRef: RefObject<HTMLButtonElement | null>;
   onGroups: () => void;
+  onToday: () => void;
 }
 export default function ComparisonToolbar({
   view,
@@ -40,10 +41,12 @@ export default function ComparisonToolbar({
   onSpotlight,
   addGroupRef,
   onGroups,
+  onToday,
 }: Props) {
   const [weekOpen, setWeekOpen] = useState(false);
   function selectDate(value: string) {
-    view.selectDate(value);
+    if (value === omskToday()) onToday();
+    else view.selectDate(value);
     setWeekOpen(false);
   }
   return (
@@ -81,6 +84,13 @@ export default function ComparisonToolbar({
       </div>
       <div className="flex flex-wrap items-center gap-[11px] min-[1100px]:shrink-0 max-[1100px]:w-full max-[1100px]:justify-between compact:hidden">
         <div className="flex items-center gap-px" data-schedule-week>
+          <Button
+            variant="ghost"
+            className="today-button min-h-11 px-2 text-xs underline underline-offset-[3px]"
+            onClick={onToday}
+          >
+            Сегодня
+          </Button>
           <IconButton
             label="Предыдущая неделя"
             name="left"

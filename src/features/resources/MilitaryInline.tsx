@@ -2,7 +2,13 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { compactVucLabel } from '../../lib/schedule-ref.ts';
 import useMilitarySchedule from './use-military-schedule.ts';
 
-export default function MilitaryInline({ date }: { date: string }) {
+export default function MilitaryInline({
+  date,
+  onVisibleEntriesChange,
+}: {
+  date: string;
+  onVisibleEntriesChange: (count: number) => void;
+}) {
   const {
     ref,
     result,
@@ -24,20 +30,28 @@ export default function MilitaryInline({ date }: { date: string }) {
       times(lesson),
       lesson.subject,
       lesson.room,
+      lesson.teacher,
     ]),
   );
   useLayoutEffect(() => {
     const viewport = body.current;
     const list = entries.current;
-    if (!viewport || !list) return;
+    if (!viewport || !list) {
+      onVisibleEntriesChange(0);
+      return;
+    }
     const measure = () => {
       if (!viewport.isConnected) return;
       const rows = Array.from(list.children) as HTMLElement[];
-      setCapacity(
-        rows.filter(
-          (row) => row.offsetTop + row.offsetHeight <= viewport.clientHeight,
-        ).length,
-      );
+      const count =
+        viewport.clientHeight > 0
+          ? rows.filter(
+              (row) =>
+                row.offsetTop + row.offsetHeight <= viewport.clientHeight,
+            ).length
+          : 0;
+      setCapacity(count);
+      onVisibleEntriesChange(count);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -45,11 +59,11 @@ export default function MilitaryInline({ date }: { date: string }) {
     observer.observe(list);
     void document.fonts.ready.then(measure);
     return () => observer.disconnect();
-  }, [contentKey, hasSnapshot]);
+  }, [contentKey, hasSnapshot, onVisibleEntriesChange]);
   return (
     <span className="military-inline relative z-[1] mt-2 hidden min-h-0 flex-1 flex-col border-t border-u-line-soft pt-2 text-[10px] leading-[1.35] [@container(height>=240px)]:flex">
       <strong className="line-clamp-1 shrink-0 text-xs">
-        {ref ? `Моё ${compactVucLabel(ref.label)}` : 'Моё расписание ВУЦ'}
+        {ref ? compactVucLabel(ref.label) : 'Расписание ВУЦ'}
       </strong>
       {!ref ? (
         <span className="mt-1 block">
@@ -87,8 +101,12 @@ export default function MilitaryInline({ date }: { date: string }) {
                 >
                   <span className="block tabular-nums">{times(lesson)}</span>
                   <strong className="line-clamp-2">{lesson.subject}</strong>
-                  {lesson.room && (
-                    <span className="line-clamp-1">{lesson.room}</span>
+                  {(lesson.room || lesson.teacher) && (
+                    <span className="line-clamp-2">
+                      {[lesson.room, lesson.teacher]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
                   )}
                 </span>
               ))}

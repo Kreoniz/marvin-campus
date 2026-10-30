@@ -93,7 +93,7 @@
   z-index: 0;
   pointer-events: none;
   background: color-mix(in srgb, var(--chip) 75%, var(--u-ink));
-  opacity: 0.34;
+  opacity: 0.28;
   mask-size: 64px 64px;
   mask-repeat: repeat;
 }
@@ -123,21 +123,74 @@
     inset 0 0 0 1px var(--chip),
     inset 4px 0 var(--u-category-ink);
 }
+/* Card text owns a small opaque halo above the decorative resource motif.
+   Apply it to linked metadata too: a muted paragraph alone misses button text. */
 @media (forced-colors: none) {
-  .resource-card .card-heading,
-  .resource-card .participant-sectors,
-  .resource-card .card-time,
-  .resource-card .card-room,
-  .resource-card .resource-name,
-  .agenda-entry .resource-card h4,
-  .agenda-entry .resource-card p {
-    -webkit-text-stroke: 2px var(--resource-surface);
+  .resource-card {
+    --resource-text-halo: var(--resource-surface);
+    text-shadow:
+      -1px -1px 0 var(--resource-text-halo),
+      0 -1px 0 var(--resource-text-halo),
+      1px -1px 0 var(--resource-text-halo),
+      -1px 0 0 var(--resource-text-halo),
+      1px 0 0 var(--resource-text-halo),
+      -1px 1px 0 var(--resource-text-halo),
+      0 1px 0 var(--resource-text-halo),
+      1px 1px 0 var(--resource-text-halo);
+  }
+  .resource-card
+    :is(
+      .card-subject,
+      .card-time,
+      .card-room,
+      .resource-name,
+      h4,
+      p,
+      .teacher-sources,
+      button
+    ) {
+    -webkit-text-stroke: 2px var(--resource-text-halo);
     paint-order: stroke fill;
   }
-  .resource-card.shared-card .participant-sector {
+  .resource-card button {
+    text-shadow: inherit;
+  }
+  .agenda-entry .resource-card :is(p, .teacher-sources, .text-u-muted) {
+    color: inherit;
+  }
+  .resource-card :is(.participant-sector, [data-member-id], .kind-badge) {
     -webkit-text-stroke: 0;
+    text-shadow: none;
   }
 }
+/* Shared member colors span the card beneath its heading. The measured grid
+   reserves a real sector for the remainder instead of shrinking many strips. */
+.shared-card .shared-sectors {
+  width: calc(100% + 10px);
+  margin-inline: -5px;
+  align-items: stretch;
+}
+.lesson-card.shared-card {
+  padding-block: 3px;
+}
+.shared-sectors .participant-sector {
+  padding-block: 0;
+  line-height: 11px;
+  border-right: 1px solid color-mix(in srgb, var(--u-surface) 45%, transparent);
+}
+.shared-sectors .more-participants[data-spotlight] {
+  background: var(--u-selection);
+  color: var(--u-selection-ink);
+}
+@container (width < 220px) {
+  .lesson-position:not(.horizontal) .shared-sectors .member-code-tail {
+    display: block;
+  }
+  .lesson-position:not(.horizontal) .shared-sectors .member-code-dash {
+    display: none;
+  }
+}
+
 .resource-chip > button {
   position: relative;
   z-index: 1;
@@ -231,3 +284,103 @@
     outline-color: Highlight;
   }
 }
+
+/* R14 calendar/navigation scrollbars — owned separately from cards and controls.
+   Native scrollbars use the same theme, including popovers and source tracks.
+   DS viewports keep their native bars hidden and reserve their own 8px track. */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: light-dark(#7b857c, #a4ad9f) transparent;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+.u-theme,
+.u-theme * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--u-muted) transparent;
+}
+:root::-webkit-scrollbar,
+.u-theme::-webkit-scrollbar,
+.u-theme *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+:root::-webkit-scrollbar-thumb,
+.u-theme::-webkit-scrollbar-thumb,
+.u-theme *::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--u-muted, #7b857c);
+  background-clip: padding-box;
+}
+/* Base UI owns these viewports; never re-enable a second native scrollbar. */
+.u-theme .u-scroll-viewport {
+  scrollbar-width: none;
+}
+.calendar-scroll {
+  --u-scroll-area-size: 8px;
+}
+.calendar-scroll .u-scroll-thumb::before {
+  inset-block: 2px;
+  background: var(--u-muted);
+}
+.calendar-scroll .u-scroll-thumb:is(:hover, :active)::before {
+  background: var(--u-accent-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendar-scroll > .u-scrollbar {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  :root,
+  .u-theme,
+  .u-theme * {
+    scrollbar-color: auto;
+  }
+  .calendar-scroll > .u-scrollbar {
+    opacity: 1;
+  }
+  .calendar-scroll .u-scroll-thumb::before {
+    background: CanvasText;
+  }
+}
+/* End R14 calendar/navigation scrollbars. */
+
+/* R14 selected controls: compact chips and menu-owned spotlight actions. */
+.group-chip {
+  user-select: none;
+}
+.group-chip[data-spotlight] {
+  background-color: color-mix(in srgb, var(--chip) 70%, white);
+  box-shadow: inset 0 0 0 2px var(--u-category-ink);
+}
+.group-chip.resource-chip[data-spotlight] {
+  --resource-surface: var(--chip);
+  background-color: var(--chip);
+  color: var(--u-category-ink);
+}
+.schedule-menu-spotlight[aria-pressed='true'] {
+  background: var(--u-selection);
+  color: var(--u-selection-ink);
+  box-shadow: inset 0 0 0 1px var(--u-selection-border);
+}
+[data-group-order] [data-dragging] {
+  opacity: 0.5;
+  outline: 2px solid var(--u-focus);
+  outline-offset: -2px;
+}
+@media (forced-colors: active) {
+  .group-chip[data-spotlight] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .schedule-menu-spotlight[aria-pressed='true'] {
+    border-color: Highlight;
+  }
+}
+/* End R14 selected controls. */

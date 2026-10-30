@@ -46,6 +46,7 @@ interface CalendarProps {
   spotlightIds?: string[];
   hiddenKinds?: ScheduleKind[];
   vucOnly?: boolean;
+  dayReveal?: number;
 }
 
 export default function Calendar({
@@ -63,15 +64,21 @@ export default function Calendar({
   spotlightIds = [],
   hiddenKinds = [],
   vucOnly = false,
+  dayReveal = 0,
 }: CalendarProps) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
+  const readyReveal = useRef(0);
+  // A new week can start with narrow placeholders. Reveal Today again once
+  // its real columns are published, without resetting later refresh anchors.
+  if (!loading) readyReveal.current = dayReveal;
   const viewportWidth = useCalendarNavigation(
     scroller,
     week,
     day,
     singleDay,
     compact,
+    readyReveal.current,
   );
   const dates = singleDay
     ? [day]
@@ -123,7 +130,7 @@ export default function Calendar({
       ),
     };
   });
-  const railWidth = compact ? 32 : 48;
+  const railWidth = compact ? 32 : 44;
   const minima = layout.map((column) =>
     dayMinimum(
       column.placed,
@@ -133,20 +140,17 @@ export default function Calendar({
   return (
     <>
       <AutoHideScrollArea
-        className={
-          compact || vucOnly
-            ? 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]'
-            : 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]'
-        }
+        className="calendar-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]"
         style={
           {
-            '--calendar-viewport': `${compact || vucOnly ? calendarHeight : 660 * scale}px`,
+            '--calendar-viewport': `${calendarHeight}px`,
             '--calendar-header': singleDay ? '0px' : '44px',
           } as CSSProperties
         }
       >
         <ScrollArea.Viewport
           ref={scroller}
+          style={{ overflowY: 'hidden' }}
           onFocusCapture={(event) => {
             const card = event.target;
             if (!(card instanceof HTMLElement) || !card.matches('.lesson-card'))
@@ -170,7 +174,7 @@ export default function Calendar({
                 viewport.scrollLeft += box.right - bounds.right + 3;
             });
           }}
-          className={`week-scroll [overflow-anchor:none] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
+          className={`week-scroll [overflow-anchor:none] [--rail-width:44px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
           tabIndex={0}
           role="region"
           aria-label={
@@ -180,7 +184,7 @@ export default function Calendar({
           }
           aria-busy={loading}
         >
-          <ScrollArea.Content>
+          <ScrollArea.Content className="pr-0">
             <div
               className={`week-grid grid w-full ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
               data-schedule-days
@@ -356,53 +360,26 @@ export default function Calendar({
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        {!compact && !vucOnly && <ScrollArea.Scrollbar className="z-[6]" />}
         <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
-        <ScrollArea.Corner />
       </AutoHideScrollArea>
-      <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {(singleDay
+      {(layers.presence || layers.free) &&
+        (singleDay
           ? included.length >= 2
           : layout.some(({ scope }) => scope.included.length >= 2)) && (
-          <>
+          <p className="calendar-hint m-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-(--u-line-soft) px-3 py-2 text-[11px] leading-4 text-u-muted">
             {(['presence', 'free'] as const).map(
               (layer) =>
                 layers[layer] && (
                   <span
                     key={layer}
-                    className={`mode-legend mr-3 inline-flex items-center gap-1 before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${layer === 'free' ? 'free-legend before:border-y before:border-u-accent-border before:bg-u-accent-soft' : 'before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}
+                    className={`mode-legend inline-flex items-center gap-1.5 before:h-2.5 before:content-[''] ${layer === 'free' ? 'free-legend before:w-2.5 before:border before:border-u-accent-border before:bg-u-accent-soft' : 'before:w-1 before:border-l-[3px] before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}
                   >
-                    {layer === 'presence' ? 'В вузе' : 'Без занятий'}
+                    {layer === 'presence' ? 'В вузе' : 'Общие окна'}
                   </span>
                 ),
             )}
-            {singleDay && (layers.presence || layers.free) && (
-              <span className="mr-3">
-                {excluded.length
-                  ? `Частичное сравнение: ${included.map((group) => label(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => label(group.selection)).join(', ')}`
-                  : `Для всех ${included.length} участников`}
-                {saved && ' · по сохранённым данным'}.
-              </span>
-            )}
-            {!singleDay && (layers.presence || layers.free) && (
-              <span className="mr-3">
-                Состав сравнения указан для каждого дня.
-              </span>
-            )}
-          </>
+          </p>
         )}
-        <span className="lesson-hint inline">
-          Нажми на занятие — подробности.
-          {(!singleDay || minima[0] + railWidth > viewportWidth) && (
-            <span className="mobile-hint hidden compact:inline">
-              {' '}
-              {singleDay
-                ? 'Пары можно прокручивать →'
-                : 'Дни можно прокручивать →'}
-            </span>
-          )}
-        </span>
-      </p>
     </>
   );
 }

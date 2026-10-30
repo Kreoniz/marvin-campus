@@ -7,6 +7,7 @@ import { formatDay } from '../../lib/dates.ts';
 import { scheduleKey } from '../../lib/schedule-ref.ts';
 import { scheduleLabels } from '../../lib/selection-labels.ts';
 import VucDocumentNotes from './VucDocumentNotes.tsx';
+import VucOriginalLink from './VucOriginalLink.tsx';
 
 export default function VucSources({
   schedules,
@@ -85,6 +86,19 @@ export default function VucSources({
                   (schedule.selection.kind === 'vuc' &&
                     schedule.selection.sourcePeriod)}
               </p>
+              <VucOriginalLink
+                ref={
+                  schedule.selection.kind === 'vuc'
+                    ? schedule.selection
+                    : undefined
+                }
+                available={
+                  data?.originalAvailable ??
+                  catalogue.data?.data.find(
+                    (ref) => ref.id === schedule.selection.id,
+                  )?.originalAvailable
+                }
+              />
               <p className="my-1">
                 {unresolved
                   ? 'В документе есть неоднозначные ячейки на этот день. Пары показаны, расчёт этого взвода ограничен.'

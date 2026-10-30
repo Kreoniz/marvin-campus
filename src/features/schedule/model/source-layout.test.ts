@@ -7,6 +7,7 @@ import {
   sourceTracks,
   sourceAnchor,
   restoreSourceAnchor,
+  SOURCE_INSET,
 } from './source-layout.ts';
 import { verticalLayout } from './vertical-layout.ts';
 const date = '2026-10-26';
@@ -110,7 +111,7 @@ test('thirty sources keep readable bands, including empty sources, with no ident
   const tracks = sourceTracks([], selections, 480, 0.9);
   assert.equal(tracks.length, 30);
   assert.equal(new Set(tracks.map((t) => t.key)).size, 30);
-  assert.equal(tracks.at(-1)!.left + tracks.at(-1)!.width + 10, 5284);
+  assert.equal(tracks.at(-1)!.left + tracks.at(-1)!.width + SOURCE_INSET, 5282);
   assert.ok(tracks.every((t) => t.width === 160 && t.occurrences.length === 0));
 });
 
@@ -162,12 +163,12 @@ test('compact affinity uses an existing free lane without inflating depth or dep
 
 test('contracting an anchored source keeps its final complete lane clear of the rail', () => {
   const previous = [
-    { key: 'a', left: 10, width: 492 },
-    { key: 'b', left: 518, width: 160 },
+    { key: 'a', left: 9, width: 492 },
+    { key: 'b', left: 517, width: 160 },
   ];
   const tracks = [
-    { key: 'a', left: 10, width: 160 },
-    { key: 'b', left: 186, width: 160 },
+    { key: 'a', left: 9, width: 160 },
+    { key: 'b', left: 185, width: 160 },
   ];
   assert.equal(
     restoreSourceAnchor({ key: 'a', offset: 332 }, previous, tracks),
@@ -178,28 +179,28 @@ test('contracting an anchored source keeps its final complete lane clear of the 
     332,
   );
   assert.equal(
-    restoreSourceAnchor({ key: 'b', offset: -10 }, previous, tracks),
+    restoreSourceAnchor({ key: 'b', offset: -9 }, previous, tracks),
     176,
   );
 });
 
 test('a removed source anchors to its next surviving neighbor, then previous', () => {
   const previous = [
-    { key: 'a', left: 10, width: 160 },
-    { key: 'b', left: 186, width: 160 },
-    { key: 'c', left: 362, width: 160 },
+    { key: 'a', left: 9, width: 160 },
+    { key: 'b', left: 185, width: 160 },
+    { key: 'c', left: 361, width: 160 },
   ];
   assert.equal(
     restoreSourceAnchor({ key: 'b', offset: 40 }, previous, [
-      { key: 'a', left: 10, width: 160 },
-      { key: 'c', left: 186, width: 160 },
+      { key: 'a', left: 9, width: 160 },
+      { key: 'c', left: 185, width: 160 },
     ]),
     176,
   );
   assert.equal(
     restoreSourceAnchor({ key: 'c', offset: 40 }, previous, [
-      { key: 'a', left: 10, width: 160 },
-      { key: 'b', left: 186, width: 160 },
+      { key: 'a', left: 9, width: 160 },
+      { key: 'b', left: 185, width: 160 },
     ]),
     176,
   );

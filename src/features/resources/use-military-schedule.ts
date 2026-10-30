@@ -58,6 +58,10 @@ export default function useMilitarySchedule(date: string) {
   }, [changeAt]);
   const snapshot = usableSnapshot(result.data, monday(date), now);
   const data = snapshot?.data;
+  const originalAvailable =
+    data?.originalAvailable ??
+    catalogueEntries.find((item) => item.id === ref?.id)?.originalAvailable ??
+    ref?.originalAvailable;
   const lessons = (data?.lessons ?? [])
     .filter((lesson) => lesson.date === date)
     .sort(
@@ -88,6 +92,7 @@ export default function useMilitarySchedule(date: string) {
     result,
     snapshot,
     data,
+    originalAvailable,
     lessons,
     covered,
     unresolved,

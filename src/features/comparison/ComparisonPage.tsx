@@ -9,6 +9,7 @@ import { useComparison, type Notify } from './model/use-comparison.ts';
 import { initAnalytics, track } from '../../lib/analytics.ts';
 import { usePwa, updatePwa } from '../../lib/pwa.ts';
 import { scheduleNavigation } from '../../lib/keyboard.ts';
+import { omskToday } from '../../lib/dates.ts';
 import useScheduleHotkeys from './model/use-schedule-hotkeys.ts';
 import SiteHeader from '../../app/ui/SiteHeader.tsx';
 import GroupPicker, { GroupPickerTrigger } from '../groups/ui/GroupPicker.tsx';
@@ -62,7 +63,7 @@ export default function ComparisonPage({
   const [scheduleView, setScheduleView] = useState<ScheduleView>(() =>
     vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week',
   );
-  const [dayFormat, setDayFormat] = useState<'timeline' | 'list'>('timeline');
+  const [dayReveal, setDayReveal] = useState(0);
   const [spotlightGroupIds, setSpotlightGroupIds] = useState<string[]>([]);
   const addGroupRef = useRef<HTMLButtonElement>(null);
   const [orderOpen, setOrderOpen] = useState(false);
@@ -150,6 +151,11 @@ export default function ComparisonPage({
     setScheduleView(value);
     track('mobile_view_changed', { view: value });
   }
+  function selectToday() {
+    view.selectDate(omskToday());
+    // A repeated request must also reveal an already selected, offscreen day.
+    setDayReveal((current) => current + 1);
+  }
 
   useScheduleHotkeys({
     view,
@@ -159,6 +165,7 @@ export default function ComparisonPage({
       setOrderOpen(true);
     },
     onView: selectFormat,
+    onToday: selectToday,
   });
 
   function toggleTheme() {
@@ -360,6 +367,7 @@ export default function ComparisonPage({
                       }
                       addGroupRef={addGroupRef}
                       onGroups={() => setOrderFocus('')}
+                      onToday={selectToday}
                     />
                     {groups.length || links.opening ? (
                       <>
@@ -369,6 +377,7 @@ export default function ComparisonPage({
                             view={view}
                             opening={links.opening}
                             showWeekControls={mobile}
+                            onToday={selectToday}
                           />
                         )}
                         {!mobile && !vucOnly && (
@@ -400,7 +409,6 @@ export default function ComparisonPage({
                             layers={layers}
                             loading={busy}
                             placeholder={links.opening}
-                            compact={mobile}
                             spotlightIds={spotlightIds}
                             hiddenKinds={hiddenKinds}
                           />
@@ -416,6 +424,7 @@ export default function ComparisonPage({
                             loading={busy}
                             placeholder={links.opening}
                             onDay={view.selectDay}
+                            dayReveal={dayReveal}
                             compact={mobile}
                             singleDay={false}
                             spotlightIds={spotlightIds}
@@ -528,8 +537,6 @@ export default function ComparisonPage({
                       layers={layers}
                       loading={busy}
                       placeholder={links.opening}
-                      dayFormat={dayFormat}
-                      onDayFormat={setDayFormat}
                       spotlightIds={spotlightIds}
                       spotlightLabel={spotlightLabel}
                       onClearSpotlight={() => setSpotlightGroupIds([])}

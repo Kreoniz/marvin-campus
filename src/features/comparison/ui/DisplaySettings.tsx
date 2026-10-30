@@ -118,9 +118,7 @@ export default function DisplaySettings({
                   aria-hidden="true"
                   className={`h-3 w-3 border-l-[3px] ${layer === 'presence' ? 'border-campus-presence-border' : 'border-y border-u-accent-border bg-u-accent-soft'}`}
                 />
-                {layer === 'presence'
-                  ? 'Общее время в вузе'
-                  : 'Общие окна без занятий'}
+                {layer === 'presence' ? 'В вузе' : 'Общие окна'}
               </label>
             ))}
           </fieldset>

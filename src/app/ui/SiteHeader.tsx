@@ -17,7 +17,7 @@ export default function SiteHeader({
   settingsControl: ReactNode;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:-mx-3 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0.5 compact:max-[359px]:gap-0 compact:border-b-0 compact:px-1 compact:py-0">
+    <header className="site-header mb-5 flex items-center gap-1.5 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:-mx-3 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0 compact:border-b-0 compact:px-1 compact:py-0">
       <a
         className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"
@@ -40,7 +40,7 @@ export default function SiteHeader({
         </span>
       </a>
       <nav
-        className="mr-auto flex items-center gap-3 text-sm max-[1000px]:hidden"
+        className="mr-auto ml-2 flex items-center gap-3 text-sm max-[1000px]:hidden"
         aria-label="Разделы расписаний"
       >
         <a
@@ -78,7 +78,7 @@ export default function SiteHeader({
         </span>
       </div>
       <div className="ml-auto flex shrink-0 items-center">{viewControl}</div>
-      <div className="header-actions flex shrink-0 items-center gap-0.5 compact:[&_.icon-button]:size-11 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
+      <div className="header-actions flex shrink-0 items-center gap-0">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}

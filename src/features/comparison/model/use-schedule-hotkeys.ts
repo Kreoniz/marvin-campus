@@ -1,5 +1,5 @@
 import { useHotkeys } from '@tanstack/react-hotkeys';
-import { addDays, omskToday } from '../../../lib/dates.ts';
+import { addDays } from '../../../lib/dates.ts';
 import type { ComparisonView } from './use-comparison.ts';
 import type { ScheduleView } from '../ui/ScheduleViewPicker.tsx';
 
@@ -9,11 +9,13 @@ export default function useScheduleHotkeys({
   enabled,
   onSearch,
   onView,
+  onToday,
 }: {
   view: ComparisonView;
   enabled: boolean;
   onSearch: () => void;
   onView: (value: ScheduleView) => void;
+  onToday: () => void;
 }) {
   function run(action: () => void, repeat = false) {
     return (event: KeyboardEvent) => {
@@ -88,7 +90,7 @@ export default function useScheduleHotkeys({
         options: { timeout: 500 },
       },
       { hotkey: 'Shift+[KeyG]', callback: run(() => scroll(1, true)) },
-      { hotkey: '[KeyT]', callback: run(() => view.selectDate(omskToday())) },
+      { hotkey: '[KeyT]', callback: run(onToday) },
       { hotkey: '[Slash]', callback: run(onSearch) },
       { hotkey: '[Digit1]', callback: run(() => onView('day')) },
       { hotkey: '[Digit2]', callback: run(() => onView('week')) },

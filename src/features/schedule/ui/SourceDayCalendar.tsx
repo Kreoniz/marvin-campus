@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
+import { Select } from 'unlikely-ui/select';
 import type {
   GroupSchedule,
   ScheduleKind,
@@ -44,14 +45,13 @@ interface Props {
   day: string;
   layers: CalendarLayers;
   loading: boolean;
-  compact: boolean;
   placeholder?: boolean;
   spotlightIds: string[];
   hiddenKinds: ScheduleKind[];
   vucOnly?: boolean;
 }
 const scale = 1;
-const rail = 48;
+const rail = 44;
 export default function SourceDayCalendar({
   schedules,
   colors,
@@ -59,7 +59,6 @@ export default function SourceDayCalendar({
   day,
   layers,
   loading,
-  compact,
   placeholder = false,
   spotlightIds,
   hiddenKinds,
@@ -69,7 +68,7 @@ export default function SourceDayCalendar({
   const scroller = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLDivElement>(null);
   const anchor = useRef<ReturnType<typeof sourceAnchor>>(undefined);
-  const oldDay = useRef(day);
+  const pendingJump = useRef<string | null>(null);
   const [jumped, setJumped] = useState('');
   const requested = schedules.find(
     (schedule) => scheduleKey(schedule.selection) === jumped,
@@ -131,11 +130,6 @@ export default function SourceDayCalendar({
   useLayoutEffect(() => {
     const viewport = scroller.current;
     if (!viewport) return;
-    if (oldDay.current !== day) {
-      oldDay.current = day;
-      // Keep the source horizontally, but return to the first hour on a new date.
-      viewport.scrollTop = 0;
-    }
     const restored = restoreSourceAnchor(
       anchor.current,
       previousTracks.current,
@@ -161,6 +155,10 @@ export default function SourceDayCalendar({
             ? 'Сохранено'
             : '';
   };
+  const choices = schedules.map((schedule) => ({
+    value: scheduleKey(schedule.selection),
+    label: `${label(schedule.selection)} · ${kindLabel(selectionKind(schedule.selection))}${hiddenKinds.includes(selectionKind(schedule.selection)) ? ' · скрыто' : status(schedule) ? ` · ${status(schedule)}` : ''}`,
+  }));
   function jump(key: string) {
     const schedule = schedules.find(
       (schedule) => scheduleKey(schedule.selection) === key,
@@ -177,26 +175,19 @@ export default function SourceDayCalendar({
       viewport.querySelectorAll<HTMLElement>('[data-source-key]'),
     ).find((element) => element.dataset.sourceKey === key);
     const target = band?.querySelector<HTMLElement>('button') ?? band;
-    target?.focus({ preventScroll: true });
-    if (target) reveal(target);
+    if (target) requestAnimationFrame(() => reveal(target));
+    return target;
   }
   function reveal(target: HTMLElement) {
     const viewport = scroller.current;
     if (!viewport || !target.isConnected) return;
     const card = target.matches('.lesson-card');
-    if (!card) viewport.scrollTop = 0;
     let box = target.getBoundingClientRect();
     const bounds = viewport.getBoundingClientRect();
     if (box.left < bounds.left + rail + SOURCE_INSET)
       viewport.scrollLeft += box.left - bounds.left - rail - SOURCE_INSET;
     else if (box.right > bounds.right - SOURCE_INSET)
       viewport.scrollLeft += box.right - bounds.right + SOURCE_INSET;
-    if (!compact && card) {
-      if (box.top < bounds.top + 8)
-        viewport.scrollTop += box.top - bounds.top - 8;
-      else if (box.bottom > bounds.bottom - 8)
-        viewport.scrollTop += box.bottom - bounds.bottom + 8;
-    }
     syncScroll();
     box = target.getBoundingClientRect();
     const headerBottom = Math.max(
@@ -217,10 +208,45 @@ export default function SourceDayCalendar({
   return (
     <section
       className="source-day-calendar min-w-0"
+      style={{ '--source-inset': `${SOURCE_INSET}px` } as CSSProperties}
       aria-label={`Расписания по дорожкам на ${formatDay(day, { day: 'numeric', month: 'long' })}`}
       aria-busy={loading}
     >
       <div className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface">
+        <div className="border-b border-u-line-soft px-2 py-1">
+          <Select.Root
+            value={null}
+            disabled={placeholder}
+            items={choices}
+            onValueChange={(value) => {
+              pendingJump.current = value;
+            }}
+          >
+            <Select.Trigger
+              className="source-jump min-h-11 w-full max-w-[360px] text-sm"
+              aria-label={`Перейти к расписанию (${schedules.length})`}
+            >
+              <Select.Value placeholder="К расписанию" />
+              <span className="ml-auto text-xs text-u-muted" aria-hidden="true">
+                {schedules.length}
+              </span>
+            </Select.Trigger>
+            <Select.Content
+              className="source-jump-options max-h-[min(320px,var(--available-height))] w-[min(360px,calc(100vw-32px))] [&_.u-select-item]:min-h-11 [&_.u-select-item]:whitespace-normal [&_.u-select-item]:wrap-anywhere"
+              finalFocus={() => {
+                const key = pendingJump.current;
+                pendingJump.current = null;
+                return key ? (jump(key) ?? true) : true;
+              }}
+            >
+              {choices.map((choice) => (
+                <Select.Item key={choice.value} value={choice.value}>
+                  {choice.label}
+                </Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
+        </div>
         <div
           ref={header}
           className="relative grid min-h-[56px]"
@@ -262,50 +288,12 @@ export default function SourceDayCalendar({
                 <span className="flex min-w-0 items-center gap-1 text-[10px] leading-3 text-u-muted">
                   <Icon name={kindIcon(kind)} size={11} />
                   {kindLabel(kind)}
-                  {spotlightIds.includes(track.key) && (
-                    <Icon name="tick" size={10} />
-                  )}
                   {status(schedule) && <span> · {status(schedule)}</span>}
                 </span>
               </div>
             );
           })}
         </div>
-        <label
-          className="absolute inset-y-0 left-0 z-[2] flex w-12 cursor-pointer flex-col items-center justify-center gap-1 border-r border-u-line-soft bg-u-surface text-[10px] has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-u-ink"
-          title="Перейти к расписанию"
-        >
-          <span>Перейти</span>
-          <span className="flex items-center gap-1 font-semibold">
-            {schedules.length}
-            <Icon name="down" size={11} />
-          </span>
-          <select
-            aria-label={`Перейти к расписанию (${schedules.length})`}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            value=""
-            onChange={(event) => jump(event.target.value)}
-            disabled={placeholder}
-          >
-            <option value="" disabled>
-              К расписанию
-            </option>
-            {schedules.map((schedule) => (
-              <option
-                key={scheduleKey(schedule.selection)}
-                value={scheduleKey(schedule.selection)}
-              >
-                {label(schedule.selection)} ·{' '}
-                {kindLabel(selectionKind(schedule.selection))}
-                {hiddenKinds.includes(selectionKind(schedule.selection))
-                  ? ' · скрыто'
-                  : status(schedule)
-                    ? ` · ${status(schedule)}`
-                    : ''}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
       {notice && (
         <p className="m-0 px-3 py-2 text-xs text-u-muted" role="status">
@@ -326,14 +314,19 @@ export default function SourceDayCalendar({
             if (document.activeElement === target) reveal(target);
           });
         }}
-        className={`source-scroll relative scroll-pl-14 overscroll-x-contain [overflow-anchor:none] ${compact || vucOnly ? 'overflow-x-auto overflow-y-hidden' : 'max-h-[560px] overflow-auto'}`}
+        className="source-scroll relative overflow-x-auto overflow-y-hidden overscroll-x-contain [overflow-anchor:none]"
         role="region"
         tabIndex={0}
-        aria-label="Дорожки расписаний. Прокручивай вправо или используй «Перейти»."
-        style={{ '--hour-height': `${60 * scale}px` } as CSSProperties}
+        aria-label="Дорожки расписаний"
+        style={
+          {
+            '--hour-height': `${60 * scale}px`,
+            scrollPaddingLeft: rail + SOURCE_INSET,
+          } as CSSProperties
+        }
       >
         <div className="relative" style={{ width, height }}>
-          <div className="time-rail sticky left-0 z-[5] h-full w-12 border-r border-u-line-soft bg-u-surface">
+          <div className="time-rail sticky left-0 z-[5] h-full w-11 border-r border-u-line-soft bg-u-surface">
             {hours.map((hour) => (
               <span
                 key={hour}
@@ -356,7 +349,7 @@ export default function SourceDayCalendar({
                 tabIndex={-1}
                 role="group"
                 aria-label={`${label(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
-                className="source-band absolute top-0 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] focus-visible:outline-2 focus-visible:outline-u-ink"
+                className="source-band absolute top-0 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] focus-visible:outline-2 focus-visible:outline-u-ink [&_.presence-highlight]:left-[calc(-1*var(--source-inset))]"
                 style={{ left: rail + track.left, width: track.width, height }}
               >
                 {includedKeys.has(track.key) && (
@@ -424,12 +417,24 @@ export default function SourceDayCalendar({
             ))}
         </div>
       </div>
-      <p className="m-0 border-t border-u-line-soft px-3 py-2 text-[11px] leading-4 text-u-muted">
-        Дорожки можно прокручивать →{' '}
-        <span className="ml-2">
-          «Общее занятие» ведёт к тем же подробностям.
-        </span>
-      </p>
+      {scope.included.length >= 2 && (layers.presence || layers.free) && (
+        <p className="calendar-hint m-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-u-line-soft px-3 py-2 text-[11px] leading-4 text-u-muted">
+          {layers.presence && (
+            <span
+              className={`inline-flex items-center gap-1.5 before:h-2.5 before:w-1 before:border-l-[3px] before:border-campus-presence-border before:content-[''] ${saved ? 'before:border-dashed' : ''}`}
+            >
+              В вузе
+            </span>
+          )}
+          {layers.free && (
+            <span
+              className={`inline-flex items-center gap-1.5 before:h-2.5 before:w-2.5 before:border before:border-u-accent-border before:bg-u-accent-soft before:content-[''] ${saved ? 'before:border-dashed' : ''}`}
+            >
+              Общие окна
+            </span>
+          )}
+        </p>
+      )}
     </section>
   );
 }

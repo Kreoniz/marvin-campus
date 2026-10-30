@@ -16,12 +16,14 @@ interface Props {
   view: ComparisonView;
   opening: boolean;
   showWeekControls?: boolean;
+  onToday: () => void;
 }
 export default function MobileDayNav({
   vucOnly = false,
   view,
   opening,
   showWeekControls = true,
+  onToday,
 }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(view.week, i));
@@ -68,7 +70,8 @@ export default function MobileDayNav({
                 <DatePicker
                   day={view.day}
                   onSelect={(value) => {
-                    view.selectDate(value);
+                    if (value === omskToday()) onToday();
+                    else view.selectDate(value);
                     setDateOpen(false);
                   }}
                 />
@@ -87,7 +90,7 @@ export default function MobileDayNav({
               variant="ghost"
               size="sm"
               className="today-button col-start-2 row-start-1 min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
-              onClick={() => view.selectDate(omskToday())}
+              onClick={onToday}
             >
               Сегодня
             </Button>

@@ -93,13 +93,9 @@ export default function LessonCard({
   const events = block.parallel ?? [lesson];
   const badges = [
     ...new Map(
-      events.map((event) => {
-        const kind = lessonKind(event.kind) ?? {
-          label: '?',
-          tone: 'other',
-          title: event.kind || 'Тип занятия не указан',
-        };
-        return [kind.label, kind] as const;
+      events.flatMap((event) => {
+        const kind = lessonKind(event.kind);
+        return kind ? [[kind.label, kind] as const] : [];
       }),
     ).values(),
   ];
@@ -137,11 +133,12 @@ export default function LessonCard({
   const spotlight = spotlights.length > 0;
   const long = lesson.end - lesson.start >= 240;
   const [memberCapacity, setMemberCapacity] = useState(1);
-  const [wrapMembers, setWrapMembers] = useState(false);
+  const [memberColumns, setMemberColumns] = useState(1);
+  const [inlineEntries, setInlineEntries] = useState(0);
   const memberMetrics = surfaceMembers.map((member) => ({
     label: groupLabel(member),
     saved: savedMember(member),
-    spotlight: spotlightIds.includes(scheduleKey(member)),
+    group: isGroup(member),
   }));
   const metricsKey = JSON.stringify(memberMetrics);
   useLayoutEffect(() => {
@@ -155,41 +152,47 @@ export default function LessonCard({
       if (!trigger.isConnected) return;
       const width = trigger.clientWidth - 10;
       const height = trigger.clientHeight;
-      const wrap = !horizontal && height >= 240;
-      setWrapMembers(wrap);
-      if (wrap) {
-        setMemberCapacity(height >= 440 ? 6 : 3);
-        return;
-      }
       if (context)
-        context.font = `600 10px ${getComputedStyle(trigger).fontFamily}`;
-      const widths = metrics.map(
-        (member) =>
-          Math.ceil(
-            context?.measureText(member.label).width ?? member.label.length * 7,
-          ) +
-          4 +
-          (member.saved ? 12 : 0) +
-          (member.spotlight ? 11 : 0),
+        context.font = `600 11px ${getComputedStyle(trigger).fontFamily}`;
+      // Names own full-width sectors. Short group codes may wrap at the
+      // hyphen; long resource names get wider sectors, with all members in details.
+      const minimum = Math.max(
+        44,
+        ...metrics
+          .slice(0, 3)
+          .map((member) =>
+            member.group
+              ? Math.min(
+                  64,
+                  Math.ceil(
+                    Math.max(
+                      ...member.label
+                        .split(/[-\s]/u)
+                        .map(
+                          (part) =>
+                            context?.measureText(part).width ?? part.length * 7,
+                        ),
+                    ),
+                  ) +
+                    6 +
+                    (member.saved ? 10 : 0),
+                )
+              : 72,
+          ),
       );
-      let capacity = 1;
-      for (let count = 1; count <= Math.min(3, widths.length); count++) {
-        const hidden = metrics.slice(count);
-        const remainder = hidden.length
-          ? 8 +
-            String(hidden.length).length * 7 +
-            (hidden.some((member) => member.saved) ? 10 : 0) +
-            (hidden.some((member) => member.spotlight) ? 10 : 0)
-          : 0;
-        if (
-          widths.slice(0, count).reduce((sum, value) => sum + value, 0) +
-            count * 3 +
-            remainder <=
-          width
-        )
-          capacity = count;
-      }
-      setMemberCapacity(capacity);
+      const columns = Math.max(
+        1,
+        Math.min(3, metrics.length, Math.floor(width / minimum)),
+      );
+      const rows = !horizontal && height >= 440 ? 2 : 1;
+      const slots = columns * rows;
+      setMemberColumns(columns);
+      setMemberCapacity(
+        Math.max(
+          1,
+          Math.min(metrics.length, slots - (metrics.length > slots ? 1 : 0)),
+        ),
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -206,7 +209,7 @@ export default function LessonCard({
   const military =
     members.some(isGroup) && /военная\s+подготовка/iu.test(lesson.subject);
   const remote = events.every((event) => event.remote);
-  const accessibleLabel = `${reference ? `Ссылка на общее занятие в расписании ${primaryMember.label}. ` : ''}${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${sharedEvent ? (allGroups ? 'Общая пара: ' : 'Одно занятие в нескольких расписаниях: ') : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одного расписания.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
+  const accessibleLabel = `${reference ? `Ссылка на общее занятие в расписании ${primaryMember.label}. ` : ''}${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${sharedEvent ? (allGroups ? 'Общая пара: ' : 'Одно занятие в нескольких расписаниях: ') : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind || 'Тип занятия не указан'}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одного расписания.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
   const background = dimmed
     ? block.parallel
       ? 'bg-[repeating-linear-gradient(135deg,var(--lesson-stripe-base)_0_9px,var(--lesson-stripe-accent)_9px_18px)]'
@@ -317,7 +320,7 @@ export default function LessonCard({
   }
   return (
     <div
-      className={`lesson-position absolute z-[2] [container-type:size] motion-safe:animate-lesson-appear ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
+      className={`lesson-position absolute z-[2] [container-type:size] ${members.every((member) => member.kind === 'vuc') ? '' : 'motion-safe:animate-lesson-appear'} ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
       data-source-member={trackMember ? scheduleKey(trackMember) : undefined}
       data-shared-reference={reference ? '' : undefined}
@@ -436,38 +439,84 @@ export default function LessonCard({
               )}
               {(!trackMember || shared) && (
                 <span
-                  className={`participant-sectors relative z-[1] flex min-w-0 flex-none items-center gap-[3px] [@container(height<42px)]:hidden ${wrapMembers ? 'flex-wrap' : ''} ${shared ? '' : 'font-semibold'}`}
+                  className={`participant-sectors relative z-[1] min-w-0 flex-none [@container(height<42px)]:hidden ${shared ? 'shared-sectors grid' : 'flex items-center font-semibold'}`}
+                  style={
+                    shared
+                      ? {
+                          gridTemplateColumns:
+                            memberColumns === 1 && hiddenMembers.length > 0
+                              ? 'minmax(0, 1fr) max-content'
+                              : `repeat(${memberColumns}, minmax(0, 1fr))`,
+                        }
+                      : undefined
+                  }
                 >
-                  {(shared ? visibleMembers : [primaryMember]).map((member) => (
+                  {(shared ? visibleMembers : [primaryMember]).map((member) => {
+                    const label = groupLabel(member);
+                    const code =
+                      shared && isGroup(member) && !horizontal
+                        ? /^([^-]+)-(\d.*)$/u.exec(label)
+                        : null;
+                    return (
+                      <span
+                        key={scheduleKey(member)}
+                        data-member-id={scheduleKey(member)}
+                        data-dimmed={
+                          memberDimmed(member, true) ? '' : undefined
+                        }
+                        data-spotlight={
+                          spotlightIds.includes(scheduleKey(member))
+                            ? ''
+                            : undefined
+                        }
+                        className={`participant-sector inline-flex min-w-0 max-w-full items-center justify-center gap-0.5 px-0.5 py-px leading-3 ${shared ? `text-[11px] font-semibold ${participantBackground(member, true)}` : 'text-[10px]'}`}
+                        style={chipStyle(member, true)}
+                        title={groupLabel(member)}
+                      >
+                        <span
+                          className={
+                            shared && !horizontal
+                              ? 'line-clamp-2 text-center wrap-anywhere'
+                              : 'truncate'
+                          }
+                        >
+                          {code ? (
+                            <>
+                              {code[1]}
+                              <span className="member-code-tail">
+                                <span className="member-code-dash">-</span>
+                                {code[2]}
+                              </span>
+                            </>
+                          ) : (
+                            label
+                          )}
+                        </span>
+                        {savedMember(member) && <Icon name="clock" size={10} />}
+                      </span>
+                    );
+                  })}
+                  {hiddenMembers.length > 0 && shared && (
                     <span
-                      key={scheduleKey(member)}
-                      data-member-id={scheduleKey(member)}
-                      data-dimmed={memberDimmed(member, true) ? '' : undefined}
+                      className="more-participants inline-flex min-w-0 items-center justify-center gap-0.5 bg-u-well px-0.5 py-px text-[11px] font-semibold"
+                      title={labels}
                       data-spotlight={
-                        spotlightIds.includes(scheduleKey(member))
+                        hiddenMembers.some((member) =>
+                          spotlightIds.includes(scheduleKey(member)),
+                        )
                           ? ''
                           : undefined
                       }
-                      className={`participant-sector inline-flex min-w-0 max-w-full items-center gap-0.5 rounded-[2px] px-0.5 py-px text-[10px] leading-3 ${wrapMembers ? 'shrink-0' : ''} ${shared ? participantBackground(member, true) : ''}`}
-                      style={chipStyle(member, true)}
-                      title={groupLabel(member)}
-                    >
-                      {spotlightIds.includes(scheduleKey(member)) && (
-                        <Icon name="tick" size={9} />
-                      )}
-                      <span className="truncate">{groupLabel(member)}</span>
-                      {savedMember(member) && <Icon name="clock" size={10} />}
-                    </span>
-                  ))}
-                  {hiddenMembers.length > 0 && shared && (
-                    <span
-                      className="more-participants inline-flex shrink-0 items-center gap-px text-[10px]"
-                      title={labels}
                     >
                       +{hiddenMembers.length}
                       {hiddenMembers.some((member) =>
                         spotlightIds.includes(scheduleKey(member)),
-                      ) && <Icon name="tick" size={10} />}
+                      ) && (
+                        <span className="sr-only">
+                          {' '}
+                          — есть выделенные расписания
+                        </span>
+                      )}
                       {hiddenSaved && (
                         <>
                           <Icon name="clock" size={10} />
@@ -501,13 +550,18 @@ export default function LessonCard({
               ))}
             </span>
           </span>
-          {military && !horizontal && <MilitaryInline date={lesson.date} />}
+          {military && !horizontal && (
+            <MilitaryInline
+              date={lesson.date}
+              onVisibleEntriesChange={setInlineEntries}
+            />
+          )}
           {shared && !horizontal && (
             <span
               className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<42px)]:flex"
               aria-hidden="true"
             >
-              {surfaceMembers.map((member) => (
+              {surfaceMembers.slice(0, 3).map((member) => (
                 <span
                   key={scheduleKey(member)}
                   data-short-member={scheduleKey(member)}
@@ -519,6 +573,9 @@ export default function LessonCard({
                   style={chipStyle(member, true)}
                 />
               ))}
+              {surfaceMembers.length > 3 && (
+                <span className="flex-1 bg-u-muted" />
+              )}
             </span>
           )}
         </Popover.Trigger>
@@ -633,7 +690,10 @@ export default function LessonCard({
               <LessonDocument lesson={event} />
               {members.some(isGroup) &&
                 /военная\s+подготовка/iu.test(event.subject) && (
-                  <MilitaryPreview date={event.date} />
+                  <MilitaryPreview
+                    date={event.date}
+                    collapseEntries={!horizontal && inlineEntries > 0}
+                  />
                 )}
             </div>
           ))}

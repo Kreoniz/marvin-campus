@@ -25,6 +25,7 @@ import { mergeSubgroups, selectionLabel } from '../../../lib/subgroups.ts';
 import { comparisonIssue } from '../../../lib/domain.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
+import ScheduleMenu from './ScheduleMenu.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
 
@@ -59,13 +60,13 @@ interface Pointer {
 const chipStyle = (color: number) =>
   ({ '--chip': chipColor(color) }) as CSSProperties;
 const chipClassName =
-  'group-chip flex h-11 rounded-[var(--u-radius)] bg-[var(--chip)] [color:var(--u-category-ink)] compact:max-w-44 compact:flex-1';
+  'group-chip flex h-11 shrink-0 rounded-[var(--u-radius)] bg-[var(--chip)] [color:var(--u-category-ink)]';
 const chipWidth = (selection: Selection) =>
   selectionKind(selection) === 'lecturer'
-    ? 'w-max min-w-40 max-w-64 compact:flex-none'
+    ? 'w-max min-w-32 max-w-52'
     : isGroup(selection)
-      ? 'w-34 min-w-34 compact:w-29 compact:min-w-29'
-      : 'w-max min-w-32 max-w-64 compact:flex-none';
+      ? 'w-24 min-w-24'
+      : 'w-max min-w-22 max-w-48';
 
 export default function GroupStrip(props: Props) {
   const {
@@ -106,9 +107,18 @@ export default function GroupStrip(props: Props) {
         ?.focus({ preventScroll: true });
     });
   }
-  function start(event: PointerEvent<HTMLButtonElement>, group: Selection) {
-    if (groups.length < 2 || event.button !== 0 || !event.isPrimary) return;
-    const button = event.currentTarget;
+  function start(
+    event: PointerEvent<HTMLElement>,
+    group: Selection,
+    button: HTMLButtonElement,
+  ) {
+    if (
+      groups.length < 2 ||
+      event.button !== 0 ||
+      !event.isPrimary ||
+      event.pointerType === 'touch'
+    )
+      return;
     pointer.current = {
       id: event.pointerId,
       group,
@@ -117,7 +127,6 @@ export default function GroupStrip(props: Props) {
       y: event.clientY,
       rect: button.closest('.group-chip')!.getBoundingClientRect(),
     };
-    button.setPointerCapture(event.pointerId);
     last.current = { x: event.clientX, y: event.clientY };
     suppressClick.current = false;
   }
@@ -287,6 +296,23 @@ export default function GroupStrip(props: Props) {
       <div
         className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue ? 'outline-2 -outline-offset-2 outline-(--u-danger)' : ''} ${!ghost && drag?.id === scheduleKey(group) ? 'opacity-35' : ''} ${ghost ? 'drag-chip pointer-events-none select-none' : ''}`}
         key={scheduleKey(group)}
+        onPointerDownCapture={(event) => {
+          if (ghost) return;
+          const trigger = (
+            event.target as HTMLElement
+          ).closest<HTMLButtonElement>('button[data-drag-id]');
+          if (trigger) start(event, group, trigger);
+        }}
+        onClickCapture={(event) => {
+          if (suppressClick.current && event.detail !== 0) {
+            event.preventDefault();
+            event.stopPropagation();
+            suppressClick.current = false;
+          }
+        }}
+        data-spotlight={
+          spotlightIds.includes(scheduleKey(group)) ? '' : undefined
+        }
         data-group-id={ghost ? undefined : scheduleKey(group)}
         aria-hidden={ghost || undefined}
         inert={ghost || undefined}
@@ -310,87 +336,68 @@ export default function GroupStrip(props: Props) {
             : {}),
         }}
       >
-        <button
-          className="flex min-h-11 w-5 shrink-0 touch-none cursor-grab items-center justify-center border-0 bg-transparent p-0 text-inherit group-data-dragging/groups:cursor-grabbing compact:hidden"
-          type="button"
-          data-drag-id={scheduleKey(group)}
-          aria-label={`Переместить ${label(group)}`}
-          aria-describedby="group-drag-help"
-          onPointerDown={(event) => start(event, group)}
-          onKeyDown={(event) => keyboard(event, group)}
-          onClick={(event) => {
-            if (suppressClick.current && event.detail !== 0) {
-              event.preventDefault();
-              suppressClick.current = false;
-              return;
-            }
-            onOrder(scheduleKey(group));
-          }}
-        >
-          <Icon name="order" size={14} />
-        </button>
         {isGroup(group) ? (
           <SubgroupPicker
+            spotlight={spotlightIds.includes(scheduleKey(group))}
+            onSpotlight={
+              groups.length > 1
+                ? () => onSpotlight(scheduleKey(group))
+                : undefined
+            }
+            onManage={() => onOrder(scheduleKey(group))}
             cardsHidden={hiddenKinds.includes(selectionKind(group))}
             groupKey={scheduleKey(group)}
             label={group.label}
             subgroups={subgroups}
             value={group.subgroup}
             subgroupNumber={group.subgroupNumber}
-            describedBy={
-              issue ? `group-issue-${scheduleKey(group)}` : undefined
-            }
+            describedBy={`group-drag-help${issue ? ` group-issue-${scheduleKey(group)}` : ''}`}
             onChange={(value) => onSubgroup(scheduleKey(group), value)}
             onKeyDown={(event) => keyboard(event, group)}
           />
         ) : (
-          <button
-            type="button"
-            className="flex min-h-11 min-w-0 flex-auto cursor-pointer items-center justify-center gap-1.5 border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
-            data-drag-id={scheduleKey(group)}
-            onClick={() => onOrder(scheduleKey(group))}
-            onKeyDown={(event) => keyboard(event, group)}
-            title={`${kindLabel(selectionKind(group))}: ${label(group)}`}
-            aria-label={`Управлять расписанием ${label(group)}`}
-          >
-            {selectionKind(group) !== 'vuc' && (
-              <span
-                className="shrink-0"
-                title={kindLabel(selectionKind(group))}
+          <ScheduleMenu
+            label={label(group)}
+            spotlight={spotlightIds.includes(scheduleKey(group))}
+            onSpotlight={
+              groups.length > 1
+                ? () => onSpotlight(scheduleKey(group))
+                : undefined
+            }
+            onManage={() => onOrder(scheduleKey(group))}
+            trigger={
+              <button
+                type="button"
+                className="flex min-h-11 min-w-0 flex-auto cursor-pointer items-center justify-center gap-1 border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
+                data-drag-id={scheduleKey(group)}
+                aria-describedby={`group-drag-help${issue ? ` group-issue-${scheduleKey(group)}` : ''}`}
+                onKeyDown={(event) => keyboard(event, group)}
+                title={`${kindLabel(selectionKind(group))}: ${label(group)}`}
+                aria-label={`Меню расписания ${label(group)}`}
               >
-                <Icon name={kindIcon(selectionKind(group))} size={14} />
-              </span>
-            )}
-            <strong className="resource-name block min-w-0 text-left text-xs leading-4 font-semibold whitespace-normal wrap-anywhere">
-              {selectionLabel(group)}
-              {label(group) !== selectionLabel(group) && (
-                <span className="block max-w-40 truncate text-[10px] leading-3 font-normal">
-                  {label(group).slice(selectionLabel(group).length + 3)}
-                </span>
-              )}
-            </strong>
-            {hiddenKinds.includes(selectionKind(group)) && (
-              <Icon name="hidden" size={11} />
-            )}
-          </button>
-        )}
-        {groups.length > 1 && (
-          <button
-            type="button"
-            className="group-spotlight cursor-pointer motion-safe:transition-colors motion-safe:duration-150 flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-r-[var(--u-radius)] border-0 bg-transparent p-0 text-inherit shadow-[inset_1px_0_#14201633] hover:bg-[color-mix(in_srgb,var(--chip)_80%,white)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink) aria-pressed:bg-[color-mix(in_srgb,var(--chip)_70%,white)] aria-pressed:[&_svg]:stroke-[2.5]"
-            data-drag-id={scheduleKey(group)}
-            aria-label={`Выделить ${label(group)}`}
-            aria-pressed={spotlightIds.includes(scheduleKey(group))}
-            onClick={() => onSpotlight(scheduleKey(group))}
-            onKeyDown={(event) => keyboard(event, group)}
-          >
-            <Icon
-              name={
-                spotlightIds.includes(scheduleKey(group)) ? 'tick' : 'focus'
-              }
-              size={18}
-            />
-          </button>
+                {selectionKind(group) !== 'vuc' && (
+                  <span
+                    className="shrink-0"
+                    title={kindLabel(selectionKind(group))}
+                  >
+                    <Icon name={kindIcon(selectionKind(group))} size={14} />
+                  </span>
+                )}
+                <strong className="resource-name block min-w-0 text-left text-xs leading-4 font-semibold whitespace-normal wrap-anywhere">
+                  {selectionLabel(group)}
+                  {label(group) !== selectionLabel(group) && (
+                    <span className="block max-w-40 truncate text-[10px] leading-3 font-normal">
+                      {label(group).slice(selectionLabel(group).length + 3)}
+                    </span>
+                  )}
+                </strong>
+                {hiddenKinds.includes(selectionKind(group)) && (
+                  <Icon name="hidden" size={11} />
+                )}
+                <Icon name="down" size={10} />
+              </button>
+            }
+          />
         )}
         {hiddenKinds.includes(selectionKind(group)) && (
           <span className="sr-only">Карточки этого вида скрыты.</span>
@@ -417,7 +424,7 @@ export default function GroupStrip(props: Props) {
           role="region"
           aria-label="Прокрутка выбранных расписаний"
         >
-          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-2 p-0.5 [&>*]:shrink-0 compact:gap-1.5 compact:p-0">
+          <ScrollArea.Content className="flex h-full w-max min-w-full items-center gap-1.5 p-0.5 [&>*]:shrink-0 compact:gap-1 compact:p-0">
             {shown.map((group) => renderChip(group))}
           </ScrollArea.Content>
         </ScrollArea.Viewport>
@@ -428,8 +435,8 @@ export default function GroupStrip(props: Props) {
           .filter((group) => scheduleKey(group) === drag.id)
           .map((group) => renderChip(group, true))}
       <span id="group-drag-help" className="sr-only">
-        Перетащи значок рядом с расписанием. Нажми, чтобы менять порядок
-        кнопками. С клавиатуры: Alt и стрелки влево или вправо.
+        Перетащи расписание мышью. С клавиатуры: Alt и стрелки влево или вправо.
+        Кнопки перемещения доступны в меню «Управлять выбранными».
       </span>
       <span className="sr-only" aria-live="polite">
         {announcement}
