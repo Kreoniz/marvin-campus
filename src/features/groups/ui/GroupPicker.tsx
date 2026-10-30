@@ -152,7 +152,7 @@ export default function GroupPicker({
     >
       {children}
       <Dialog.Content
-        className="flex h-[min(620px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto"
+        className="flex h-[min(620px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto p-4"
         initialFocus={() =>
           (focusGroupId
             ? document.querySelector<HTMLElement>(
@@ -175,7 +175,7 @@ export default function GroupPicker({
           true
         }
       >
-        <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
+        <div className="mb-1 flex shrink-0 items-center justify-between gap-3">
           <Dialog.Title className="m-0 text-xl leading-6">
             Расписания
           </Dialog.Title>
@@ -198,7 +198,7 @@ export default function GroupPicker({
         </Dialog.Description>
         <RadioGroup.Root
           variant="segmented"
-          className="mt-1 mb-2 grid shrink-0 grid-cols-[1fr_1.5fr_1.2fr] gap-0 [&_.u-segmented-item]:min-h-11 [&_.u-segmented-item]:min-w-0 [&_.u-segmented-item]:px-1 [&_.u-segmented-item]:text-[11px]"
+          className="mb-1 grid shrink-0 grid-cols-[1fr_1.5fr_1.2fr] gap-0 p-0.5 [&_.u-segmented-item]:min-h-10 [&_.u-segmented-item]:min-w-0 [&_.u-segmented-item]:px-1 [&_.u-segmented-item]:text-sm"
           aria-label="Что найти"
           value={kind}
           onValueChange={(value) => {
@@ -219,7 +219,7 @@ export default function GroupPicker({
         </RadioGroup.Root>
         <Field.Root className="flex min-h-0 flex-1 flex-col">
           <Field.Label
-            className="mt-2 mb-2 block text-[13px] font-semibold"
+            className="mt-1 mb-1 block text-sm font-semibold"
             htmlFor={searchId}
           >
             {kind === 'group'
