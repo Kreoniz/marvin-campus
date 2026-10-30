@@ -58,13 +58,16 @@
   vertical presentation lanes against semantic and painted bounds. Calendar
   display bounds are independent of domain intervals; VUC defaults to 09:00
   while preserving real earlier events. Presence gutters clear external card outlines. Rendering uses
-  fixed 160-pixel cards and 166-pixel lanes in compact Week. A free-lane source
-  preference never increases concurrency. `source-layout` projects source-oriented
-  Day bands from canonical blocks: 160-pixel cards, painted-bound sublanes,
-  user-ordered source bands and typed-key scroll anchoring, clamped on contraction
+  `source-layout` projections in both Day and Week: user-ordered stable source
+  bands, painted-bound overlap sublanes and 160/144/128/112-pixel card widths
+  for up to 3/6/12/30 bands, with six-pixel sublane gaps. Day retains all visible
+  selected sources. Week projects each date's known active sources, including
+  shared references, and reports unavailable sources separately rather than
+  inventing empty bands. Headers and cards use the same variable-width vector.
+  Typed-key scroll anchoring is clamped on contraction
   with neighboring-source fallback. Header columns use the same width vector and
-  natural text height; focus reveal measures the rail and current header. An academic-first
-  visible presentation owner gets the full card; other member occurrences open
+  natural text height; focus reveal measures the rail and current header. The first
+  selected visible participating source gets the full card; other member occurrences open
   the same details. These references never enter calculation or lesson counts. Per-day minima and measured column
   navigation stay outside domain calculations. Initial/date/Today reveals remain
   pending until the first usable cohort geometry, unless deliberate scrolling

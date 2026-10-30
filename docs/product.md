@@ -107,13 +107,19 @@ Ordinary group cards use the group color. Lecturer and auditorium cards use a
 lightly tinted neutral surface, a categorical inset edge and distinct cap/door glyphs
 repeated diagonally. Text strokes and an opaque outline around the text keep labels and metadata links
 legible over the stronger motif, including List. Resource selection chips use the same grammar;
+spotlight uses categorical fill with dark motifs and no inset edge. In forced
+colors, a double inset marker identifies spotlighted cards and List entries
+independently of the outer focus/popup outline and remote dashed border.
 lecturer names retain their full labels without ellipsis and redundant role captions are omitted. Visible kind text/icons also identify them. Parallel bundles
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.
 
 Day assigns each visible selected source a labelled stable band in user order,
-with a 16-pixel gap and an extra 16 pixels at kind transitions. Each overlap
-sublane keeps 160 pixels without stretching into spare viewport space. A design-system Select moves to the requested band and focuses its
+with a 16-pixel gap and an extra 16 pixels at kind transitions. Card width follows
+the visible source count: 160 pixels for up to three, 144 for four to six, 128
+for seven to twelve, and 112 for thirteen to thirty. Distinct overlapping events
+reserve sublanes within their source band, separated by six pixels; cards never
+stretch into spare viewport space. A design-system Select moves to the requested band and focuses its
 first lesson or empty/status band without changing selection or calculation.
 It includes hidden sources with an explicit notice rather than silently unhiding.
 All 30 schedules remain available; there is no automatic mode change or collapse.
@@ -123,11 +129,13 @@ Source anchoring clamps offsets when sublanes shrink and uses a surviving
 neighbor when a source disappears. Keyboard focus clears the actual sticky rail
 in both Day and Week.
 
-One full shared card belongs to the academically preferred visible typed source.
+One full shared card belongs to the first selected visible participating source,
+including a lecturer or room moved ahead of its groups.
 Other member bands carry an explicit actionable reference to the same complete
 details, at the original time, never spanning unrelated bands. Hidden owner kinds
 promote the next visible member. References never enter counts or calculations.
-Week and List show each proven shared event once. Shared cards follow the selected-source order in every view and in details. Shared vertical cards use full-width categorical member sectors beneath the heading. Capacity follows measured width and available height, with readable leading names and a remainder for dense membership. Horizontal rows keep one fitting row regardless of duration. Full membership remains in details; saved collapsed members retain their clock marker. Spotlight uses fill rather than decorative checks. Presentation ordering does not alter canonical event merging or geometry.
+Week shows one full card per proven shared event, plus these labelled references;
+List shows the event once. Shared cards follow the selected-source order in every view and in details. Shared vertical cards use full-width categorical member sectors beneath the heading. Capacity follows measured width and available height, with readable leading names and a remainder for dense membership. Horizontal rows keep one fitting row regardless of duration. Full membership remains in details; saved collapsed members retain their clock marker. Spotlight uses fill rather than decorative checks. Presentation ordering does not alter canonical event merging or geometry.
 Long vertical event text starts at the top. Short free intervals keep true height;
 inline text appears only when it fits, and exact ranges are visible in the day
 summary outside horizontal scrolling. Long calculation membership is collapsible.
@@ -186,13 +194,18 @@ Spotlight and day format are transient presentation state, not comparison URL
 parameters or changes to the presence/free calculation.
 
 Each compact Week date has its own minimum width, derived from that day's
-rendered concurrency. Navigation measures actual date columns and preserves
+active source bands in selected order. A source keeps its band throughout that
+date; reordering the selection moves the bands. Confirmed-empty bands are
+omitted, while unknown, failed, expired or uncovered sources remain explicitly
+named in the day's unavailable status and calculation details. Known lessons
+remain visible even when their source is excluded from calculation. Empty dates
+retain a column. Each date uses the same 160/144/128/112 card-width tiers as Day,
+based on its active band count rather than the entire selected set.
+Navigation measures actual date columns and preserves
 the visible date/offset across geometry changes. Lane allocation reserves both
 the true interval and the minimum painted height, so short events cannot collide.
-Compact Week cards use 160 pixels with a six-pixel gap and a 166-pixel lane pitch;
-they do not expand into vacant lanes. A deterministic source preference chooses
-an already allocated free lane, never increasing concurrency to reserve identity. Only each dense date grows. Empty dates keep their
-columns, and unavailable data is not treated as an empty day.
+Each source's internal overlap sublanes use a six-pixel gap; only dates with
+more active sources or overlaps grow. Unavailable data is never an empty day.
 An isolated lesson does not stretch across the day.
 Their horizontal pitch is capped too, keeping a six-pixel gap instead of
 spreading narrow cards across a wide day. Pressing a card highlights it without

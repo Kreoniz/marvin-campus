@@ -297,6 +297,18 @@
   .lesson-card:is(:hover, :focus-visible, [aria-expanded='true']) {
     outline-color: Highlight;
   }
+  /* Keep spotlight separate from the outer focus/popup outline and remote
+     dashed border. A double inset marker survives forced color replacement. */
+  .lesson-position[data-spotlight] .lesson-card::after,
+  .agenda-entry[data-spotlight] > article::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    z-index: 2;
+    border: 3px double Highlight;
+    border-radius: 4px;
+    pointer-events: none;
+  }
 }
 
 /* R14 calendar/navigation scrollbars — owned separately from cards and controls.
