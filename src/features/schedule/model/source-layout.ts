@@ -82,3 +82,35 @@ export function sourceAnchor(
     tracks.find((track) => track.left + track.width > offset) ?? tracks.at(-1);
   return track ? { key: track.key, offset: offset - track.left } : undefined;
 }
+
+// A source can lose overlap lanes or disappear after a filter/date update.
+// Keep a complete lane in view and fall back by the prior source order.
+export function restoreSourceAnchor(
+  anchor: ReturnType<typeof sourceAnchor>,
+  previous: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
+  tracks: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
+): number | undefined {
+  if (!anchor || !tracks.length) return undefined;
+  let target = tracks.find((track) => track.key === anchor.key);
+  let offset = anchor.offset;
+  if (!target) {
+    const index = previous.findIndex((track) => track.key === anchor.key);
+    const neighbors = [
+      ...previous.slice(index + 1),
+      ...previous.slice(0, index).reverse(),
+    ];
+    target =
+      neighbors
+        .map((prior) => tracks.find((track) => track.key === prior.key))
+        .find(Boolean) ?? tracks[0];
+    offset = -SOURCE_INSET;
+  }
+  const max = Math.max(
+    -SOURCE_INSET,
+    target.width - VERTICAL_CARD_WIDTH - SOURCE_INSET,
+  );
+  return Math.max(
+    0,
+    target.left + Math.max(-SOURCE_INSET, Math.min(offset, max)),
+  );
+}

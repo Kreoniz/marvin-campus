@@ -151,6 +151,29 @@ export default function Calendar({
       >
         <ScrollArea.Viewport
           ref={scroller}
+          onFocusCapture={(event) => {
+            const card = event.target;
+            if (!(card instanceof HTMLElement) || !card.matches('.lesson-card'))
+              return;
+            requestAnimationFrame(() => {
+              const viewport = scroller.current;
+              if (
+                !viewport ||
+                !card.isConnected ||
+                document.activeElement !== card
+              )
+                return;
+              const box = card.getBoundingClientRect();
+              const bounds = viewport.getBoundingClientRect();
+              const rail =
+                viewport.querySelector('.time-rail')?.getBoundingClientRect()
+                  .right ?? bounds.left;
+              if (box.left < rail + 3)
+                viewport.scrollLeft += box.left - rail - 3;
+              else if (box.right > bounds.right - 3)
+                viewport.scrollLeft += box.right - bounds.right + 3;
+            });
+          }}
           className={`week-scroll [overflow-anchor:none] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
           tabIndex={0}
           role="region"

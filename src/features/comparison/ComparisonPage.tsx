@@ -334,12 +334,8 @@ export default function ComparisonPage() {
                         )}
                         {mobile ? (
                           <MobileComparisonPanel
-                            hiddenKinds={hiddenKinds}
-                            section="controls"
                             view={view}
                             schedules={source.schedules}
-                            links={links}
-                            fetching={links.opening || source.fetching}
                             loading={busy}
                             opening={links.opening}
                           />
@@ -376,7 +372,7 @@ export default function ComparisonPage() {
                           day={day}
                           onSelectDate={view.selectDate}
                         />
-                        {scheduleView !== 'week' && (
+                        {(mobile || scheduleView !== 'week') && (
                           <div className="border-t border-u-line-soft px-3 py-2">
                             <ComparisonSummary
                               schedules={source.schedules}
@@ -430,16 +426,12 @@ export default function ComparisonPage() {
                             hiddenKinds={hiddenKinds}
                           />
                         )}
-                        {mobile && scheduleView === 'week' && (
-                          <MobileComparisonPanel
-                            hiddenKinds={hiddenKinds}
-                            section="result"
-                            view={view}
+                        {mobile && (
+                          <ComparisonStatus
                             schedules={source.schedules}
-                            links={links}
+                            day={day}
                             fetching={links.opening || source.fetching}
-                            loading={busy}
-                            opening={links.opening}
+                            links={links}
                           />
                         )}
                       </>

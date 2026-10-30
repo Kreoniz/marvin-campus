@@ -113,18 +113,20 @@
   --resource-surface: color-mix(in srgb, var(--chip) 8%, var(--u-well));
   background: var(--resource-surface);
 }
-.resource-card .card-heading,
-.resource-card .participant-sectors,
-.resource-card .card-time,
-.resource-card .card-room,
-.resource-card .resource-name,
-.agenda-entry .resource-card h4,
-.agenda-entry .resource-card p {
-  -webkit-text-stroke: 2px var(--resource-surface);
-  paint-order: stroke fill;
-}
-.resource-card.shared-card .participant-sector {
-  -webkit-text-stroke: 0;
+@media (forced-colors: none) {
+  .resource-card .card-heading,
+  .resource-card .participant-sectors,
+  .resource-card .card-time,
+  .resource-card .card-room,
+  .resource-card .resource-name,
+  .agenda-entry .resource-card h4,
+  .agenda-entry .resource-card p {
+    -webkit-text-stroke: 2px var(--resource-surface);
+    paint-order: stroke fill;
+  }
+  .resource-card.shared-card .participant-sector {
+    -webkit-text-stroke: 0;
+  }
 }
 .resource-chip > button {
   position: relative;
@@ -137,12 +139,12 @@
 .resource-chip button:focus-visible {
   outline-color: var(--u-ink);
 }
+.resource-chip .group-spotlight[aria-pressed='true']:focus-visible {
+  outline-color: var(--u-category-ink);
+}
 @media (forced-colors: active) {
   .resource-card {
     box-shadow: none;
-  }
-  .resource-card * {
-    -webkit-text-stroke: 0;
   }
   .resource-card::before {
     display: none;

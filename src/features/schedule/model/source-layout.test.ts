@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import { scheduleKey } from '../../../lib/schedule-ref.ts';
 import type { GroupSchedule, Lesson, Selection } from '../../../lib/types.ts';
-import { sourceTracks, sourceAnchor } from './source-layout.ts';
+import {
+  sourceTracks,
+  sourceAnchor,
+  restoreSourceAnchor,
+} from './source-layout.ts';
 import { verticalLayout } from './vertical-layout.ts';
 const date = '2026-10-26';
 const a: Selection = { id: 1, label: 'Г-А' };
@@ -153,5 +157,54 @@ test('compact affinity uses an existing free lane without inflating depth or dep
   assert.equal(
     verticalLayout(lessonBlocks(input, date), 480, 0.9).at(-1)!.column,
     0,
+  );
+});
+
+test('contracting an anchored source keeps its final complete lane clear of the rail', () => {
+  const previous = [
+    { key: 'a', left: 6, width: 492 },
+    { key: 'b', left: 510, width: 160 },
+  ];
+  const tracks = [
+    { key: 'a', left: 6, width: 160 },
+    { key: 'b', left: 178, width: 160 },
+  ];
+  assert.equal(
+    restoreSourceAnchor({ key: 'a', offset: 332 }, previous, tracks),
+    0,
+  );
+  assert.equal(
+    restoreSourceAnchor({ key: 'a', offset: 480 }, previous, previous),
+    332,
+  );
+  assert.equal(
+    restoreSourceAnchor({ key: 'b', offset: -6 }, previous, tracks),
+    172,
+  );
+});
+
+test('a removed source anchors to its next surviving neighbor, then previous', () => {
+  const previous = [
+    { key: 'a', left: 6, width: 160 },
+    { key: 'b', left: 178, width: 160 },
+    { key: 'c', left: 350, width: 160 },
+  ];
+  assert.equal(
+    restoreSourceAnchor({ key: 'b', offset: 40 }, previous, [
+      { key: 'a', left: 6, width: 160 },
+      { key: 'c', left: 178, width: 160 },
+    ]),
+    172,
+  );
+  assert.equal(
+    restoreSourceAnchor({ key: 'c', offset: 40 }, previous, [
+      { key: 'a', left: 6, width: 160 },
+      { key: 'b', left: 178, width: 160 },
+    ]),
+    172,
+  );
+  assert.equal(
+    restoreSourceAnchor({ key: 'a', offset: 40 }, previous, []),
+    undefined,
   );
 });

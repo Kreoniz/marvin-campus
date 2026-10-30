@@ -23,6 +23,7 @@ import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import {
   sourceTracks,
   sourceAnchor,
+  restoreSourceAnchor,
   SOURCE_INSET,
 } from '../model/source-layout.ts';
 import {
@@ -66,7 +67,13 @@ export default function SourceDayCalendar({
   const anchor = useRef<ReturnType<typeof sourceAnchor>>(undefined);
   const oldDay = useRef(day);
   const [jumped, setJumped] = useState('');
-  const [notice, setNotice] = useState('');
+  const requested = schedules.find(
+    (schedule) => scheduleKey(schedule.selection) === jumped,
+  );
+  const notice =
+    requested && hiddenKinds.includes(selectionKind(requested.selection))
+      ? `${selectionLabel(requested.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`
+      : '';
   const visible = schedules.filter(
     (schedule) => !hiddenKinds.includes(selectionKind(schedule.selection)),
   );
@@ -110,6 +117,7 @@ export default function SourceDayCalendar({
   const geometryKey = tracks
     .map((track) => `${track.key}:${track.left}:${track.width}`)
     .join('|');
+  const previousTracks = useRef(tracks);
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
   const hasSnapshot = schedules.some((schedule) => schedule.snapshot);
@@ -128,10 +136,13 @@ export default function SourceDayCalendar({
       // Keep the source horizontally, but return to the first hour on a new date.
       viewport.scrollTop = 0;
     }
-    const prior = anchor.current;
-    const target =
-      prior && tracksRef.current.find((track) => track.key === prior.key);
-    if (target) viewport.scrollLeft = Math.max(0, target.left + prior.offset);
+    const restored = restoreSourceAnchor(
+      anchor.current,
+      previousTracks.current,
+      tracksRef.current,
+    );
+    if (restored !== undefined) viewport.scrollLeft = restored;
+    previousTracks.current = tracksRef.current;
     syncScroll();
   }, [geometryKey, day]);
   const status = (schedule: GroupSchedule) => {
@@ -157,13 +168,7 @@ export default function SourceDayCalendar({
     const track = tracksRef.current.find((track) => track.key === key);
     if (!schedule) return;
     setJumped(key);
-    if (!track) {
-      setNotice(
-        `${selectionLabel(schedule.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`,
-      );
-      return;
-    }
-    setNotice('');
+    if (!track) return;
     const viewport = scroller.current;
     if (!viewport) return;
     viewport.scrollLeft = track.left - SOURCE_INSET;
@@ -215,14 +220,26 @@ export default function SourceDayCalendar({
       aria-label={`Расписания по дорожкам на ${formatDay(day, { day: 'numeric', month: 'long' })}`}
       aria-busy={loading}
     >
-      <div className="source-header sticky top-0 z-[7] h-20 overflow-hidden border-y border-u-line-soft bg-u-surface">
+      <div className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface">
         <div
           ref={header}
-          className="relative h-full"
-          style={{ width }}
+          className="relative grid min-h-[78px]"
+          style={{
+            width,
+            gridTemplateColumns: `${rail + SOURCE_INSET}px ${tracks
+              .flatMap((track, index) => [
+                track.width,
+                (tracks[index + 1]?.left ??
+                  track.left + track.width + SOURCE_INSET) -
+                  track.left -
+                  track.width,
+              ])
+              .map((size) => `${size}px`)
+              .join(' ')}`,
+          }}
           aria-hidden={placeholder || undefined}
         >
-          {tracks.map((track) => {
+          {tracks.map((track, index) => {
             const schedule = visible.find(
               (schedule) => scheduleKey(schedule.selection) === track.key,
             )!;
@@ -232,14 +249,14 @@ export default function SourceDayCalendar({
             return (
               <div
                 key={track.key}
-                className={`source-label absolute top-0 flex h-full flex-col justify-center gap-1 border-b-[3px] px-1.5 ${jumped === track.key ? 'bg-u-selection' : 'bg-u-surface'}`}
+                className={`source-label flex min-h-[78px] flex-col justify-center gap-1 border-b-[3px] px-1.5 py-1 ${jumped === track.key ? 'bg-u-selection' : 'bg-u-surface'}`}
                 style={{
-                  left: rail + track.left,
-                  width: track.width,
+                  gridColumn: 2 + index * 2,
+                  gridRow: 1,
                   borderColor: lessonColor(colors[track.key] ?? 0, muted),
                 }}
               >
-                <strong className="line-clamp-2 text-xs leading-4 wrap-anywhere">
+                <strong className="text-xs leading-4 wrap-anywhere">
                   {selectionLabel(track.selection)}
                 </strong>
                 <span className="flex min-w-0 items-center gap-1 text-[10px] leading-3 text-u-muted">
@@ -393,11 +410,17 @@ export default function SourceDayCalendar({
               </div>
             );
           })}
-          {tracks.length === 0 && (
-            <p className="absolute top-12 right-4 left-14 text-sm text-u-muted">
-              Карточки выбранных видов скрыты.
-            </p>
-          )}
+          {tracks.length === 0 &&
+            (placeholder ? (
+              <div className="absolute top-12 right-4 left-14" role="status">
+                <Skeleton className="h-20 w-40" />
+                <span className="sr-only">Открываем расписания…</span>
+              </div>
+            ) : (
+              <p className="absolute top-12 right-4 left-14 text-sm text-u-muted">
+                Карточки выбранных видов скрыты.
+              </p>
+            ))}
         </div>
       </div>
       <p className="m-0 border-t border-u-line-soft px-3 py-2 text-[11px] leading-4 text-u-muted">

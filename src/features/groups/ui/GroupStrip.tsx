@@ -345,7 +345,7 @@ export default function GroupStrip(props: Props) {
                   ) : (
                     <button
                       type="button"
-                      className="flex min-h-11 min-w-0 max-w-48 flex-auto cursor-pointer items-center justify-center gap-1.5 border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
+                      className="flex min-h-11 min-w-0 flex-auto cursor-pointer items-center justify-center gap-1.5 border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink)"
                       data-drag-id={scheduleKey(group)}
                       onClick={() => onOrder(scheduleKey(group))}
                       onKeyDown={(event) => keyboard(event, group)}

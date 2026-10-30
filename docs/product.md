@@ -74,7 +74,9 @@ clearing all spotlights. Kind visibility changes cards only, not selection or
 calculation; hidden selections remain marked and can be restored directly.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
 No comparison-mode row precedes the mobile calendar. A partial-data notice
-continues to name included and excluded selections above the known lessons. Mobile day and week grids
+shows the usable count and excluded names above the known lessons. The full
+included roster lives in the expandable day summary, available above all compact
+views; freshness remains available below the timetable. Mobile day and week grids
 expand to their full time range and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
@@ -99,7 +101,7 @@ Ordinary group cards use the group color. Lecturer and auditorium cards use a
 lightly tinted neutral surface, a categorical inset edge and distinct cap/door glyphs
 repeated diagonally. Text strokes are painted behind the fill to keep labels
 legible over the stronger motif. Resource selection chips use the same grammar;
-lecturer names wrap without ellipsis and redundant role captions are omitted. Visible kind text/icons also identify them. Parallel bundles
+lecturer names retain their full labels without ellipsis and redundant role captions are omitted. Visible kind text/icons also identify them. Parallel bundles
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.
 
@@ -109,7 +111,11 @@ sublane keeps 160 pixels without stretching into spare viewport space. A source 
 first lesson or empty/status band without changing selection or calculation.
 It includes hidden sources with an explicit notice rather than silently unhiding.
 All 30 schedules remain available; there is no automatic mode change or collapse.
-Headers and the time rail stay visible while navigating the source canvas.
+Headers wrap full source names and grow only when their content needs more
+height. Headers and the time rail stay visible while navigating the source canvas.
+Source anchoring clamps offsets when sublanes shrink and uses a surviving
+neighbor when a source disappears. Keyboard focus clears the actual sticky rail
+in both Day and Week.
 
 One full shared card belongs to the academically preferred visible typed source.
 Other member bands carry an explicit actionable reference to the same complete
