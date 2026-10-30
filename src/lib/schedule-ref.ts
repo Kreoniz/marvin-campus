@@ -29,7 +29,7 @@ export function kindLabel(kind: ScheduleKind): string {
     group: 'Группа',
     lecturer: 'Преподаватель',
     auditorium: 'Аудитория',
-    vuc: 'Взвод ВУЦ',
+    vuc: 'ВУЦ',
   }[kind];
 }
 export function kindIcon(kind: ScheduleKind): string {
@@ -37,7 +37,7 @@ export function kindIcon(kind: ScheduleKind): string {
     group: 'groups',
     lecturer: 'teacher',
     auditorium: 'room',
-    vuc: 'vuc',
+    vuc: 'calendar',
   }[kind];
 }
 export function participates(selection: Selection): boolean {
@@ -99,4 +99,10 @@ export function importedDate(selection: Selection): string | undefined {
     validDate(selection.firstDate)
     ? selection.firstDate
     : undefined;
+}
+
+export function compactVucLabel(label: string): string {
+  return label
+    .replace(/^ВУЦ\s*[·-]?\s*взвод\s*/iu, 'ВУЦ ')
+    .replace(/^взвод\s*/iu, 'ВУЦ ');
 }

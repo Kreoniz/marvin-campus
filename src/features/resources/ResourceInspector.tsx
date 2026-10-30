@@ -23,8 +23,16 @@ type AddResource = (
   date?: string,
   continuation?: Continuation,
 ) => void;
-const ResourceContext = createContext<{ openResource: AddResource }>({
+const ResourceContext = createContext<{
+  openResource: AddResource;
+  schedules: GroupSchedule[];
+  militaryId: string;
+  selectMilitary: (id: string) => void;
+}>({
   openResource: () => {},
+  schedules: [],
+  militaryId: '',
+  selectMilitary: () => {},
 });
 export function useResourceInspector() {
   return useContext(ResourceContext);
@@ -43,6 +51,20 @@ export function ResourceProvider({
   schedules: GroupSchedule[];
   children: ReactNode;
 }) {
+  const [militaryId, setMilitaryId] = useState(() => {
+    try {
+      const id = localStorage.getItem('campus-vuc-preview') ?? '';
+      return /^[a-z0-9][a-z0-9._-]{0,99}$/.test(id) ? id : '';
+    } catch {
+      return '';
+    }
+  });
+  const selectMilitary = useCallback((id: string) => {
+    setMilitaryId(id);
+    try {
+      localStorage.setItem('campus-vuc-preview', id);
+    } catch {}
+  }, []);
   const pending = useRef<PendingFocus | undefined>(undefined);
   const [request, setRequest] = useState(0);
   const clear = useCallback(() => {
@@ -134,7 +156,10 @@ export function ResourceProvider({
     );
     if (source && !source.loading && (source.snapshot || source.error)) clear();
   }, [request, schedules, clear]);
-  const value = useMemo(() => ({ openResource }), [openResource]);
+  const value = useMemo(
+    () => ({ openResource, schedules, militaryId, selectMilitary }),
+    [openResource, schedules, militaryId, selectMilitary],
+  );
   return (
     <ResourceContext.Provider value={value}>
       {children}

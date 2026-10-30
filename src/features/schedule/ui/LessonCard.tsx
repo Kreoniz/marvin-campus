@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type PointerEvent,
-} from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Popover } from 'unlikely-ui/popover';
 import { Badge } from 'unlikely-ui/badge';
 import { Button } from 'unlikely-ui/button';
@@ -43,6 +36,7 @@ import {
 } from '../../resources/LessonResources.tsx';
 import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
+import MilitaryPreview from '../../resources/MilitaryPreview.tsx';
 
 interface LessonCardProps {
   block: LessonBlock;
@@ -227,22 +221,7 @@ export default function LessonCard({
   }, [open]);
 
   const hovering = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const cancel = () => clearTimeout(timer.current);
-  function enter(event: PointerEvent) {
-    if (event.pointerType !== 'mouse') return;
-    cancel();
-    hovering.current = true;
-    timer.current = setTimeout(() => setOpen(true), 180);
-  }
-  function leave(event: PointerEvent) {
-    if (event.pointerType !== 'mouse') return;
-    cancel();
-    timer.current = setTimeout(() => {
-      if (hovering.current) setOpen(false);
-    }, 180);
-  }
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const pinned = useRef(false);
   function participants(event?: Lesson) {
     return (
       <div className="popover-participants my-2 flex flex-wrap items-center gap-[3px]">
@@ -271,18 +250,46 @@ export default function LessonCard({
       style={style}
       data-source-member={trackMember ? scheduleKey(trackMember) : undefined}
       data-shared-reference={reference ? '' : undefined}
+      data-popup-open={open ? '' : undefined}
       data-spotlight={spotlight ? '' : undefined}
       data-dimmed={dimmed ? '' : undefined}
     >
       <Popover.Root
         open={open}
-        onOpenChange={(next) => {
+        onOpenChange={(next, details) => {
+          if (details.reason === 'trigger-press') {
+            // The first click on a hover preview pins it; the second closes it.
+            if (!next && !pinned.current) {
+              details.cancel();
+              pinned.current = true;
+              hovering.current = false;
+              return;
+            }
+            pinned.current = next;
+            hovering.current = false;
+          } else if (details.reason === 'trigger-hover') {
+            if (!next && pinned.current) {
+              details.cancel();
+              return;
+            }
+            if (next) {
+              hovering.current = true;
+              pinned.current = false;
+            }
+          }
           if (next) resourceAction.current = false;
+          else {
+            hovering.current = false;
+            pinned.current = false;
+          }
           setOpen(next);
         }}
       >
         <Popover.Trigger
           ref={cardTrigger}
+          openOnHover
+          delay={100}
+          closeDelay={120}
           data-lesson-keys={JSON.stringify(
             events.filter((event) => event.id).map(lessonKey),
           )}
@@ -308,8 +315,6 @@ export default function LessonCard({
           data-resource-kind={resourceKind}
           className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) p-[5px] [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''} ${reference ? 'shared-reference' : ''}`}
 
-          onPointerEnter={enter}
-          onPointerLeave={leave}
           onClick={() => {
             hovering.current = false;
             track('lesson_opened', { remote: lesson.remote });
@@ -433,14 +438,16 @@ export default function LessonCard({
         </Popover.Trigger>
         <Popover.Content
           ref={popover}
-          className="lesson-popover max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
+          className="lesson-popover motion-safe:duration-100 max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{ sideOffset: 7 }}
           initialFocus={hovering.current ? false : undefined}
+          onPointerDownCapture={() => {
+            pinned.current = true;
+            hovering.current = false;
+          }}
           finalFocus={() =>
             resourceAction.current ? false : (cardTrigger.current ?? true)
           }
-          onPointerEnter={cancel}
-          onPointerLeave={leave}
         >
           <div className="popover-heading mb-[5px] flex items-center justify-between gap-2.5">
             <Popover.Title className="m-0 text-sm">
@@ -490,7 +497,6 @@ export default function LessonCard({
                   lesson={event}
                   onOpen={(resource, _trigger, date) => {
                     resourceAction.current = true;
-                    cancel();
                     hovering.current = false;
                     setOpen(false);
                     openResource(resource, cardTrigger.current, date, {
@@ -510,7 +516,6 @@ export default function LessonCard({
                     lesson={event}
                     onOpen={(resource, _trigger, date) => {
                       resourceAction.current = true;
-                      cancel();
                       hovering.current = false;
                       setOpen(false);
                       openResource(resource, cardTrigger.current, date, {
@@ -538,6 +543,10 @@ export default function LessonCard({
                 }}
               />
               <LessonDocument lesson={event} />
+              {block.members.some(isGroup) &&
+                /военная\s+подготовка/iu.test(event.subject) && (
+                  <MilitaryPreview date={event.date} />
+                )}
             </div>
           ))}
           {!block.parallel && participants()}

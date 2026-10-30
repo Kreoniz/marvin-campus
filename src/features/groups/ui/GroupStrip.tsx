@@ -20,7 +20,7 @@ import {
   kindLabel,
   kindIcon,
 } from '../../../lib/schedule-ref.ts';
-import { mergeSubgroups } from '../../../lib/subgroups.ts';
+import { mergeSubgroups, selectionLabel } from '../../../lib/subgroups.ts';
 import { comparisonIssue } from '../../../lib/domain.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import SubgroupPicker from './SubgroupPicker.tsx';
@@ -58,7 +58,7 @@ interface Pointer {
 const chipStyle = (color: number) =>
   ({ '--chip': chipColor(color) }) as CSSProperties;
 const chipClassName =
-  'group-chip flex rounded-[var(--u-radius)] bg-[var(--chip)] [color:var(--u-category-ink)] compact:max-w-44 compact:flex-1';
+  'group-chip flex h-11 rounded-[var(--u-radius)] bg-[var(--chip)] [color:var(--u-category-ink)] compact:max-w-44 compact:flex-1';
 const chipWidth = (selection: Selection) =>
   selectionKind(selection) === 'lecturer'
     ? 'w-max min-w-40 max-w-64 compact:flex-none'
@@ -352,16 +352,19 @@ export default function GroupStrip(props: Props) {
                       title={`${kindLabel(selectionKind(group))}: ${group.label}`}
                       aria-label={`Управлять расписанием ${group.label}`}
                     >
-                      <span
-                        className="shrink-0"
-                        title={kindLabel(selectionKind(group))}
-                      >
-                        <Icon name={kindIcon(selectionKind(group))} size={14} />
-                      </span>
-                      <strong className="resource-name block min-w-0 text-left text-[13px] leading-4 whitespace-normal wrap-anywhere">
-                        {selectionKind(group) === 'vuc'
-                          ? group.label.replace(/^ВУЦ\s*·\s*/iu, '')
-                          : group.label}
+                      {selectionKind(group) !== 'vuc' && (
+                        <span
+                          className="shrink-0"
+                          title={kindLabel(selectionKind(group))}
+                        >
+                          <Icon
+                            name={kindIcon(selectionKind(group))}
+                            size={14}
+                          />
+                        </span>
+                      )}
+                      <strong className="resource-name block min-w-0 text-left text-xs leading-4 font-semibold whitespace-normal wrap-anywhere">
+                        {selectionLabel(group)}
                       </strong>
                       {hiddenKinds.includes(selectionKind(group)) && (
                         <Icon name="hidden" size={11} />

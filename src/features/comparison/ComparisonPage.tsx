@@ -26,6 +26,7 @@ import DayAgenda from '../schedule/ui/DayAgenda.tsx';
 import type { ScheduleKind, Selection } from '../../lib/types.ts';
 import { scheduleKey, selectionKind } from '../../lib/schedule-ref.ts';
 import VucSources from '../resources/VucSources.tsx';
+import VucCatalogue from '../resources/VucCatalogue.tsx';
 import { nearestVucDate } from '../../lib/vuc-navigation.ts';
 import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
@@ -35,7 +36,11 @@ import ScheduleViewPicker, {
 const compactQuery =
   '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
 
-export default function ComparisonPage() {
+export default function ComparisonPage({
+  vucOnly = false,
+}: {
+  vucOnly?: boolean;
+}) {
   const manager = Toast.useToastManager();
   const searchMutation = useRef(false);
   const notify = useCallback<Notify>(
@@ -45,15 +50,17 @@ export default function ComparisonPage() {
     },
     [manager],
   );
-  const { view, links, source, colors, subgroupCatalog } =
-    useComparison(notify);
+  const { view, links, source, colors, subgroupCatalog } = useComparison(
+    notify,
+    vucOnly,
+  );
   const pwa = usePwa();
   const [theme, setTheme] = useState<Appearance>(
     document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
   const [scheduleView, setScheduleView] = useState<ScheduleView>(() =>
-    matchMedia(compactQuery).matches ? 'day' : 'week',
+    vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week',
   );
   const [dayFormat, setDayFormat] = useState<'timeline' | 'list'>('timeline');
   const [spotlightGroupIds, setSpotlightGroupIds] = useState<string[]>([]);
@@ -141,8 +148,8 @@ export default function ComparisonPage() {
     track('theme_changed', { theme: next });
   }
   useEffect(() => {
-    document.title = `Кампус — ${groups.length ? groups.map((group) => group.label).join(' + ') : 'найдём время пересечься'}`;
-  }, [groups]);
+    document.title = `${vucOnly ? 'ВУЦ · ' : ''}Кампус — ${groups.length ? groups.map((group) => group.label).join(' + ') : 'найдём время пересечься'}`;
+  }, [groups, vucOnly]);
   useEffect(() => {
     void initAnalytics();
     const size = matchMedia(compactQuery);
@@ -226,6 +233,7 @@ export default function ComparisonPage() {
         </a>
         <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
           <SiteHeader
+            vucOnly={vucOnly}
             theme={theme}
             onToggleTheme={toggleTheme}
             viewControl={
@@ -254,7 +262,22 @@ export default function ComparisonPage() {
                 Нет сети. Доступны сохранённые расписания.
               </p>
             )}
-            <h1 className="sr-only">Сравнение расписаний ОмГТУ</h1>
+            <h1 className="sr-only">
+              {vucOnly
+                ? 'Сравнение расписаний ВУЦ'
+                : 'Сравнение расписаний ОмГТУ'}
+            </h1>
+            {vucOnly && (
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                <strong className="text-lg">ВУЦ</strong>
+                <a
+                  href="/"
+                  className="inline-flex min-h-9 items-center underline"
+                >
+                  ← Все расписания
+                </a>
+              </div>
+            )}
             {links.error ? (
               <Card.Root
                 id="comparison"
@@ -286,6 +309,7 @@ export default function ComparisonPage() {
                   aria-busy={busy}
                 >
                   <GroupPicker
+                    vucOnly={vucOnly}
                     hiddenKinds={hiddenKinds}
                     selected={groups}
                     onAdd={(selection) =>
@@ -435,6 +459,12 @@ export default function ComparisonPage() {
                           />
                         )}
                       </>
+                    ) : vucOnly ? (
+                      <VucCatalogue
+                        onAdd={(selection) =>
+                          fromSearch(() => addSchedule(selection))
+                        }
+                      />
                     ) : (
                       <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
                         <img
@@ -492,11 +522,12 @@ export default function ComparisonPage() {
           <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted compact:text-[10px]">
             <a
               className="inline-flex items-center gap-[5px] no-underline hover:underline"
-              href="https://rasp.omgtu.ru"
+              href={vucOnly ? 'https://vuc.omgtu.ru' : 'https://rasp.omgtu.ru'}
               target="_blank"
               rel="noreferrer"
             >
-              Источник расписания <Icon name="external" size={13} />
+              {vucOnly ? 'Сайт ВУЦ' : 'Источник расписания'}{' '}
+              <Icon name="external" size={13} />
             </a>
           </footer>
         </div>

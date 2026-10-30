@@ -1,5 +1,5 @@
 import type { Lesson, Selection, Subgroup } from './types.ts';
-import { isGroup } from './schedule-ref.ts';
+import { compactVucLabel, isGroup } from './schedule-ref.ts';
 
 export function publicSubgroup(label: string): number | undefined {
   const value = Number(/\/(\d{1,2})$/.exec(label)?.[1]);
@@ -21,6 +21,7 @@ export function selectedSubgroup(
 }
 
 export function selectionLabel(selection: Selection): string {
+  if (selection.kind === 'vuc') return compactVucLabel(selection.label);
   return isGroup(selection) && selection.subgroupNumber
     ? `${selection.label}/${selection.subgroupNumber}`
     : selection.label;
@@ -33,7 +34,10 @@ export function lessonGroupLabel(
   lessons: Lesson[],
   catalog: Subgroup[],
 ): string {
-  if (!isGroup(selection)) return selection.label;
+  if (!isGroup(selection))
+    return selection.kind === 'vuc'
+      ? compactVucLabel(selection.label)
+      : selection.label;
   if (lessons.some((lesson) => !lesson.subgroups.length))
     return selection.label;
   const ids = new Set(lessons.flatMap((lesson) => lesson.subgroups));

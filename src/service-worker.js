@@ -119,6 +119,7 @@ self.addEventListener('fetch', (event) => {
     request.mode === 'navigate' &&
     (url.pathname === '/' ||
       url.pathname === '/compare' ||
+      url.pathname === '/vuc' ||
       /^\/s\/[A-Za-z0-9_-]{12}\/?$/.test(url.pathname) ||
       /^\/(?:g\d{1,8}|~?[a-z_]{1,112}-\d{2,5})(?:-(?:s\d{1,2}|sid\d{1,8}))?(?:\+(?:g\d{1,8}|~?[a-z_]{1,112}-\d{2,5})(?:-(?:s\d{1,2}|sid\d{1,8}))?){0,29}\/?$/i.test(
         url.pathname,

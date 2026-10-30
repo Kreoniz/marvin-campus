@@ -159,3 +159,18 @@
     min-height: 320px;
   }
 }
+
+/* Hover previews and pressed cards keep an explicit anchor, including resources
+   whose decorative inset shadows otherwise replace utility hover shadows. */
+.lesson-position[data-popup-open] {
+  z-index: 4;
+}
+.lesson-card:is(:hover, :focus-visible, [aria-expanded='true']) {
+  outline: 2px solid var(--u-ink);
+  outline-offset: 1px;
+}
+@media (forced-colors: active) {
+  .lesson-card:is(:hover, :focus-visible, [aria-expanded='true']) {
+    outline-color: Highlight;
+  }
+}

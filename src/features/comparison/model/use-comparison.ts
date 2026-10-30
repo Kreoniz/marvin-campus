@@ -245,7 +245,17 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
   };
 }
 
-export function useComparison(notify: Notify) {
+function rememberSelection(selection: Selection[], vucOnly: boolean) {
+  if (!vucOnly) {
+    rememberGroups(selection);
+    return;
+  }
+  try {
+    localStorage.setItem('campus-vuc-selection', JSON.stringify(selection));
+  } catch {}
+}
+
+export function useComparison(notify: Notify, vucOnly = false) {
   const client = useQueryClient();
   const [state, setState] = useState(initialView);
   const stateRef = useRef(state);
@@ -284,6 +294,7 @@ export function useComparison(notify: Notify) {
       const groups = stateRef.current.groups;
       if (
         !validSelection(selection) ||
+        (vucOnly && selection.kind !== 'vuc') ||
         groups.length >= 30 ||
         groups.some(
           (existing) => scheduleKey(existing) === scheduleKey(selection),
@@ -432,7 +443,7 @@ export function useComparison(notify: Notify) {
         });
       },
     };
-  }, []);
+  }, [vucOnly]);
 
   const [linkState, setLinkState] = useState(() => ({
     opening: typeof location !== 'undefined' && location.pathname !== '/',
@@ -451,7 +462,7 @@ export function useComparison(notify: Notify) {
     function canonicalize() {
       if (linkRef.current.opening || linkRef.current.error) return;
       const value = view.current();
-      rememberGroups(value.groups);
+      rememberSelection(value.groups, vucOnly);
       history.replaceState(
         { campusView: value },
         '',
@@ -481,7 +492,7 @@ export function useComparison(notify: Notify) {
       sync() {
         update({ manual: '' });
         const value = view.current();
-        rememberGroups(value.groups);
+        rememberSelection(value.groups, vucOnly);
         history.pushState(
           { campusView: value },
           '',
@@ -492,7 +503,10 @@ export function useComparison(notify: Notify) {
         if (linkRef.current.sharing) return;
         update({ sharing: true, manual: '' });
         const value = view.current(),
-          url = viewURL(value, new URL(location.origin)).href;
+          url = viewURL(
+            value,
+            new URL(location.pathname, location.origin),
+          ).href;
         canonicalize();
         try {
           // No await before writeText: preserve Safari's clipboard activation.
@@ -526,7 +540,7 @@ export function useComparison(notify: Notify) {
         }
       },
     };
-  }, [view]);
+  }, [view, vucOnly]);
   changedRef.current = links.sync;
 
   useEffect(() => {
@@ -546,13 +560,27 @@ export function useComparison(notify: Notify) {
         if (!id && url.pathname.startsWith('/s/'))
           throw new Error('Ссылка на сравнение не найдена.');
         const readable = readableGroups(url);
-        const value = id
+        let value = id
           ? normalizeView(await readShare(id, signal))
           : readable !== undefined
             ? await resolveReadable(url, client, signal)
             : parseView(url);
         if (signal.aborted) return;
-        if (url.pathname === '/compare' && !value.groups.length)
+        if (vucOnly && !url.searchParams.has('s')) {
+          try {
+            value = normalizeView({
+              ...value,
+              groups: JSON.parse(
+                localStorage.getItem('campus-vuc-selection') ?? '[]',
+              ).filter((ref: Selection) => ref?.kind === 'vuc'),
+            });
+          } catch {}
+        }
+        if (
+          (url.pathname === '/compare' ||
+            (url.pathname === '/vuc' && url.searchParams.has('s'))) &&
+          !value.groups.length
+        )
           throw new Error('Некорректная ссылка на сравнение.');
         view.apply(value);
         if (id || readable !== undefined) {
@@ -598,7 +626,13 @@ export function useComparison(notify: Notify) {
         history.replaceState({ campusView: view.current() }, '', location.href);
     }
     function onBack(event: PopStateEvent) {
-      if (!event.state?.campusView) {
+      if (
+        !event.state?.campusView ||
+        (vucOnly &&
+          event.state.campusView.groups?.some(
+            (ref: Selection) => ref?.kind !== 'vuc',
+          ))
+      ) {
         void openLocation(new URL(location.href));
         return;
       }
@@ -614,7 +648,7 @@ export function useComparison(notify: Notify) {
       retryOpeningRef.current = undefined;
       window.removeEventListener('popstate', onBack);
     };
-  }, [client, links, view]);
+  }, [client, links, view, vucOnly]);
 
   const source = useSchedules(
     state.groups,

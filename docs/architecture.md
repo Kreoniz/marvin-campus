@@ -100,3 +100,12 @@ a fresh link rather than an arbitrary choice of the first matching group.
 subgroup without a public number uses `sidID`. Old `/s/id` comparisons already
 contain source IDs and remain readable. Duplicate catalog names with distinct
 source IDs must be resolved through explicit selection, never first-match lookup.
+
+`/vuc` reuses `ComparisonPage` with a VUC-only catalogue and selection boundary.
+Typed URLs retain that page context, while mixed comparisons keep `/compare`.
+Its saved selection uses a separate local key; canonical source IDs and the
+existing configured-document API remain unchanged. `MilitaryPreview` reads
+same-date VUC data within academic military-preparation details; its remembered
+personal choice is presentation state, independent of comparison participants.
+Popover hover, safe pointer travel and press semantics build on Base UI;
+Campus explicitly pins an open preview on its first press.

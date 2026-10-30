@@ -24,6 +24,7 @@ export function readableGroups(url: URL): GroupRequest[] | undefined {
   if (
     url.pathname === '/' ||
     url.pathname === '/compare' ||
+    url.pathname === '/vuc' ||
     url.pathname.startsWith('/s/')
   )
     return;
@@ -73,7 +74,7 @@ export function parseView(
 ): ViewState {
   const groups: Selection[] = [];
   const requests = readableGroups(url);
-  if (url.pathname === '/compare') {
+  if (url.pathname === '/compare' || url.pathname === '/vuc') {
     const encoded = url.searchParams.getAll('s');
     if (encoded.length <= 30) {
       for (const entry of encoded) {
@@ -85,7 +86,7 @@ export function parseView(
           break;
         }
         const parsed = cleanSelection(candidate);
-        if (!parsed) {
+        if (!parsed || (url.pathname === '/vuc' && parsed.kind !== 'vuc')) {
           groups.length = 0;
           break;
         }
@@ -241,21 +242,25 @@ function cleanSelection(value: unknown): Selection | undefined {
 export function viewURL(state: ViewState, base: URL): URL {
   const url = new URL(base);
   const typed = state.groups.some((group) => !isGroup(group));
-  url.pathname = typed
-    ? '/compare'
-    : '/' +
-      state.groups
-        .filter(isGroup)
-        .map(
-          (group) =>
-            groupSlug(group) +
-            (group.subgroupNumber
-              ? `-s${group.subgroupNumber}`
-              : group.subgroup
-                ? `-sid${group.subgroup}`
-                : ''),
-        )
-        .join('+');
+  url.pathname =
+    base.pathname === '/vuc' &&
+    state.groups.every((group) => group.kind === 'vuc')
+      ? '/vuc'
+      : typed
+        ? '/compare'
+        : '/' +
+          state.groups
+            .filter(isGroup)
+            .map(
+              (group) =>
+                groupSlug(group) +
+                (group.subgroupNumber
+                  ? `-s${group.subgroupNumber}`
+                  : group.subgroup
+                    ? `-sid${group.subgroup}`
+                    : ''),
+            )
+            .join('+');
   url.search = '';
   url.hash = '';
   url.searchParams.set('d', state.day);

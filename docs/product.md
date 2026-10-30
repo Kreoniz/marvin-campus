@@ -234,3 +234,17 @@ weeks while preserving the selected weekday; week controls also support
 Left/Right. Commands are scoped to navigation controls and do not intercept
 typing, native selects or open dialogs. Ordinary keyboard access works at every
 viewport width; the small command set adds no hotkey dependency.
+
+Lesson hover previews use the library's pointer-safe region. A first click pins
+an open preview; a second click, Escape, Close or outside press dismisses it.
+Moving from the card into its popup keeps the preview available. Hovered,
+keyboard-focused and popup-owning cards retain a visible outline, including
+resource cards with decorative inset shadows. Resource names use quieter 12px
+selection-chip text. VUC chips show the compact source label without a shield
+or repeated “взвод” caption and keep the same 44px height.
+
+The dedicated `/vuc` page compares VUC sources only, using the same calendar,
+list, scope and data-status components with a separate saved selected set.
+The general calendar still accepts mixed VUC selections. Military-preparation
+lesson details can preview one personally chosen VUC schedule for the same date;
+this preference does not join a comparison or infer a group-to-platoon mapping.

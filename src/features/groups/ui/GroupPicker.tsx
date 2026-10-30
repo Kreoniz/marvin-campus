@@ -31,6 +31,7 @@ import {
 
 interface Props {
   selected: Selection[];
+  vucOnly?: boolean;
   hiddenKinds?: ScheduleKind[];
   onAdd: (selection: Selection) => void;
   children: ReactNode;
@@ -55,6 +56,7 @@ const plurals: Record<ScheduleKind, string> = {
 
 export default function GroupPicker({
   selected,
+  vucOnly = false,
   hiddenKinds = [],
   onAdd,
   children,
@@ -76,7 +78,7 @@ export default function GroupPicker({
   const input = useRef<HTMLInputElement>(null);
   const searchId = useId();
   const term = query.trim().toUpperCase();
-  const showManagement = managing || !term;
+  const showManagement = managing || (!term && !vucOnly);
   useEffect(() => {
     if (!open) return;
     setManaging(!!focusScheduleKey);
@@ -89,16 +91,19 @@ export default function GroupPicker({
           ?.focus(),
       );
   }, [open, focusScheduleKey]);
-  const enabled = open && term.length >= 2 && term === debounced;
+  const enabled = open && (vucOnly || term.length >= 2) && term === debounced;
   const selectedKeys = new Set(selected.map(scheduleKey));
-  const groups = useQuery({ ...groupOptions(debounced), enabled });
+  const groups = useQuery({
+    ...groupOptions(debounced),
+    enabled: enabled && !vucOnly,
+  });
   const lecturers = useQuery({
     ...resourceSearchOptions('lecturer', debounced),
-    enabled,
+    enabled: enabled && !vucOnly,
   });
   const rooms = useQuery({
     ...resourceSearchOptions('auditorium', debounced),
-    enabled,
+    enabled: enabled && !vucOnly,
   });
   const vuc = useQuery({ ...vucSearchOptions(debounced), enabled });
   const sources = [
@@ -106,7 +111,7 @@ export default function GroupPicker({
     { kind: 'lecturer' as const, query: lecturers },
     { kind: 'auditorium' as const, query: rooms },
     { kind: 'vuc' as const, query: vuc },
-  ];
+  ].filter((source) => !vucOnly || source.kind === 'vuc');
   const now = Math.max(clock, Date.now());
   const deadlines = sources.flatMap(({ query: search }) => {
     const expires = Date.parse(search.data?.expiresAt ?? '');
@@ -123,13 +128,13 @@ export default function GroupPicker({
     return () => clearTimeout(timer);
   }, [open, changeAt]);
   useEffect(() => {
-    if (!open || term.length < 2) {
+    if (!open || (!vucOnly && term.length < 2)) {
       setDebounced('');
       return;
     }
     const timer = setTimeout(() => setDebounced(term), 300);
     return () => clearTimeout(timer);
-  }, [term, open]);
+  }, [term, open, vucOnly]);
   const visible: SearchResult[] = !enabled
     ? []
     : sources
@@ -159,7 +164,7 @@ export default function GroupPicker({
         );
   const loading =
     open &&
-    term.length >= 2 &&
+    (vucOnly || term.length >= 2) &&
     (term !== debounced ||
       sources.some(
         ({ query: search }) =>
@@ -185,7 +190,7 @@ export default function GroupPicker({
         return message ? [{ kind, message, query: search }] : [];
       });
   const status =
-    term.length < 2
+    !vucOnly && term.length < 2
       ? 'Группа, фамилия, аудитория или взвод — от 2 символов.'
       : loading
         ? 'Ищем расписания…'
@@ -221,7 +226,7 @@ export default function GroupPicker({
       >
         <div className="mb-1 flex shrink-0 items-center justify-between gap-3">
           <Dialog.Title className="m-0 text-xl leading-6">
-            Расписания
+            {vucOnly ? 'Расписания ВУЦ' : 'Расписания'}
           </Dialog.Title>
           <Dialog.Close
             render={
@@ -236,6 +241,14 @@ export default function GroupPicker({
             <Icon name="close" />
           </Dialog.Close>
         </div>
+        {!vucOnly && (
+          <a
+            href="/vuc"
+            className="mb-1 inline-flex min-h-8 shrink-0 items-center text-xs underline"
+          >
+            Отдельное сравнение ВУЦ →
+          </a>
+        )}
         <Dialog.Description className="sr-only">
           Найди группу, преподавателя, аудиторию или взвод ВУЦ. Все расписания
           добавляются в один календарь.
@@ -245,7 +258,7 @@ export default function GroupPicker({
             className="mt-1 mb-1 block text-sm font-semibold"
             htmlFor={searchId}
           >
-            Что найти
+            {vucOnly ? 'Номер ВУЦ' : 'Что найти'}
           </Field.Label>
           <Combobox.Root<SearchResult>
             inline
@@ -286,12 +299,14 @@ export default function GroupPicker({
                 className="min-h-11 w-full pl-10 text-base"
                 id={searchId}
                 ref={input}
-                placeholder="ФИТ-232, Иванов, 8-201, ВУЦ"
+                placeholder={
+                  vucOnly ? 'Например, 431' : 'ФИТ-232, Иванов, 8-201, ВУЦ'
+                }
                 autoComplete="off"
               />
             </div>
             <div className="mt-1 shrink-0">
-              {managing && term ? (
+              {managing && (term || vucOnly) ? (
                 <Button
                   variant="ghost"
                   className="min-h-11 text-sm"
@@ -307,7 +322,7 @@ export default function GroupPicker({
                   <Icon name="left" size={16} />
                   Назад к поиску
                 </Button>
-              ) : term ? (
+              ) : term || vucOnly ? (
                 <Button
                   variant="ghost"
                   className="min-h-11 text-sm"

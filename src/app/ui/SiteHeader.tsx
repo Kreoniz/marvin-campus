@@ -5,11 +5,13 @@ import IconButton from '../../shared/ui/IconButton.tsx';
 
 export default function SiteHeader({
   theme,
+  vucOnly = false,
   onToggleTheme,
   viewControl,
   settingsControl,
 }: {
   theme: string;
+  vucOnly?: boolean;
   onToggleTheme: () => void;
   viewControl?: ReactNode;
   settingsControl: ReactNode;
@@ -37,9 +39,25 @@ export default function SiteHeader({
           </Badge>
         </span>
       </a>
-      <span className="mr-auto text-sm text-u-muted max-[1000px]:hidden">
-        Расписание ОмГТУ
-      </span>
+      <nav
+        className="mr-auto flex items-center gap-3 text-sm max-[1000px]:hidden"
+        aria-label="Разделы расписаний"
+      >
+        <a
+          href="/"
+          aria-current={!vucOnly ? 'page' : undefined}
+          className={!vucOnly ? 'font-semibold' : 'text-u-muted'}
+        >
+          Расписания
+        </a>
+        <a
+          href="/vuc"
+          aria-current={vucOnly ? 'page' : undefined}
+          className={vucOnly ? 'font-semibold' : 'text-u-muted'}
+        >
+          ВУЦ
+        </a>
+      </nav>
       <div
         className="space-doodle hidden min-[1300px]:flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
         aria-hidden="true"
