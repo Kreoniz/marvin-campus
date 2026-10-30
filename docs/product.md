@@ -242,8 +242,10 @@ viewport width; the small command set adds no hotkey dependency.
 
 Lesson hover previews use the library's pointer-safe region. A first click pins
 an open preview; a second click, Escape, Close or outside press dismisses it.
-Moving from the card into its popup keeps the preview available. Hovered,
-keyboard-focused and popup-owning cards retain a visible outline, including
+Moving from the card into its popup keeps the preview available.
+Compact fine-pointer previews open beside the card when a side fits; otherwise
+details require a press. Touch popups may overlap tall cards to remain bounded.
+Hovered, keyboard-focused and popup-owning cards retain a visible outline, including
 resource cards with decorative inset shadows. Resource names use quieter 12px
 selection-chip text. VUC chips show the compact source label without a shield
 or repeated “взвод” caption and keep the same 44px height.
