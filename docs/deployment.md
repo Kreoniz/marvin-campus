@@ -4,6 +4,30 @@ Deployment remains manual. GitHub CI validates the repository; automatic deliver
 is deferred by the owner's choice while GitHub Actions billing is unavailable.
 No deployment credentials or SSH key installation is required for this release.
 
+## Current release 2026 10 30
+
+The approved calendar UI is active at <https://campus.kreoniz.ru> from revision
+`cf8dffa29446d7176d4ad33b19ffcd7e63565780`, image
+`marvin-campus:cf8dffa29446d7176d4ad33b19ffcd7e63565780` with image ID
+`sha256:6018701a838d9d6fcd21d77b2ee6329f6bda918a7cc195dfb9a8e1ebd9bb98d4`.
+The compressed image archive SHA-256 is
+`7e4f119f7d38f7d141c60e1f11789568227c1e6e2f5e179860660be0a9f300ac`.
+
+The manual receiver verified provenance, created a consistent SQLite backup,
+activated a healthy container and preserved the count and digest of all 108
+legacy comparisons. Production Compose, networking, the named volume and all
+non-image environment settings were retained. Independent HTTPS verification
+matched all 35 built file hashes, health and two app-shell routes. The previous
+`marvin-campus:2026-10-24-ui-1` image remains available for rollback.
+
+Release checks passed: 76 frontend tests, TypeScript, lint, tracked-tree
+formatting, build, Go race tests/vet, 17 receiver validation/rollback tests and
+privacy/history/Gitleaks scans. [PR 3](https://github.com/Kreoniz/marvin-campus/pull/3)
+was merged into `main` as `94d082a6fb975ab211498da0bbf6cc74f77913b3`; the local
+animation and teacher/room work is separate.
+GitHub Actions jobs remain blocked by account payments/spending limits, and the
+owner chose manual delivery. No deployment secrets were installed in GitHub.
+
 ## Release artifact
 
 Build from the exact committed tracked tree. Keep local reports, environment
