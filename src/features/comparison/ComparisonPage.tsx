@@ -9,12 +9,12 @@ import { useComparison, type Notify } from './model/use-comparison.ts';
 import { initAnalytics, track } from '../../lib/analytics.ts';
 import { usePwa, updatePwa } from '../../lib/pwa.ts';
 import { scheduleNavigation } from '../../lib/keyboard.ts';
+import useScheduleHotkeys from './model/use-schedule-hotkeys.ts';
 import SiteHeader from '../../app/ui/SiteHeader.tsx';
 import GroupPicker, { GroupPickerTrigger } from '../groups/ui/GroupPicker.tsx';
 import ComparisonToolbar from './ui/ComparisonToolbar.tsx';
 import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
-import MobileComparisonPanel from './ui/MobileComparisonPanel.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
 import SourceDayCalendar from '../schedule/ui/SourceDayCalendar.tsx';
 import ComparisonSummary from './ui/ComparisonSummary.tsx';
@@ -72,6 +72,19 @@ export default function ComparisonPage({
   });
   const [orderFocus, setOrderFocus] = useState('');
   const [hiddenKinds, setHiddenKinds] = useState<ScheduleKind[]>([]);
+  const [vimHotkeys, setVimHotkeys] = useState(() => {
+    try {
+      return localStorage.getItem('campus-vim-hotkeys') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  function toggleVimHotkeys(value: boolean) {
+    setVimHotkeys(value);
+    try {
+      localStorage.setItem('campus-vim-hotkeys', value ? 'on' : 'off');
+    } catch {}
+  }
   const groups = view.groups,
     week = view.week,
     day = view.day,
@@ -137,6 +150,16 @@ export default function ComparisonPage({
     setScheduleView(value);
     track('mobile_view_changed', { view: value });
   }
+
+  useScheduleHotkeys({
+    view,
+    enabled: vimHotkeys && !links.opening && !links.error,
+    onSearch: () => {
+      setOrderFocus('');
+      setOrderOpen(true);
+    },
+    onView: selectFormat,
+  });
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -247,6 +270,8 @@ export default function ComparisonPage({
             }
             settingsControl={
               <DisplaySettings
+                vimHotkeys={vimHotkeys}
+                onVimHotkeys={toggleVimHotkeys}
                 layers={layers}
                 onLayers={setLayers}
                 hiddenKinds={hiddenKinds}
@@ -267,17 +292,6 @@ export default function ComparisonPage({
                 ? 'Сравнение расписаний ВУЦ'
                 : 'Сравнение расписаний ОмГТУ'}
             </h1>
-            {vucOnly && (
-              <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                <strong className="text-lg">ВУЦ</strong>
-                <a
-                  href="/"
-                  className="inline-flex min-h-9 items-center underline"
-                >
-                  ← Все расписания
-                </a>
-              </div>
-            )}
             {links.error ? (
               <Card.Root
                 id="comparison"
@@ -357,19 +371,55 @@ export default function ComparisonPage({
                             showWeekControls={mobile}
                           />
                         )}
-                        {mobile ? (
-                          <MobileComparisonPanel
-                            view={view}
-                            schedules={source.schedules}
-                            loading={busy}
-                            opening={links.opening}
-                          />
-                        ) : (
+                        {!mobile && !vucOnly && (
                           <ComparisonStatus
                             schedules={source.schedules}
                             day={day}
                             fetching={links.opening || source.fetching}
                             links={links}
+                          />
+                        )}
+                        {scheduleView === 'list' ? (
+                          <DayAgenda
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            day={day}
+                            loading={busy}
+                            placeholder={links.opening}
+                            spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
+                          />
+                        ) : scheduleView === 'day' ? (
+                          <SourceDayCalendar
+                            vucOnly={vucOnly}
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            day={day}
+                            layers={layers}
+                            loading={busy}
+                            placeholder={links.opening}
+                            compact={mobile}
+                            spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
+                          />
+                        ) : (
+                          <Calendar
+                            vucOnly={vucOnly}
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            week={week}
+                            day={day}
+                            layers={layers}
+                            loading={busy}
+                            placeholder={links.opening}
+                            onDay={view.selectDay}
+                            compact={mobile}
+                            singleDay={false}
+                            spotlightIds={spotlightIds}
+                            hiddenKinds={hiddenKinds}
                           />
                         )}
                         {groups.some((group) =>
@@ -392,13 +442,8 @@ export default function ComparisonPage({
                             </Button>
                           </div>
                         )}
-                        <VucSources
-                          schedules={source.schedules}
-                          day={day}
-                          onSelectDate={view.selectDate}
-                        />
-                        {(mobile || scheduleView !== 'week') && (
-                          <div className="border-t border-u-line-soft px-3 py-2">
+                        {(mobile || vucOnly || scheduleView !== 'week') && (
+                          <div className="calendar-result px-3 py-2">
                             <ComparisonSummary
                               schedules={source.schedules}
                               hiddenKinds={hiddenKinds}
@@ -410,48 +455,12 @@ export default function ComparisonPage({
                             />
                           </div>
                         )}
-                        {scheduleView === 'list' ? (
-                          <DayAgenda
-                            schedules={source.schedules}
-                            colors={colors}
-                            subgroupCatalog={subgroupCatalog}
-                            day={day}
-                            loading={busy}
-                            placeholder={links.opening}
-                            spotlightIds={spotlightIds}
-                            hiddenKinds={hiddenKinds}
-                          />
-                        ) : scheduleView === 'day' ? (
-                          <SourceDayCalendar
-                            schedules={source.schedules}
-                            colors={colors}
-                            subgroupCatalog={subgroupCatalog}
-                            day={day}
-                            layers={layers}
-                            loading={busy}
-                            placeholder={links.opening}
-                            compact={mobile}
-                            spotlightIds={spotlightIds}
-                            hiddenKinds={hiddenKinds}
-                          />
-                        ) : (
-                          <Calendar
-                            schedules={source.schedules}
-                            colors={colors}
-                            subgroupCatalog={subgroupCatalog}
-                            week={week}
-                            day={day}
-                            layers={layers}
-                            loading={busy}
-                            placeholder={links.opening}
-                            onDay={view.selectDay}
-                            compact={mobile}
-                            singleDay={false}
-                            spotlightIds={spotlightIds}
-                            hiddenKinds={hiddenKinds}
-                          />
-                        )}
-                        {mobile && (
+                        <VucSources
+                          schedules={source.schedules}
+                          day={day}
+                          onSelectDate={view.selectDate}
+                        />
+                        {(mobile || vucOnly) && (
                           <ComparisonStatus
                             schedules={source.schedules}
                             day={day}
@@ -507,6 +516,7 @@ export default function ComparisonPage({
                 </Card.Root>
                 {(groups.length > 0 || links.opening) &&
                   !mobile &&
+                  !vucOnly &&
                   scheduleView === 'week' && (
                     <DayDetail
                       schedules={source.schedules}
@@ -528,7 +538,7 @@ export default function ComparisonPage({
               </>
             )}
           </main>
-          <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted compact:text-[10px]">
+          <footer className="app-footer my-4 flex justify-end text-[11px] text-u-muted compact:text-[10px]">
             <a
               className="inline-flex items-center gap-[5px] no-underline hover:underline"
               href={vucOnly ? 'https://vuc.omgtu.ru' : 'https://rasp.omgtu.ru'}

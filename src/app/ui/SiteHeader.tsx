@@ -78,7 +78,7 @@ export default function SiteHeader({
         </span>
       </div>
       <div className="ml-auto flex shrink-0 items-center">{viewControl}</div>
-      <div className="header-actions flex shrink-0 gap-0.5 compact:[&_.icon-button]:size-11 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
+      <div className="header-actions flex shrink-0 items-center gap-0.5 compact:[&_.icon-button]:size-11 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}
@@ -88,8 +88,8 @@ export default function SiteHeader({
           aria-pressed={theme === 'dark'}
           onClick={onToggleTheme}
         />
+        {settingsControl}
       </div>
-      {settingsControl}
     </header>
   );
 }

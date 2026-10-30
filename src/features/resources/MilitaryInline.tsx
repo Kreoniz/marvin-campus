@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import { compactVucLabel } from '../../lib/schedule-ref.ts';
 import useMilitarySchedule from './use-military-schedule.ts';
 
@@ -13,9 +14,41 @@ export default function MilitaryInline({ date }: { date: string }) {
     catalogue,
     expired,
   } = useMilitarySchedule(date);
+  const body = useRef<HTMLSpanElement>(null);
+  const entries = useRef<HTMLSpanElement>(null);
+  const [capacity, setCapacity] = useState(0);
+  const hasSnapshot = !!snapshot;
+  const contentKey = JSON.stringify(
+    lessons.map((lesson) => [
+      lesson.id,
+      times(lesson),
+      lesson.subject,
+      lesson.room,
+    ]),
+  );
+  useLayoutEffect(() => {
+    const viewport = body.current;
+    const list = entries.current;
+    if (!viewport || !list) return;
+    const measure = () => {
+      if (!viewport.isConnected) return;
+      const rows = Array.from(list.children) as HTMLElement[];
+      setCapacity(
+        rows.filter(
+          (row) => row.offsetTop + row.offsetHeight <= viewport.clientHeight,
+        ).length,
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    observer.observe(list);
+    void document.fonts.ready.then(measure);
+    return () => observer.disconnect();
+  }, [contentKey, hasSnapshot]);
   return (
-    <span className="military-inline relative z-[1] mt-2 hidden flex-none border-t border-u-line-soft pt-2 text-[10px] leading-[1.35] [@container(height>=320px)]:block">
-      <strong className="line-clamp-1 text-xs">
+    <span className="military-inline relative z-[1] mt-2 hidden min-h-0 flex-1 flex-col border-t border-u-line-soft pt-2 text-[10px] leading-[1.35] [@container(height>=240px)]:flex">
+      <strong className="line-clamp-1 shrink-0 text-xs">
         {ref ? `Моё ${compactVucLabel(ref.label)}` : 'Моё расписание ВУЦ'}
       </strong>
       {!ref ? (
@@ -30,7 +63,7 @@ export default function MilitaryInline({ date }: { date: string }) {
         <span className="mt-1 block">Нет доступных данных · подробнее →</span>
       ) : (
         <>
-          <span className="military-status mt-1 block opacity-80">
+          <span className="military-status mt-1 block shrink-0 opacity-80">
             {!covered || unresolved
               ? 'Документ · данные неполные'
               : !lessons.length
@@ -38,30 +71,34 @@ export default function MilitaryInline({ date }: { date: string }) {
                 : 'По документу'}
             {result.error ? ' · сохранённые данные' : ''}
           </span>
-          {lessons.length > 1 && (
-            <span className="military-remainder mt-1 block [@container(height>=520px)]:hidden">
-              Ещё {lessons.length - 1} · подробнее →
+          <span
+            ref={body}
+            className="military-body relative min-h-0 flex-1 overflow-hidden"
+          >
+            <span ref={entries} className="absolute inset-x-0 top-0 block">
+              {lessons.map((lesson, index) => (
+                <span
+                  className="military-entry mt-2 block border-l-2 border-u-line pl-1.5"
+                  key={lesson.id}
+                  style={{
+                    visibility: index < capacity ? 'visible' : 'hidden',
+                  }}
+                  aria-hidden={index >= capacity}
+                >
+                  <span className="block tabular-nums">{times(lesson)}</span>
+                  <strong className="line-clamp-2">{lesson.subject}</strong>
+                  {lesson.room && (
+                    <span className="line-clamp-1">{lesson.room}</span>
+                  )}
+                </span>
+              ))}
             </span>
-          )}
-          {lessons.length > 2 && (
-            <span className="military-remainder mt-1 hidden [@container(height>=520px)]:block">
-              Ещё {lessons.length - 2} · подробнее →
-            </span>
-          )}
-          {lessons.slice(0, 2).map((lesson, index) => (
-            <span
-              className={`military-entry mt-2 border-l-2 border-u-line pl-1.5 ${index === 0 ? 'block' : 'hidden [@container(height>=520px)]:block'}`}
-              key={lesson.id}
-            >
-              <span className="line-clamp-1 tabular-nums" title={times(lesson)}>
-                {times(lesson)}
-              </span>
-              <strong className="line-clamp-2">{lesson.subject}</strong>
-              {lesson.room && (
-                <span className="line-clamp-1">{lesson.room}</span>
-              )}
-            </span>
-          ))}
+          </span>
+          <span className="military-remainder block min-h-[14px] shrink-0">
+            {lessons.length > capacity
+              ? `Ещё ${lessons.length - capacity} · подробнее →`
+              : ''}
+          </span>
         </>
       )}
     </span>

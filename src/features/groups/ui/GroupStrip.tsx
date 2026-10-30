@@ -285,7 +285,7 @@ export default function GroupStrip(props: Props) {
     );
     return (
       <div
-        className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue ? 'outline-2 outline-(--u-danger)' : ''} ${!ghost && drag?.id === scheduleKey(group) ? 'opacity-35' : ''} ${ghost ? 'drag-chip pointer-events-none select-none' : ''}`}
+        className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue ? 'outline-2 -outline-offset-2 outline-(--u-danger)' : ''} ${!ghost && drag?.id === scheduleKey(group) ? 'opacity-35' : ''} ${ghost ? 'drag-chip pointer-events-none select-none' : ''}`}
         key={scheduleKey(group)}
         data-group-id={ghost ? undefined : scheduleKey(group)}
         aria-hidden={ghost || undefined}
@@ -377,7 +377,7 @@ export default function GroupStrip(props: Props) {
         {groups.length > 1 && (
           <button
             type="button"
-            className="group-spotlight cursor-pointer flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-r-[var(--u-radius)] border-0 bg-transparent p-0 text-inherit shadow-[inset_1px_0_#14201633] hover:bg-[color-mix(in_srgb,var(--chip)_80%,white)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink) aria-pressed:bg-[color-mix(in_srgb,var(--chip)_70%,white)] aria-pressed:[&_svg]:stroke-[2.5]"
+            className="group-spotlight cursor-pointer motion-safe:transition-colors motion-safe:duration-150 flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-r-[var(--u-radius)] border-0 bg-transparent p-0 text-inherit shadow-[inset_1px_0_#14201633] hover:bg-[color-mix(in_srgb,var(--chip)_80%,white)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--u-category-ink) aria-pressed:bg-[color-mix(in_srgb,var(--chip)_70%,white)] aria-pressed:[&_svg]:stroke-[2.5]"
             data-drag-id={scheduleKey(group)}
             aria-label={`Выделить ${label(group)}`}
             aria-pressed={spotlightIds.includes(scheduleKey(group))}

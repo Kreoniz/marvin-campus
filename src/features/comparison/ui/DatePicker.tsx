@@ -55,7 +55,7 @@ export default function DatePicker({
         onDayFocus={(date) => setPreviewWeek(monday(dateString(date)))}
         onDayBlur={() => setPreviewWeek('')}
       />
-      <p className="my-3 text-xs text-u-muted" aria-live="polite">
+      <p className="my-3 text-center text-xs text-u-muted" aria-live="polite">
         Неделя: {weekLabel(previewWeek || monday(day))}
       </p>
       <Button

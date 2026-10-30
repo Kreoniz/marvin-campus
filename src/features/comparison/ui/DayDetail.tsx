@@ -103,13 +103,13 @@ export default function DayDetail({
       : Math.max(252, Math.min(496, weekRows * rowHeight + 104));
   return (
     <Card.Root
-      className="day-detail mt-[17px] flex h-[var(--detail-height)] gap-3.5 p-3 [overflow-anchor:none] [&>.marvin-card]:min-h-0 [&>.marvin-card]:overflow-y-auto [&>.marvin-card]:[scrollbar-gutter:stable]"
+      className="day-detail mt-[17px] flex min-h-[var(--detail-height)] items-start gap-3.5 p-3 [overflow-anchor:none]"
       role="region"
       aria-busy={loading}
       aria-labelledby="day-title"
       style={{ '--detail-height': `${panelHeight}px` } as CSSProperties}
     >
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex h-[calc(var(--detail-height)-26px)] min-w-0 flex-1 flex-col">
         <div className="mb-1 flex min-h-9 flex-wrap items-center gap-2">
           <h2
             id="day-title"

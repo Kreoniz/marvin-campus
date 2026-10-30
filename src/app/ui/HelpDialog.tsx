@@ -70,11 +70,33 @@ export default function HelpDialog({
         </p>
         <details className="my-3 text-xs leading-relaxed text-u-muted">
           <summary className="cursor-pointer rounded-u-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-u-focus">
-            Клавиатура
+            Клавиатура и Vim-шорткаты
           </summary>
           <p className="mt-2">
             На кнопках дней: ← → — день, Home / End — начало / конец недели,
             Page Up / Page Down — неделя. На выборе недели работают и ← →.
+          </p>
+          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 [&>dt]:font-mono [&>dd]:m-0">
+            <dt>h / l</dt>
+            <dd>Предыдущий / следующий день</dd>
+            <dt>Shift+h / l</dt>
+            <dd>На неделю назад / вперёд</dd>
+            <dt>j / k</dt>
+            <dd>Прокрутка вниз / вверх</dd>
+            <dt>gg / Shift+g</dt>
+            <dd>Начало / конец календаря</dd>
+            <dt>t</dt>
+            <dd>Сегодня</dd>
+            <dt>/</dt>
+            <dd>Поиск расписания</dd>
+            <dt>1 / 2 / 3</dt>
+            <dd>День / неделя / список</dd>
+            <dt>?</dt>
+            <dd>Эта справка</dd>
+          </dl>
+          <p className="mt-2">
+            Работают и в русской раскладке, вне ввода и открытых окон.
+            Отключаются в настройках отображения.
           </p>
         </details>
         <PwaHelp />

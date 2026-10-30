@@ -14,6 +14,8 @@ const kinds = [
 ] as const;
 
 export default function DisplaySettings({
+  vimHotkeys,
+  onVimHotkeys,
   layers,
   onLayers,
   hiddenKinds,
@@ -21,6 +23,8 @@ export default function DisplaySettings({
   spotlightLabel,
   onClearSpotlight,
 }: {
+  vimHotkeys: boolean;
+  onVimHotkeys: (enabled: boolean) => void;
   layers: CalendarLayers;
   onLayers: (layers: CalendarLayers) => void;
   hiddenKinds: ScheduleKind[];
@@ -120,7 +124,19 @@ export default function DisplaySettings({
               </label>
             ))}
           </fieldset>
-          <div className="mt-2 border-t border-u-line-soft pt-2">
+          <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-3 border-t border-u-line-soft text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-u-selection-ink"
+              checked={vimHotkeys}
+              onChange={(event) => onVimHotkeys(event.target.checked)}
+            />
+            Vim-шорткаты
+          </label>
+          <p className="m-0 text-xs text-u-muted">
+            h / l — день, j / k — прокрутка, ? — все команды.
+          </p>
+          <div>
             {spotlightLabel && (
               <Button
                 variant="ghost"

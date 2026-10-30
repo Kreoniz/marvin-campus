@@ -59,47 +59,13 @@ export default function VucSources({
       className="vuc-sources border-t border-u-line-soft px-3 py-2 text-[13px] leading-relaxed"
       aria-label="Источники ВУЦ"
     >
-      {sources.map((schedule) => {
-        if (
-          !schedule.snapshot ||
-          schedule.snapshot.data.coveredDates?.includes(day)
-        )
-          return null;
-        const date = nearest(schedule);
-        return (
-          <div
-            className="mb-1 flex flex-wrap items-center justify-between gap-2"
-            key={scheduleKey(schedule.selection)}
-          >
-            <span>
-              {label(schedule.selection)}:{' '}
-              {schedule.snapshot.data.unresolvedDates?.includes(day)
-                ? 'часть ячеек требует сверки'
-                : 'нет данных на этот день'}
-              .
-            </span>
-            {date && date !== day && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="min-h-9 text-xs"
-                onClick={() => onSelectDate(date)}
-              >
-                Открыть{' '}
-                {formatDay(date, {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </Button>
-            )}
-          </div>
-        );
-      })}
       <details>
-        <summary className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-u-ink">
-          ВУЦ · документы{yearLabel && ` ${yearLabel}`} · не онлайн
+        <summary className="min-h-8 cursor-pointer rounded-sm py-1.5 focus-visible:outline-2 focus-visible:outline-u-ink">
+          Документы ВУЦ{yearLabel && ` · ${yearLabel}`}
         </summary>
+        <p className="my-1 text-u-muted">
+          Данные из документов. Актуальность сайта ВУЦ не проверена.
+        </p>
         {sources.map((schedule) => {
           const data = schedule.snapshot?.data;
           const covered = data?.coveredDates?.includes(day);

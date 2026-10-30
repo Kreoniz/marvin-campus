@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
+import { Select } from 'unlikely-ui/select';
 import { monday, formatDay } from '../../lib/dates.ts';
 import { vucOptionLabel } from '../../lib/selection-labels.ts';
 import { viewURL } from '../../lib/url.ts';
@@ -32,6 +33,13 @@ export default function MilitaryPreview({ date }: { date: string }) {
     times,
     selectMilitary,
   } = useMilitarySchedule(date);
+  const choices = [
+    { value: '', label: 'Выбрать ВУЦ' },
+    ...available.map((item) => ({
+      value: item.id,
+      label: vucOptionLabel(item, available),
+    })),
+  ];
   return (
     <section
       className="military-preview mt-3 border-t border-u-line-soft pt-3"
@@ -40,19 +48,22 @@ export default function MilitaryPreview({ date }: { date: string }) {
       <label htmlFor={id} className="mb-1 block text-sm font-semibold">
         Моё расписание ВУЦ
       </label>
-      <select
-        id={id}
-        className="min-h-11 w-full rounded-u-control border border-u-line bg-u-surface px-2 text-sm text-u-ink focus-visible:outline-2 focus-visible:outline-u-ink"
+      <Select.Root
+        items={choices}
         value={ref?.id ?? ''}
-        onChange={(event) => selectMilitary(event.target.value)}
+        onValueChange={(value) => selectMilitary(value ?? '')}
       >
-        <option value="">Выбрать ВУЦ</option>
-        {available.map((item) => (
-          <option key={item.id} value={item.id}>
-            {vucOptionLabel(item, available)}
-          </option>
-        ))}
-      </select>
+        <Select.Trigger id={id} className="min-h-11 w-full text-sm">
+          <Select.Value />
+        </Select.Trigger>
+        <Select.Content className="max-h-[min(320px,var(--available-height))] min-w-[var(--anchor-width)] max-w-[calc(100vw-32px)]">
+          {choices.map((item) => (
+            <Select.Item key={item.value} value={item.value}>
+              {item.label}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
       {catalogue.isPending && !available.length && (
         <p className="my-2 text-xs text-u-muted">Загружаем список ВУЦ…</p>
       )}

@@ -501,9 +501,7 @@ export default function LessonCard({
               ))}
             </span>
           </span>
-          {military && !horizontal && !reference && (
-            <MilitaryInline date={lesson.date} />
-          )}
+          {military && !horizontal && <MilitaryInline date={lesson.date} />}
           {shared && !horizontal && (
             <span
               className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<42px)]:flex"

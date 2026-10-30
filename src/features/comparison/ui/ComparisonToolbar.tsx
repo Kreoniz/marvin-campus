@@ -91,7 +91,7 @@ export default function ComparisonToolbar({
               render={
                 <Button
                   variant="secondary"
-                  className="week-button w-[218px] [&>.u-button-label]:grid [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:grid-cols-[20px_minmax(0,1fr)_16px] [&>.u-button-label]:gap-2.5 [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15]"
+                  className="week-button w-[218px] [&>.u-button-label]:grid [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:grid-cols-[20px_minmax(0,1fr)_20px] [&>.u-button-label]:gap-2.5 [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>span]:text-center"
                   aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                 />
               }

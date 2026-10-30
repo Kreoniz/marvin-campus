@@ -34,13 +34,13 @@ export default function MobileDayNav({
           inert={opening}
         >
           <div
-            className="mobile-week-controls flex min-w-0 flex-1 items-center"
+            className="mobile-week-controls grid min-w-0 flex-1 grid-cols-[44px_52px_minmax(0,1fr)_52px_44px] items-center"
             data-schedule-week
           >
             <Button
               variant="ghost"
               size="icon-sm"
-              className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
+              className="week-arrow col-start-1 row-start-1 size-11 min-h-11 min-w-11 shrink-0 p-1"
               aria-label="Предыдущая неделя"
               onClick={() => view.selectWeek(addDays(view.week, -7))}
             >
@@ -52,7 +52,7 @@ export default function MobileDayNav({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mobile-date min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
+                    className="mobile-date col-start-3 row-start-1 min-h-11 min-w-0 flex-1 gap-[3px] px-[3px] py-1.5 text-[13px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:justify-center [&>.u-button-label]:gap-[3px] [&>.u-button-label>span]:min-w-0 [&>.u-button-label>span]:whitespace-normal [&>.u-button-label>span]:leading-[1.15] [&>.u-button-label>svg]:shrink-0"
                     aria-label={`Выбрать дату. ${weekLabel(view.week)}`}
                   />
                 }
@@ -77,7 +77,7 @@ export default function MobileDayNav({
             <Button
               variant="ghost"
               size="icon-sm"
-              className="week-arrow size-11 min-h-11 min-w-11 shrink-0 p-1"
+              className="week-arrow col-start-5 row-start-1 size-11 min-h-11 min-w-11 shrink-0 p-1"
               aria-label="Следующая неделя"
               onClick={() => view.selectWeek(addDays(view.week, 7))}
             >
@@ -86,14 +86,14 @@ export default function MobileDayNav({
             <Button
               variant="ghost"
               size="sm"
-              className="today-button min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
+              className="today-button col-start-2 row-start-1 min-h-11 min-w-0 shrink-0 px-1 text-xs underline underline-offset-[3px]"
               onClick={() => view.selectDate(omskToday())}
             >
               Сегодня
             </Button>
             <a
               href={vucOnly ? '/' : '/vuc'}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-sm text-xs underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-u-ink"
+              className="col-start-4 row-start-1 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-sm text-xs underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-u-ink"
               aria-label={vucOnly ? 'Все расписания' : 'Расписания ВУЦ'}
             >
               {vucOnly ? 'Все' : 'ВУЦ'}
