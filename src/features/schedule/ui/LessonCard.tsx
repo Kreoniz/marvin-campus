@@ -21,6 +21,11 @@ import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { track } from '../../../lib/analytics.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import { participantClasses } from './participant-style.ts';
+import {
+  LessonRoom,
+  LessonTeachers,
+} from '../../resources/LessonResources.tsx';
+import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 
 interface LessonCardProps {
   block: LessonBlock;
@@ -40,6 +45,8 @@ export default function LessonCard({
   spotlightIds = [],
 }: LessonCardProps) {
   const { lesson } = block;
+  const { openResource } = useResourceInspector();
+  const cardTrigger = useRef<HTMLButtonElement>(null);
   const shared = block.members.length > 1;
   const events = block.parallel ?? [lesson];
   const badges = [
@@ -102,16 +109,14 @@ export default function LessonCard({
   const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${shared ? 'Общая пара: ' : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одной группы.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
   const background = dimmed
     ? block.parallel
-      ? 'bg-[repeating-linear-gradient(135deg,var(--chip)_0_9px,color-mix(in_srgb,var(--chip)_80%,var(--u-well))_9px_18px)]'
+      ? 'bg-[repeating-linear-gradient(135deg,var(--lesson-stripe-base)_0_9px,var(--lesson-stripe-accent)_9px_18px)]'
       : shared
         ? 'bg-u-surface'
         : allSaved
           ? 'bg-[color-mix(in_srgb,var(--chip)_90%,var(--u-well))]'
           : 'bg-(--chip)'
     : block.parallel
-      ? allSaved
-        ? 'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--chip)_25%,var(--u-well))_0_9px,var(--u-well)_9px_18px)]'
-        : 'bg-[repeating-linear-gradient(135deg,var(--chip)_0_9px,color-mix(in_srgb,var(--chip)_78%,white)_9px_18px)]'
+      ? 'bg-[repeating-linear-gradient(135deg,var(--lesson-stripe-base)_0_9px,var(--lesson-stripe-accent)_9px_18px)]'
       : shared
         ? 'bg-u-surface'
         : allSaved
@@ -184,16 +189,34 @@ export default function LessonCard({
   }
   return (
     <div
-      className={`lesson-position absolute z-[2] [container-type:size] ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
+      className={`lesson-position absolute z-[2] [container-type:size] motion-safe:animate-lesson-appear ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
       data-spotlight={spotlight ? '' : undefined}
       data-dimmed={dimmed ? '' : undefined}
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
+          ref={cardTrigger}
           render={<button type="button" aria-label={accessibleLabel} />}
-          style={chipStyle(block.members[0], true)}
-          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? `shared-card gap-0 p-0 ${dimmed ? 'text-u-ink' : 'text-u-ink'}` : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${dimmed ? 'text-u-ink' : allSaved ? 'text-u-ink' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
+          style={
+            {
+              ...chipStyle(block.members[0], true),
+              ...(block.parallel
+                ? {
+                    '--lesson-stripe-base':
+                      dimmed || !allSaved
+                        ? 'var(--chip)'
+                        : 'color-mix(in srgb,var(--chip) 25%,var(--u-well))',
+                    '--lesson-stripe-accent': dimmed
+                      ? 'color-mix(in srgb,var(--chip) 80%,var(--u-well))'
+                      : allSaved
+                        ? 'var(--u-well)'
+                        : 'color-mix(in srgb,var(--chip) 78%,white)',
+                  }
+                : {}),
+            } as CSSProperties
+          }
+          className={`lesson-card relative motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out flex size-full cursor-pointer flex-col items-stretch justify-center overflow-hidden rounded-(--u-radius) text-left text-[11px] leading-[1.2] hover:shadow-[0_0_0_1px_var(--u-ink)] active:shadow-[inset_0_0_0_1px_var(--u-ink)] focus-visible:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-focus) ${background} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? `shared-card gap-0 p-0 ${dimmed ? 'text-u-ink' : 'text-u-ink'}` : `gap-0.5 p-[5px] [@container(width<95px)]:px-[3px] [@container(height<58px)]:p-[3px] ${dimmed ? 'text-u-ink' : allSaved ? 'text-u-ink' : 'text-[#142016]'}`}${long ? ' long-lesson' : ''}${block.parallel ? ' parallel-card' : ''}${allSaved ? ' saved-card' : ''}`}
           onPointerEnter={enter}
           onPointerLeave={leave}
           onClick={() => {
@@ -317,7 +340,7 @@ export default function LessonCard({
               {badges.map((kind) => (
                 <Badge
                   key={kind.label}
-                  className={`kind-badge min-h-0 flex-none rounded-[3px] border text-[9px] leading-none font-semibold ${dimmed ? 'text-u-ink' : 'text-[#142016]'} [@container(height<58px)]:px-0.5 [@container(height<58px)]:py-px ${shared ? 'px-0.5 py-px' : 'px-[3px] py-0.5'} ${dimmed ? 'border-u-line bg-transparent' : 'border-[#14201640] bg-[#f7f5ebc9]'}`}
+                  className={`kind-badge motion-safe:transition-colors motion-safe:duration-300 motion-safe:ease-out min-h-0 flex-none rounded-[3px] border text-[9px] leading-none font-semibold ${dimmed ? 'text-u-ink' : 'text-[#142016]'} [@container(height<58px)]:px-0.5 [@container(height<58px)]:py-px ${shared ? 'px-0.5 py-px' : 'px-[3px] py-0.5'} ${dimmed ? 'border-u-line bg-transparent' : 'border-[#14201640] bg-[#f7f5ebc9]'}`}
                   data-kind={kind.tone}
                   title={kind.title}
                 >
@@ -363,9 +386,30 @@ export default function LessonCard({
               </h3>
               {block.parallel && participants(event)}
               <p className="my-1">
-                {event.kind || 'Тип занятия не указан'} · {room(event)}
+                {event.kind || 'Тип занятия не указан'} ·{' '}
+                <LessonRoom
+                  lesson={event}
+                  onOpen={(resource, _trigger, date) => {
+                    cancel();
+                    hovering.current = false;
+                    setOpen(false);
+                    openResource(resource, cardTrigger.current, date);
+                  }}
+                />
               </p>
-              {event.teacher && <p className="my-1">{event.teacher}</p>}
+              {(event.teacher || event.teachers?.length) && (
+                <p className="my-1">
+                  <LessonTeachers
+                    lesson={event}
+                    onOpen={(resource, _trigger, date) => {
+                      cancel();
+                      hovering.current = false;
+                      setOpen(false);
+                      openResource(resource, cardTrigger.current, date);
+                    }}
+                  />
+                </p>
+              )}
             </div>
           ))}
           {!block.parallel && participants()}

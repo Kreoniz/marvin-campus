@@ -8,6 +8,10 @@ import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
 import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import { participantClasses } from './participant-style.ts';
+import {
+  LessonRoom,
+  LessonTeachers,
+} from '../../resources/LessonResources.tsx';
 
 interface Props {
   schedules: GroupSchedule[];
@@ -75,13 +79,13 @@ export default function DayAgenda({
                   return (
                     <li
                       key={entry.identity}
-                      className="agenda-entry border-t border-u-line-soft first:border-t-0"
+                      className="agenda-entry border-t border-u-line-soft first:border-t-0 motion-safe:animate-lesson-appear"
                       data-agenda-id={entry.identity}
                       data-spotlight={spotlight ? '' : undefined}
                       data-dimmed={dimmed ? '' : undefined}
                     >
                       <article
-                        className={`min-w-0 p-3 ${dimmed ? 'bg-u-surface text-u-muted' : 'bg-u-raised'} ${lesson.remote ? 'remote-lesson border-2 border-dashed border-u-muted' : ''}`}
+                        className={`min-w-0 p-3 motion-safe:transition-colors motion-safe:duration-300 motion-safe:ease-out ${dimmed ? 'bg-u-surface text-u-muted' : 'bg-u-raised'} ${lesson.remote ? 'remote-lesson border-2 border-dashed border-u-muted' : ''}`}
                       >
                         {spotlight && (
                           <span className="sr-only">
@@ -142,14 +146,12 @@ export default function DayAgenda({
                           })}
                         </div>
                         <p className="mt-1.5 mb-0 text-xs leading-relaxed text-u-muted wrap-anywhere">
-                          {lesson.remote
-                            ? 'Онлайн'
-                            : lesson.room || 'Аудитория не указана'}{' '}
-                          · {lesson.kind || 'Тип занятия не указан'}
-                          {lesson.teacher && (
+                          <LessonRoom lesson={lesson} /> ·{' '}
+                          {lesson.kind || 'Тип занятия не указан'}
+                          {(lesson.teacher || lesson.teachers?.length) && (
                             <span className="agenda-teacher">
                               {' '}
-                              · {lesson.teacher}
+                              · <LessonTeachers lesson={lesson} />
                             </span>
                           )}
                         </p>

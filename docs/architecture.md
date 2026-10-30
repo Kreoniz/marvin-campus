@@ -19,9 +19,16 @@
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   The subgroup trigger and spotlight icon are independent controls. Multiple
   spotlight IDs live as local presentation state in `ComparisonPage`; they do
-  not change schedule data. The single Groups dialog combines the existing
+  not change schedule data. The single schedule-search dialog combines the existing
   combobox search with the reusable ordering/removal list. Removing its last
   selection keeps search available. The exploratory name/icon chooser has been removed.
+- `src/features/resources`: typed lecturer/auditorium queries and a transient
+  resource inspector. The group manager's search tabs and linked lesson metadata
+  open it without changing group selection or the comparison URL. Resource HTTP
+  endpoints allow only `lecturer` and `auditorium`; normalization whitelists public
+  lesson fields and canonical refs, retaining legacy teacher/room strings. Cache
+  and Query keys include resource kind and ID. Resource weeks reuse snapshot
+  deadlines while persistent worker caching remains limited to group schedules.
 - `src/features/schedule`: time grid and lesson cards; geometry stays separate
   from the pure calculations in `src/lib`. Day and week views both render the
   same consolidated `lessonBlocks` events. `features/schedule/model` allocates
@@ -40,7 +47,8 @@
 - `src/shared/ui`: small shared icon controls. Components import unlikely-ui
   through its public subpaths and style app layout with Tailwind utilities.
   `src/app/styles.css` only loads Tailwind, the published DS stylesheet/adapter,
-  the local font, semantic Tailwind theme aliases and the app's presence colors.
+  the local font, semantic Tailwind theme aliases, the app's presence colors and
+  a short opacity entrance with typed color properties for stripe transitions.
   Subgroups use the base group color; saved-data muting is handled separately in
   lesson cards. Dynamic schedule geometry
   and categorical colors use computed styles; there are no app component

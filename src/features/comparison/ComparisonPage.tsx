@@ -21,6 +21,7 @@ import Icon from '../../shared/ui/Icon.tsx';
 import DisplaySettings from './ui/DisplaySettings.tsx';
 import type { CalendarLayers } from '../schedule/ui/ComparisonHighlights.tsx';
 import DayAgenda from '../schedule/ui/DayAgenda.tsx';
+import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
 } from './ui/ScheduleViewPicker.tsx';
@@ -173,249 +174,253 @@ export default function ComparisonPage() {
       className="campus-theme min-h-svh bg-u-canvas text-u-ink"
       tokens={{ '--u-accent': '#87f19d' }}
     >
-      <a
-        className="fixed top-2 left-2 z-[200] -translate-y-[160%] rounded-u-control bg-u-accent p-2.5 text-u-accent-ink focus:translate-y-0"
-        href="#comparison"
-      >
-        Перейти к расписанию
-      </a>
-      <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
-        <SiteHeader
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          viewControl={
-            (groups.length > 0 || links.opening) && (
-              <ScheduleViewPicker
-                value={
-                  mobileView === 'week'
-                    ? 'week'
-                    : dayFormat === 'list'
-                      ? 'list'
-                      : 'day'
-                }
-                onChange={selectFormat}
-                disabled={links.opening}
+      <ResourceProvider day={day}>
+        <a
+          className="fixed top-2 left-2 z-[200] -translate-y-[160%] rounded-u-control bg-u-accent p-2.5 text-u-accent-ink focus:translate-y-0"
+          href="#comparison"
+        >
+          Перейти к расписанию
+        </a>
+        <div className="app-shell mx-auto max-w-[1440px] px-6 pt-2 compact:px-3 compact:pt-1">
+          <SiteHeader
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            viewControl={
+              (groups.length > 0 || links.opening) && (
+                <ScheduleViewPicker
+                  value={
+                    mobileView === 'week'
+                      ? 'week'
+                      : dayFormat === 'list'
+                        ? 'list'
+                        : 'day'
+                  }
+                  onChange={selectFormat}
+                  disabled={links.opening}
+                />
+              )
+            }
+            settingsControl={
+              <DisplaySettings
+                layers={layers}
+                onLayers={setLayers}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                spotlightLabel={spotlightLabel}
+                onClearSpotlight={() => setSpotlightGroupIds([])}
               />
-            )
-          }
-          settingsControl={
-            <DisplaySettings
-              layers={layers}
-              onLayers={setLayers}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              spotlightLabel={spotlightLabel}
-              onClearSpotlight={() => setSpotlightGroupIds([])}
-            />
-          }
-        />
-        <main>
-          {pwa.offline && (
-            <p className="my-2 text-xs text-u-muted" role="status">
-              Нет сети. Доступны сохранённые расписания.
-            </p>
-          )}
-          <h1 className="sr-only">Сравнение расписаний ОмГТУ</h1>
-          {links.error ? (
-            <Card.Root
-              id="comparison"
-              className="grid min-h-[200px] justify-items-start gap-5 p-7"
-              aria-live="polite"
-            >
-              <Alert.Root tone="danger">
-                <Alert.Title>Не удалось открыть сравнение</Alert.Title>
-                <Alert.Description>{links.error}</Alert.Description>
-              </Alert.Root>
-              {links.canRetryOpening && (
-                <Button onClick={links.retryOpening}>Повторить открытие</Button>
-              )}
-              <Button
-                render={<a href="/" aria-label="Открыть своё расписание" />}
-              >
-                Открыть своё расписание
-              </Button>
-            </Card.Root>
-          ) : (
-            <>
+            }
+          />
+          <main>
+            {pwa.offline && (
+              <p className="my-2 text-xs text-u-muted" role="status">
+                Нет сети. Доступны сохранённые расписания.
+              </p>
+            )}
+            <h1 className="sr-only">Сравнение расписаний ОмГТУ</h1>
+            {links.error ? (
               <Card.Root
                 id="comparison"
-                className="comparison overflow-hidden compact:-mx-3 compact:rounded-none compact:border-x-0"
-                role="region"
-                aria-label="Сравнение расписаний"
-                aria-busy={busy}
+                className="grid min-h-[200px] justify-items-start gap-5 p-7"
+                aria-live="polite"
               >
-                <GroupPicker
-                  selected={groups}
-                  onAdd={view.add}
-                  onError={(message) => notify(message, 'error')}
-                  returnFocus={addGroupRef}
-                  open={orderOpen}
-                  onOpenChange={setOrderOpen}
-                  colors={colors}
-                  onMove={view.move}
-                  onRemove={view.remove}
-                  focusGroupId={orderFocus}
+                <Alert.Root tone="danger">
+                  <Alert.Title>Не удалось открыть сравнение</Alert.Title>
+                  <Alert.Description>{links.error}</Alert.Description>
+                </Alert.Root>
+                {links.canRetryOpening && (
+                  <Button onClick={links.retryOpening}>
+                    Повторить открытие
+                  </Button>
+                )}
+                <Button
+                  render={<a href="/" aria-label="Открыть своё расписание" />}
                 >
-                  <ComparisonToolbar
-                    view={view}
-                    schedules={source.schedules}
-                    subgroupCatalog={subgroupCatalog}
-                    colors={colors}
-                    opening={links.opening}
-                    onOrder={(id) => {
-                      setOrderFocus(id);
-                      setOrderOpen(true);
-                    }}
-                    spotlightIds={spotlightIds}
-                    onSpotlight={(id) =>
-                      setSpotlightGroupIds((current) =>
-                        current.includes(id)
-                          ? current.filter((value) => value !== id)
-                          : [...current, id],
-                      )
-                    }
-                    addGroupRef={addGroupRef}
-                    onGroups={() => setOrderFocus(0)}
-                  />
-                  {groups.length || links.opening ? (
-                    <>
-                      {mobile && (
-                        <MobileDayNav view={view} opening={links.opening} />
-                      )}
-                      {mobile ? (
-                        <MobileComparisonPanel
-                          section="controls"
-                          view={view}
-                          schedules={source.schedules}
-                          links={links}
-                          fetching={links.opening || source.fetching}
-                          loading={busy}
-                          opening={links.opening}
-                        />
-                      ) : (
-                        <ComparisonStatus
-                          schedules={source.schedules}
-                          fetching={links.opening || source.fetching}
-                          links={links}
-                        />
-                      )}
-                      {mobile &&
-                      mobileView === 'day' &&
-                      dayFormat === 'list' ? (
-                        <DayAgenda
-                          schedules={source.schedules}
-                          colors={colors}
-                          subgroupCatalog={subgroupCatalog}
-                          day={day}
-                          loading={busy}
-                          placeholder={links.opening}
-                          spotlightIds={spotlightIds}
-                        />
-                      ) : (
-                        <Calendar
-                          schedules={source.schedules}
-                          colors={colors}
-                          subgroupCatalog={subgroupCatalog}
-                          week={week}
-                          day={day}
-                          layers={layers}
-                          loading={busy}
-                          placeholder={links.opening}
-                          onDay={view.selectDay}
-                          compact={mobile}
-                          singleDay={mobile && mobileView === 'day'}
-                          spotlightIds={spotlightIds}
-                        />
-                      )}
-                      {mobile && (
-                        <MobileComparisonPanel
-                          section="result"
-                          view={view}
-                          schedules={source.schedules}
-                          links={links}
-                          fetching={links.opening || source.fetching}
-                          loading={busy}
-                          opening={links.opening}
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
-                      <img
-                        className="h-[210px] w-[190px] shrink-0 object-contain compact:h-[145px] compact:w-[135px]"
-                        src="/assets/mascot-m2-thinking-v1.webp"
-                        width="190"
-                        height="210"
-                        alt="Робот ждёт расписание"
-                      />
-                      <div>
-                        <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] compact:text-2xl">
-                          С кем пересечёмся?
-                        </h2>
-                        <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
-                          Добавь свою группу и группу друга.
-                          <br />С одной группой можно посмотреть своё
-                          расписание.
-                        </p>
-                        <GroupPickerTrigger labelled />
-                        <button
-                          className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
-                          onClick={view.example}
-                        >
-                          Посмотреть ИВТ-241 и ИВТ-242{' '}
-                          <span aria-hidden="true">→</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </GroupPicker>
+                  Открыть своё расписание
+                </Button>
               </Card.Root>
-              {(groups.length > 0 || links.opening) && !mobile && (
-                <DayDetail
-                  schedules={source.schedules}
-                  colors={colors}
-                  subgroupCatalog={subgroupCatalog}
-                  day={day}
-                  mode={mode}
-                  layers={layers}
-                  loading={busy}
-                  placeholder={links.opening}
-                  dayFormat={dayFormat}
-                  onDayFormat={setDayFormat}
-                  spotlightIds={spotlightIds}
-                  spotlightLabel={spotlightLabel}
-                  onClearSpotlight={() => setSpotlightGroupIds([])}
-                />
-              )}
-            </>
-          )}
-        </main>
-        <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted compact:text-[10px]">
-          <a
-            className="inline-flex items-center gap-[5px] no-underline hover:underline"
-            href="https://rasp.omgtu.ru"
-            target="_blank"
-            rel="noreferrer"
+            ) : (
+              <>
+                <Card.Root
+                  id="comparison"
+                  className="comparison overflow-hidden compact:-mx-3 compact:rounded-none compact:border-x-0"
+                  role="region"
+                  aria-label="Сравнение расписаний"
+                  aria-busy={busy}
+                >
+                  <GroupPicker
+                    selected={groups}
+                    onAdd={view.add}
+                    onError={(message) => notify(message, 'error')}
+                    returnFocus={addGroupRef}
+                    open={orderOpen}
+                    onOpenChange={setOrderOpen}
+                    colors={colors}
+                    onMove={view.move}
+                    onRemove={view.remove}
+                    focusGroupId={orderFocus}
+                  >
+                    <ComparisonToolbar
+                      view={view}
+                      schedules={source.schedules}
+                      subgroupCatalog={subgroupCatalog}
+                      colors={colors}
+                      opening={links.opening}
+                      onOrder={(id) => {
+                        setOrderFocus(id);
+                        setOrderOpen(true);
+                      }}
+                      spotlightIds={spotlightIds}
+                      onSpotlight={(id) =>
+                        setSpotlightGroupIds((current) =>
+                          current.includes(id)
+                            ? current.filter((value) => value !== id)
+                            : [...current, id],
+                        )
+                      }
+                      addGroupRef={addGroupRef}
+                      onGroups={() => setOrderFocus(0)}
+                    />
+                    {groups.length || links.opening ? (
+                      <>
+                        {mobile && (
+                          <MobileDayNav view={view} opening={links.opening} />
+                        )}
+                        {mobile ? (
+                          <MobileComparisonPanel
+                            section="controls"
+                            view={view}
+                            schedules={source.schedules}
+                            links={links}
+                            fetching={links.opening || source.fetching}
+                            loading={busy}
+                            opening={links.opening}
+                          />
+                        ) : (
+                          <ComparisonStatus
+                            schedules={source.schedules}
+                            fetching={links.opening || source.fetching}
+                            links={links}
+                          />
+                        )}
+                        {mobile &&
+                        mobileView === 'day' &&
+                        dayFormat === 'list' ? (
+                          <DayAgenda
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            day={day}
+                            loading={busy}
+                            placeholder={links.opening}
+                            spotlightIds={spotlightIds}
+                          />
+                        ) : (
+                          <Calendar
+                            schedules={source.schedules}
+                            colors={colors}
+                            subgroupCatalog={subgroupCatalog}
+                            week={week}
+                            day={day}
+                            layers={layers}
+                            loading={busy}
+                            placeholder={links.opening}
+                            onDay={view.selectDay}
+                            compact={mobile}
+                            singleDay={mobile && mobileView === 'day'}
+                            spotlightIds={spotlightIds}
+                          />
+                        )}
+                        {mobile && (
+                          <MobileComparisonPanel
+                            section="result"
+                            view={view}
+                            schedules={source.schedules}
+                            links={links}
+                            fetching={links.opening || source.fetching}
+                            loading={busy}
+                            opening={links.opening}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="welcome flex min-h-[340px] items-center justify-center gap-10 px-6 py-9 compact:min-h-[380px] compact:flex-col compact:gap-4 compact:px-[15px] compact:py-6 compact:text-center">
+                        <img
+                          className="h-[210px] w-[190px] shrink-0 object-contain compact:h-[145px] compact:w-[135px]"
+                          src="/assets/mascot-m2-thinking-v1.webp"
+                          width="190"
+                          height="210"
+                          alt="Робот ждёт расписание"
+                        />
+                        <div>
+                          <h2 className="mb-3 text-[28px] font-bold tracking-[-1px] compact:text-2xl">
+                            С кем пересечёмся?
+                          </h2>
+                          <p className="mb-5 text-[15px] leading-relaxed text-u-muted compact:mb-[15px] compact:text-[13px]">
+                            Добавь свою группу и группу друга.
+                            <br />С одной группой можно посмотреть своё
+                            расписание.
+                          </p>
+                          <GroupPickerTrigger labelled />
+                          <button
+                            className="example-button mt-3.5 block cursor-pointer border-0 bg-transparent p-0 text-xs text-u-muted underline underline-offset-4 compact:mx-auto"
+                            onClick={view.example}
+                          >
+                            Посмотреть ИВТ-241 и ИВТ-242{' '}
+                            <span aria-hidden="true">→</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </GroupPicker>
+                </Card.Root>
+                {(groups.length > 0 || links.opening) && !mobile && (
+                  <DayDetail
+                    schedules={source.schedules}
+                    colors={colors}
+                    subgroupCatalog={subgroupCatalog}
+                    day={day}
+                    mode={mode}
+                    layers={layers}
+                    loading={busy}
+                    placeholder={links.opening}
+                    dayFormat={dayFormat}
+                    onDayFormat={setDayFormat}
+                    spotlightIds={spotlightIds}
+                    spotlightLabel={spotlightLabel}
+                    onClearSpotlight={() => setSpotlightGroupIds([])}
+                  />
+                )}
+              </>
+            )}
+          </main>
+          <footer className="app-footer my-5 flex justify-end border-t border-[var(--u-line-soft)] pt-3.5 text-[11px] text-u-muted compact:text-[10px]">
+            <a
+              className="inline-flex items-center gap-[5px] no-underline hover:underline"
+              href="https://rasp.omgtu.ru"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Источник расписания <Icon name="external" size={13} />
+            </a>
+          </footer>
+        </div>
+        {pwa.waiting && (
+          <aside
+            className="pwa-update fixed bottom-[18px] left-1/2 z-[80] flex w-max max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised p-3 text-[13px] shadow-[var(--u-shadow-md)]"
+            role="status"
           >
-            Источник расписания <Icon name="external" size={13} />
-          </a>
-        </footer>
-      </div>
-      {pwa.waiting && (
-        <aside
-          className="pwa-update fixed bottom-[18px] left-1/2 z-[80] flex w-max max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-[var(--u-panel-radius)] border border-u-line bg-u-raised p-3 text-[13px] shadow-[var(--u-shadow-md)]"
-          role="status"
-        >
-          <span>Доступно обновление приложения.</span>
-          <Button disabled={pwa.updating} onClick={updatePwa}>
-            Обновить
-          </Button>
-        </aside>
-      )}
-      <Toast.Viewport
-        aria-label="Уведомления"
-        closeLabel="Закрыть уведомление"
-      />
+            <span>Доступно обновление приложения.</span>
+            <Button disabled={pwa.updating} onClick={updatePwa}>
+              Обновить
+            </Button>
+          </aside>
+        )}
+        <Toast.Viewport
+          aria-label="Уведомления"
+          closeLabel="Закрыть уведомление"
+        />
+      </ResourceProvider>
     </Theme>
   );
 }

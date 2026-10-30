@@ -11,11 +11,15 @@ import { Button } from 'unlikely-ui/button';
 import { Combobox } from 'unlikely-ui/combobox';
 import { Dialog } from 'unlikely-ui/dialog';
 import { Field } from 'unlikely-ui/field';
+import { RadioGroup } from 'unlikely-ui/radio-group';
 import { groupOptions } from '../../../lib/queries.ts';
-import type { Group, Selection } from '../../../lib/types.ts';
+import { STALE_GRACE } from '../../../lib/cache-policy.ts';
+import type { Group, Selection, ResourceKind } from '../../../lib/types.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import type { GroupColors } from '../../../lib/colors.ts';
 import GroupOrder from './GroupOrder.tsx';
+import { resourceSearchOptions } from '../../resources/api.ts';
+import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 
 interface Props {
   selected: Selection[];
@@ -44,26 +48,59 @@ export default function GroupPicker({
   onRemove,
   focusGroupId,
 }: Props) {
+  const [kind, setKind] = useState<'group' | ResourceKind>('group');
+  const { openResource } = useResourceInspector();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
+  const [clock, setClock] = useState(Date.now());
   const input = useRef<HTMLInputElement>(null);
   const reportedError = useRef(0);
   const searchId = useId();
   const term = query.trim().toUpperCase();
   const search = useQuery({
     ...groupOptions(debounced),
-    enabled: open && term.length >= 2 && term === debounced,
+    enabled: open && kind === 'group' && term.length >= 2 && term === debounced,
   });
-  const results = term === debounced ? (search.data?.data ?? []) : [];
+  const resourceSearch = useQuery({
+    ...resourceSearchOptions(kind === 'group' ? 'lecturer' : kind, debounced),
+    enabled: open && kind !== 'group' && term.length >= 2 && term === debounced,
+  });
+  const activeSearch = kind === 'group' ? search : resourceSearch;
+  const now = Math.max(clock, Date.now());
+  const expires = Date.parse(activeSearch.data?.expiresAt ?? '');
+  const expired =
+    !!activeSearch.data &&
+    (!Number.isFinite(expires) || now > expires + STALE_GRACE);
+  const results =
+    term === debounced && !expired ? (activeSearch.data?.data ?? []) : [];
   const loading =
     open &&
     term.length >= 2 &&
     (term !== debounced ||
-      (search.isPending && search.fetchStatus !== 'paused'));
-  const error = term === debounced ? (search.error?.message ?? '') : '';
-  const stale = term === debounced && !!search.data?.stale;
+      (activeSearch.isPending && activeSearch.fetchStatus !== 'paused'));
+  const error = term === debounced ? (activeSearch.error?.message ?? '') : '';
+  const stale =
+    term === debounced &&
+    !!(
+      activeSearch.data?.stale ||
+      (activeSearch.isError && activeSearch.data) ||
+      now > expires
+    );
   const visible = term.length < 2 ? [] : results;
   const selectedIds = new Set(selected.map((group) => group.id));
+  useEffect(() => {
+    if (!open || !Number.isFinite(expires) || now > expires + STALE_GRACE)
+      return;
+    const next = now <= expires ? expires + 1 : expires + STALE_GRACE + 1;
+    const timer = setTimeout(
+      () => setClock(Date.now()),
+      Math.min(2_147_483_647, Math.max(1, next - Date.now())),
+    );
+    return () => clearTimeout(timer);
+  }, [open, expires, now]);
+  useEffect(() => {
+    if (open && focusGroupId) setKind('group');
+  }, [open, focusGroupId]);
   useEffect(() => {
     if (!open || term.length < 2) {
       setDebounced('');
@@ -73,28 +110,46 @@ export default function GroupPicker({
     return () => clearTimeout(timer);
   }, [term, open]);
   useEffect(() => {
-    if (open && error && search.errorUpdatedAt !== reportedError.current) {
-      reportedError.current = search.errorUpdatedAt;
+    if (
+      open &&
+      error &&
+      activeSearch.errorUpdatedAt !== reportedError.current
+    ) {
+      reportedError.current = activeSearch.errorUpdatedAt;
       onError(error);
     }
-  }, [open, error, search.errorUpdatedAt, onError]);
+  }, [open, error, activeSearch.errorUpdatedAt, onError]);
   const status =
-    selected.length >= 30
+    kind === 'group' && selected.length >= 30
       ? 'Добавлено максимум 30 групп. Убери одну из выбранных групп, чтобы добавить другую.'
-      : search.fetchStatus === 'paused' && !results.length
+      : activeSearch.fetchStatus === 'paused' && !results.length
         ? 'Нет сети. Поиск продолжится после подключения.'
         : loading
-          ? 'Ищем группы…'
+          ? kind === 'group'
+            ? 'Ищем группы…'
+            : kind === 'lecturer'
+              ? 'Ищем преподавателей…'
+              : 'Ищем аудитории…'
           : error ||
-            (stale
-              ? 'Поиск по сохранённому снимку: источник временно недоступен.'
-              : term.length >= 2 && !visible.length
-                ? 'Группы не найдены. Попробуй другое название.'
-                : term.length < 2
-                  ? 'Для поиска введи хотя бы 2 символа.'
-                  : '');
+            (expired
+              ? 'Срок хранения результатов истёк. Повтори поиск.'
+              : stale
+                ? 'Поиск по сохранённому снимку. Данные могут измениться.'
+                : term.length >= 2 && !visible.length
+                  ? 'Ничего не найдено. Попробуй другое название.'
+                  : term.length < 2
+                    ? 'Для поиска введи хотя бы 2 символа.'
+                    : '');
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next && (focusGroupId || selected.length === 0)) {
+          setKind('group');
+        }
+        onOpenChange(next);
+      }}
+    >
       {children}
       <Dialog.Content
         className="flex h-[min(620px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto"
@@ -121,14 +176,16 @@ export default function GroupPicker({
         }
       >
         <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
-          <Dialog.Title className="m-0 text-xl leading-6">Группы</Dialog.Title>
+          <Dialog.Title className="m-0 text-xl leading-6">
+            Расписания
+          </Dialog.Title>
           <Dialog.Close
             render={
               <Button
                 variant="ghost"
                 size="icon-sm"
                 className="min-h-11 min-w-11 shrink-0"
-                aria-label="Закрыть группы"
+                aria-label="Закрыть выбор расписаний"
               />
             }
           >
@@ -136,14 +193,40 @@ export default function GroupPicker({
           </Dialog.Close>
         </div>
         <Dialog.Description className="sr-only">
-          Найди группы, поменяй порядок или убери их из сравнения.
+          Добавь группы, поменяй порядок или открой расписание преподавателя и
+          аудитории.
         </Dialog.Description>
+        <RadioGroup.Root
+          variant="segmented"
+          className="mt-1 mb-2 grid shrink-0 grid-cols-[1fr_1.5fr_1.2fr] gap-0 [&_.u-segmented-item]:min-h-11 [&_.u-segmented-item]:min-w-0 [&_.u-segmented-item]:px-1 [&_.u-segmented-item]:text-[11px]"
+          aria-label="Что найти"
+          value={kind}
+          onValueChange={(value) => {
+            if (
+              value === 'group' ||
+              value === 'lecturer' ||
+              value === 'auditorium'
+            ) {
+              setKind(value);
+              setQuery('');
+              setDebounced('');
+            }
+          }}
+        >
+          <RadioGroup.Item value="group">Группы</RadioGroup.Item>
+          <RadioGroup.Item value="lecturer">Преподаватели</RadioGroup.Item>
+          <RadioGroup.Item value="auditorium">Аудитории</RadioGroup.Item>
+        </RadioGroup.Root>
         <Field.Root className="flex min-h-0 flex-1 flex-col">
           <Field.Label
             className="mt-2 mb-2 block text-[13px] font-semibold"
             htmlFor={searchId}
           >
-            Название группы
+            {kind === 'group'
+              ? 'Название группы'
+              : kind === 'lecturer'
+                ? 'Фамилия преподавателя'
+                : 'Номер аудитории'}
           </Field.Label>
           <Combobox.Root<Group>
             inline
@@ -158,6 +241,11 @@ export default function GroupPicker({
             itemToStringLabel={(group) => group.label}
             isItemEqualToValue={(a, b) => a.id === b.id}
             onValueChange={(group) => {
+              if (group && kind !== 'group') {
+                onOpenChange(false);
+                openResource({ ...group, kind }, returnFocus.current);
+                return;
+              }
               if (group && !selectedIds.has(group.id) && selected.length < 30) {
                 onAdd(group);
                 input.current?.focus({ preventScroll: true });
@@ -172,11 +260,17 @@ export default function GroupPicker({
                 className="min-h-11 w-full pl-10 text-base"
                 id={searchId}
                 ref={input}
-                placeholder="Например, ФИТ-232"
+                placeholder={
+                  kind === 'group'
+                    ? 'Например, ФИТ-232'
+                    : kind === 'lecturer'
+                      ? 'Например, Иванов'
+                      : 'Например, 8-201'
+                }
                 autoComplete="off"
               />
             </div>
-            {selected.length > 0 && (
+            {kind === 'group' && selected.length > 0 && (
               <section className="mt-3 shrink-0" aria-label="Выбранные группы">
                 <h3 className="m-0 text-xs font-semibold text-u-muted">
                   Выбраны · {selected.length}
@@ -198,7 +292,8 @@ export default function GroupPicker({
                     key={group.id}
                     value={group}
                     disabled={
-                      selectedIds.has(group.id) || selected.length >= 30
+                      kind === 'group' &&
+                      (selectedIds.has(group.id) || selected.length >= 30)
                     }
                   >
                     <span className="flex w-full items-center justify-between gap-3">
@@ -211,12 +306,15 @@ export default function GroupPicker({
                         </small>
                       </span>
                       <span className="flex shrink-0 items-center">
-                        {selectedIds.has(group.id) ? (
+                        {kind === 'group' && selectedIds.has(group.id) ? (
                           <span className="text-xs text-u-muted">
                             Уже добавлена
                           </span>
                         ) : (
-                          <Icon name="plus" size={16} />
+                          <Icon
+                            name={kind === 'group' ? 'plus' : 'right'}
+                            size={16}
+                          />
                         )}
                       </span>
                     </span>
@@ -225,11 +323,24 @@ export default function GroupPicker({
               </Combobox.List>
               <Combobox.Status className="m-0 overflow-y-auto p-0 pt-3 text-xs leading-4.5 text-u-muted">
                 {status}
+                {(error || expired) && (
+                  <button
+                    type="button"
+                    className="ml-1 min-h-6 cursor-pointer rounded-sm border-0 bg-transparent p-0 text-inherit underline focus-visible:outline-2 focus-visible:outline-u-ink"
+                    disabled={
+                      activeSearch.isFetching ||
+                      activeSearch.fetchStatus === 'paused'
+                    }
+                    onClick={() => void activeSearch.refetch()}
+                  >
+                    Повторить
+                  </button>
+                )}
               </Combobox.Status>
             </div>
             <Combobox.Empty className="sr-only">
               {!loading && !error && term.length >= 2
-                ? 'Нет подходящих групп'
+                ? 'Нет подходящих расписаний'
                 : null}
             </Combobox.Empty>
           </Combobox.Root>
@@ -260,13 +371,13 @@ export function GroupPickerTrigger({
               : 'add-group compact:size-11 compact:min-h-11 compact:min-w-11 compact:p-0'
           }
           variant="secondary"
-          aria-label={labelled ? 'Добавить группу' : 'Группы'}
+          aria-label={labelled ? 'Добавить группу' : 'Расписания'}
         />
       }
     >
-      <Icon name={labelled ? 'plus' : 'groups'} />
+      <Icon name={labelled ? 'plus' : 'search'} />
       <span className={labelled ? undefined : 'compact:hidden'}>
-        {labelled ? 'Добавить группу' : 'Группы'}
+        {labelled ? 'Добавить группу' : 'Расписания'}
       </span>
     </Dialog.Trigger>
   );

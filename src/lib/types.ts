@@ -17,6 +17,18 @@ export interface Interval {
   start: number;
   end: number;
 }
+export type ResourceKind = 'lecturer' | 'auditorium';
+export interface ResourceRef {
+  kind: ResourceKind;
+  id: number;
+  label: string;
+  description?: string;
+}
+export interface ResourceWeek {
+  kind: ResourceKind;
+  id: number;
+  lessons: Lesson[];
+}
 export interface Lesson extends Interval {
   id: string;
   date: string;
@@ -25,6 +37,9 @@ export interface Lesson extends Interval {
   building: string;
   room: string;
   teacher: string;
+  teachers?: ResourceRef[];
+  roomRef?: ResourceRef;
+  audience?: string;
   remote: boolean;
   subgroups: number[];
 }

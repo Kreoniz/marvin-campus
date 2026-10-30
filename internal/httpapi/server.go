@@ -44,6 +44,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/timetable/groups", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
 	mux.Handle("GET /api/v1/timetable/weeks/{id}", limits.wrap(http.HandlerFunc(s.timetable), s.TrustedProxies))
 	mux.Handle("GET /api/groups", limits.wrap(http.HandlerFunc(s.groups), s.TrustedProxies))
+	mux.Handle("GET /api/resources/{kind}", limits.wrap(http.HandlerFunc(s.resources), s.TrustedProxies))
+	mux.Handle("GET /api/resources/{kind}/{id}", limits.wrap(http.HandlerFunc(s.resourceWeek), s.TrustedProxies))
 	mux.Handle("GET /api/schedule/{id}", limits.wrap(http.HandlerFunc(s.week), s.TrustedProxies))
 	mux.HandleFunc("POST /api/share", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusGone, "Создание коротких ссылок отключено. Используйте читаемую ссылку на сравнение.")

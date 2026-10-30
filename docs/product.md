@@ -45,7 +45,7 @@ of an underline; the whole chip keeps its categorical color without a heavy fram
 The whole-group option and unresolved selections retain their labels. A single
 group uses the whole chip for subgroup selection. Scope captions never ellipsize;
 the whole-group caption is “Все” and short subgroup numbers retain a separate
-chevron. One Groups icon opens a dialog combining search and the complete
+chevron. One schedule-search icon opens a dialog combining search and the complete
 selection with move-up/down and removal; desktop drag handles and Alt+arrows
 remain available. Removing the last group keeps the search open and focuses its
 input. Group search starts empty, without suggested groups.
@@ -95,6 +95,28 @@ a shared event keeps all its participants in one card. Missing group data remain
 explicit in the comparison result and data status; known lessons never establish
 an empty schedule for an unavailable group. Reordering selected groups keeps
 event placement and colors stable.
+Teacher and auditorium schedules open from linked lesson metadata or the
+search tabs inside the single “Расписания” dialog. They use an independent
+selected-day agenda with week/date navigation, and closing restores focus to
+the original lesson or search control. Opening a resource preserves selected
+groups, date and comparison URL. Only canonical source IDs create links;
+missing IDs remain plain text, and virtual rooms have no physical-room link.
+Teacher/room numeric identities are scoped by kind. Their events show actual
+group/stream audience, rather than a resource masquerading as a student group.
+The lecturer's own canonical reference is omitted from repeated lesson metadata;
+co-teachers and unstructured teacher text remain visible. Short viewports scroll
+the whole inspector so fixed controls cannot squeeze the agenda to a single line.
+No presence/free comparison is applied to these views. Empty schedules, missing
+data and usable saved snapshots remain distinct. Cold opening needs a network
+response; persistent offline resource storage and shareable resource routes are
+deferred. Search results become marked saved at their deadline and disappear
+after the 24-hour grace period, with an explicit retry action.
+
+Mounted lesson entries fade in over 180 ms without moving their geometry.
+Saved/fresh, focus and parallel-stripe colors interpolate over 300 ms; data
+status and clock markers update immediately. Revalidation of an existing entry
+does not replay its entrance. Reduced-motion preferences disable these effects.
+
 Each group spotlight can be toggled independently; several groups can be active.
 A shared event matches if any participant is selected, retaining its normal
 subject and metadata. Each participant sector or list badge is emphasized

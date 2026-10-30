@@ -10,8 +10,30 @@
   font-display: swap;
 }
 
+/* Typed colors let the existing parallel-lesson stripes fade between states. */
+@property --lesson-stripe-base {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --lesson-stripe-accent {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
 @theme {
   --font-sans: Inter, system-ui, sans-serif;
+  --animate-lesson-appear: lesson-appear 180ms ease-out both;
+  @keyframes lesson-appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
   --color-campus-presence: light-dark(
     oklch(92.1% 0.104 93),
     oklch(81.8% 0.109 92)
