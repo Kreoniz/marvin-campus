@@ -15,7 +15,9 @@ import { dayMinimum, verticalLayout } from '../model/vertical-layout.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
-import ComparisonHighlights, { type CalendarLayers } from './ComparisonHighlights.tsx';
+import ComparisonHighlights, {
+  type CalendarLayers,
+} from './ComparisonHighlights.tsx';
 
 interface CalendarProps {
   schedules: GroupSchedule[];
@@ -228,7 +230,13 @@ export default function Calendar({
                       </div>
                     ) : (
                       <>
-                        <ComparisonHighlights result={column.result} layers={layers} saved={saved} start={start} scale={scale} />
+                        <ComparisonHighlights
+                          result={column.result}
+                          layers={layers}
+                          saved={saved}
+                          start={start}
+                          scale={scale}
+                        />
                         {column.placed.map(
                           ({
                             block,
@@ -299,17 +307,29 @@ export default function Calendar({
         <ScrollArea.Corner />
       </AutoHideScrollArea>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {included.length >= 2 && <>
-          {(['presence', 'free'] as const).map((layer) => layers[layer] && (
-            <span key={layer} className={`mode-legend mr-3 inline-flex items-center gap-1 before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${layer === 'free' ? 'free-legend before:border-y before:border-u-accent-border before:bg-u-accent-soft' : 'before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}>
-              {layer === 'presence' ? 'В вузе' : 'Без занятий'}
-            </span>
-          ))}
-          {(layers.presence || layers.free) && <span className="mr-3">
-            {excluded.length ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}` : `Для всех ${included.length} групп`}
-            {saved && ' · по сохранённым данным'}.
-          </span>}
-        </>}
+        {included.length >= 2 && (
+          <>
+            {(['presence', 'free'] as const).map(
+              (layer) =>
+                layers[layer] && (
+                  <span
+                    key={layer}
+                    className={`mode-legend mr-3 inline-flex items-center gap-1 before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${layer === 'free' ? 'free-legend before:border-y before:border-u-accent-border before:bg-u-accent-soft' : 'before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}
+                  >
+                    {layer === 'presence' ? 'В вузе' : 'Без занятий'}
+                  </span>
+                ),
+            )}
+            {(layers.presence || layers.free) && (
+              <span className="mr-3">
+                {excluded.length
+                  ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
+                  : `Для всех ${included.length} групп`}
+                {saved && ' · по сохранённым данным'}.
+              </span>
+            )}
+          </>
+        )}
         <span className="lesson-hint inline">
           Нажми на занятие — подробности.
           {(!singleDay || minima[0] + railWidth > viewportWidth) && (
