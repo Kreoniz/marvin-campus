@@ -110,6 +110,7 @@ legible over the stronger motif, including List. Resource selection chips use th
 spotlight uses categorical fill with dark motifs and no inset edge. In forced
 colors, a double inset marker identifies spotlighted cards and List entries
 independently of the outer focus/popup outline and remote dashed border.
+Short calendar cards reserve space for a side-only marker so it cannot cross text.
 lecturer names retain their full labels without ellipsis and redundant role captions are omitted. Visible kind text/icons also identify them. Parallel bundles
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.

@@ -309,6 +309,19 @@
     border-radius: 4px;
     pointer-events: none;
   }
+  @container (height < 36px) {
+    .lesson-position[data-spotlight] .lesson-card {
+      padding-inline-start: 7px;
+    }
+    .lesson-position[data-spotlight] .lesson-card::after {
+      inset-block: 0;
+      inset-inline: 0 auto;
+      width: 3px;
+      border-block-width: 0;
+      border-inline-end-width: 0;
+      border-radius: 0;
+    }
+  }
 }
 
 /* R14 calendar/navigation scrollbars — owned separately from cards and controls.
