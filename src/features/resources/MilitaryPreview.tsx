@@ -27,12 +27,12 @@ export default function MilitaryPreview({
   const {
     catalogue,
     expired,
+    missingPreferred,
     available,
     ref,
     result,
     snapshot,
     data,
-    originalAvailable,
     lessons,
     covered,
     unresolved,
@@ -113,6 +113,11 @@ export default function MilitaryPreview({
           </button>
         </p>
       )}
+      {missingPreferred && (
+        <p className="my-2 text-xs text-u-muted" role="status">
+          Выбранного расписания нет в текущем наборе ВУЦ. Выбери другое.
+        </p>
+      )}
       {ref && (
         <>
           <p className="my-2 text-xs leading-relaxed text-u-muted">
@@ -183,7 +188,7 @@ export default function MilitaryPreview({
         </>
       )}
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs">
-        <VucOriginalLink ref={ref} available={originalAvailable} />
+        <VucOriginalLink ref={ref} />
         <a
           className="inline-flex min-h-8 items-center underline"
           href={vucPageURL(ref ? [ref] : [], date)}

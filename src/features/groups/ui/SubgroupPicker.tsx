@@ -18,6 +18,11 @@ interface Props {
   spotlight?: boolean;
   onSpotlight?: () => void;
   onManage?: () => void;
+  onRemove?: () => void;
+  onClearSpotlights?: () => void;
+  hasSpotlights?: boolean;
+  color?: string;
+  status?: string;
 }
 
 export default function SubgroupPicker({
@@ -33,6 +38,11 @@ export default function SubgroupPicker({
   spotlight,
   onSpotlight,
   onManage,
+  onRemove,
+  onClearSpotlights,
+  hasSpotlights,
+  color,
+  status,
 }: Props) {
   const current = subgroups.find((subgroup) => subgroup.id === value);
   const number = subgroupNumber ?? (current && publicSubgroup(current.label));
@@ -62,6 +72,11 @@ export default function SubgroupPicker({
       spotlight={spotlight}
       onSpotlight={onSpotlight}
       onManage={onManage}
+      onRemove={onRemove}
+      onClearSpotlights={onClearSpotlights}
+      hasSpotlights={hasSpotlights}
+      color={color}
+      status={status}
       trigger={
         <button
           type="button"

@@ -25,12 +25,9 @@ import {
   sourceTracks,
   sourceAnchor,
   restoreSourceAnchor,
+  sourceTracksWidth,
   SOURCE_INSET,
 } from '../model/source-layout.ts';
-import {
-  VERTICAL_CARD_WIDTH,
-  VERTICAL_LANE_PITCH,
-} from '../model/vertical-layout.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import LessonCard from './LessonCard.tsx';
 import { calendarBounds } from '../model/calendar-bounds.ts';
@@ -91,13 +88,7 @@ export default function SourceDayCalendar({
     start,
     scale,
   );
-  const width = Math.max(
-    rail + 172,
-    rail +
-      (tracks.at(-1)?.left ?? 0) +
-      (tracks.at(-1)?.width ?? 160) +
-      SOURCE_INSET,
-  );
+  const width = rail + sourceTracksWidth(tracks);
   const height = Math.max(
     (end - start) * scale,
     ...tracks.flatMap((track) =>
@@ -386,8 +377,8 @@ export default function SourceDayCalendar({
                         style={{
                           top,
                           height: cardHeight,
-                          left: column * VERTICAL_LANE_PITCH,
-                          width: VERTICAL_CARD_WIDTH,
+                          left: column * track.lanePitch,
+                          width: track.cardWidth,
                         }}
                       />
                     ),
@@ -420,16 +411,24 @@ export default function SourceDayCalendar({
       {scope.included.length >= 2 && (layers.presence || layers.free) && (
         <p className="calendar-hint m-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-u-line-soft px-3 py-2 text-[11px] leading-4 text-u-muted">
           {layers.presence && (
-            <span
-              className={`inline-flex items-center gap-1.5 before:h-2.5 before:w-1 before:border-l-[3px] before:border-campus-presence-border before:content-[''] ${saved ? 'before:border-dashed' : ''}`}
-            >
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className={`calendar-layer-icon ${saved ? 'border-b border-dashed' : ''}`}
+                data-layer="presence"
+              >
+                <Icon name="presence" size={14} />
+              </span>
               В вузе
             </span>
           )}
           {layers.free && (
-            <span
-              className={`inline-flex items-center gap-1.5 before:h-2.5 before:w-2.5 before:border before:border-u-accent-border before:bg-u-accent-soft before:content-[''] ${saved ? 'before:border-dashed' : ''}`}
-            >
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className={`calendar-layer-icon ${saved ? 'border-b border-dashed' : ''}`}
+                data-layer="free"
+              >
+                <Icon name="free" size={14} />
+              </span>
               Общие окна
             </span>
           )}

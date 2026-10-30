@@ -123,6 +123,13 @@ export default function DayAgenda({
                   );
                   const spotlight = spotlights.length > 0;
                   const dimmed = spotlightIds.length > 0 && !spotlight;
+                  const roomInMembers =
+                    !lesson.remote &&
+                    members.some(
+                      (member) =>
+                        member.kind === 'auditorium' &&
+                        member.label.trim() === lesson.room.trim(),
+                    );
                   return (
                     <li
                       key={entry.identity}
@@ -232,7 +239,11 @@ export default function DayAgenda({
                           </p>
                         ))}
                         <p className="mt-1.5 mb-0 text-[13px] leading-relaxed text-u-muted wrap-anywhere">
-                          <LessonRoom lesson={lesson} /> ·{' '}
+                          {!roomInMembers && (
+                            <>
+                              <LessonRoom lesson={lesson} /> ·{' '}
+                            </>
+                          )}
                           {lesson.kind || 'Тип занятия не указан'}
                           {(lesson.teacher || lesson.teachers?.length) && (
                             <span className="agenda-teacher">

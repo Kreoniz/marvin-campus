@@ -72,6 +72,7 @@
    parallel-event stripes, remote dashes and saved clocks keep separate meanings. */
 .resource-card {
   --resource-surface: color-mix(in srgb, var(--chip) 12%, var(--u-surface));
+  --resource-motif: color-mix(in srgb, var(--chip) 75%, var(--u-ink));
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -92,7 +93,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: color-mix(in srgb, var(--chip) 75%, var(--u-ink));
+  background: var(--resource-motif);
   opacity: 0.28;
   mask-size: 64px 64px;
   mask-repeat: repeat;
@@ -114,14 +115,15 @@
   background: var(--resource-surface);
 }
 .lesson-position[data-spotlight] .resource-card,
-.agenda-entry[data-spotlight] .resource-card {
+.agenda-entry[data-spotlight] .resource-card,
+.group-chip.resource-chip[data-spotlight],
+.schedule-menu-spotlight.resource-card[aria-pressed='true'] {
   --resource-surface: var(--chip);
+  --resource-motif: var(--u-category-ink);
   background-color: var(--resource-surface);
   color: var(--u-category-ink);
   border-color: var(--chip);
-  box-shadow:
-    inset 0 0 0 1px var(--chip),
-    inset 4px 0 var(--u-category-ink);
+  box-shadow: none;
 }
 /* Card text owns a small opaque halo above the decorative resource motif.
    Apply it to linked metadata too: a muted paragraph alone misses button text. */
@@ -194,6 +196,18 @@
 .resource-chip > button {
   position: relative;
   z-index: 1;
+}
+.schedule-menu-spotlight.resource-card > * {
+  position: relative;
+  z-index: 1;
+}
+.calendar-layer-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-campus-presence-border);
+}
+.calendar-layer-icon[data-layer='free'] {
+  color: var(--u-accent-text);
 }
 .resource-chip .group-spotlight[aria-pressed='true'] {
   background: var(--chip);
@@ -363,11 +377,12 @@
   --resource-surface: var(--chip);
   background-color: var(--chip);
   color: var(--u-category-ink);
+  box-shadow: none;
 }
 .schedule-menu-spotlight[aria-pressed='true'] {
-  background: var(--u-selection);
-  color: var(--u-selection-ink);
-  box-shadow: inset 0 0 0 1px var(--u-selection-border);
+  background: var(--chip, var(--u-selection));
+  color: var(--u-category-ink);
+  box-shadow: none;
 }
 [data-group-order] [data-dragging] {
   opacity: 0.5;
@@ -380,7 +395,11 @@
     outline-offset: -2px;
   }
   .schedule-menu-spotlight[aria-pressed='true'] {
-    border-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .calendar-layer-icon {
+    color: CanvasText;
   }
 }
 /* End R14 selected controls. */

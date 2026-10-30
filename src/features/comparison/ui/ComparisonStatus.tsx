@@ -8,6 +8,7 @@ import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { ComparisonLinks } from '../model/use-comparison.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
+import VucScheduleNotes from '../../resources/VucScheduleNotes.tsx';
 
 const checkedLabel = (value: string) =>
   new Intl.DateTimeFormat('ru-RU', {
@@ -164,6 +165,9 @@ export default function ComparisonStatus({
                         <p className="mt-1 text-xs leading-[18px] text-u-muted">
                           {warning}
                         </p>
+                      )}
+                      {imported && (
+                        <VucScheduleNotes schedule={group} date={day} />
                       )}
                       {!snapshot && !group.loading && !warning && (
                         <p className="mt-1 text-xs text-u-muted">

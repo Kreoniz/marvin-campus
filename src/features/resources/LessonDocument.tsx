@@ -5,11 +5,9 @@ import VucOriginalLink from './VucOriginalLink.tsx';
 export default function LessonDocument({
   lesson,
   documentRef,
-  originalAvailable,
 }: {
   lesson: Lesson;
   documentRef?: VucRef;
-  originalAvailable?: boolean;
 }) {
   if (!lesson.rawText && !lesson.sourceOrigin && !documentRef) return null;
   return (
@@ -30,7 +28,7 @@ export default function LessonDocument({
           .
         </p>
       )}
-      <VucOriginalLink ref={documentRef} available={originalAvailable} />
+      <VucOriginalLink ref={documentRef} />
     </details>
   );
 }

@@ -16,14 +16,7 @@ export default function useMilitarySchedule(date: string) {
     expired,
   } = useVucCatalogue();
   const selected = schedules.filter((row) => row.selection.kind === 'vuc');
-  const available = [
-    ...new Map(
-      [
-        ...selected.map((row) => row.selection as VucRef),
-        ...catalogueEntries,
-      ].map((ref) => [ref.id, ref]),
-    ).values(),
-  ].sort((a, b) => {
+  const available = [...catalogueEntries].sort((a, b) => {
     const distance = (item: VucRef) => {
       const nearest = nearestVucDate(item, date);
       return nearest
@@ -58,10 +51,6 @@ export default function useMilitarySchedule(date: string) {
   }, [changeAt]);
   const snapshot = usableSnapshot(result.data, monday(date), now);
   const data = snapshot?.data;
-  const originalAvailable =
-    data?.originalAvailable ??
-    catalogueEntries.find((item) => item.id === ref?.id)?.originalAvailable ??
-    ref?.originalAvailable;
   const lessons = (data?.lessons ?? [])
     .filter((lesson) => lesson.date === date)
     .sort(
@@ -87,12 +76,17 @@ export default function useMilitarySchedule(date: string) {
   return {
     catalogue,
     expired,
+    missingPreferred:
+      !!preferred &&
+      !ref &&
+      !catalogue.isPending &&
+      !catalogue.isError &&
+      !expired,
     available,
     ref,
     result,
     snapshot,
     data,
-    originalAvailable,
     lessons,
     covered,
     unresolved,

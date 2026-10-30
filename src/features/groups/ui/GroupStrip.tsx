@@ -41,6 +41,10 @@ interface Props {
   onOrder: (id: string) => void;
   spotlightIds: string[];
   onSpotlight: (id: string) => void;
+  onRemove: (key: string) => void;
+  onClearSpotlights: () => void;
+  hasSpotlights: boolean;
+  onEmpty: () => void;
 }
 interface Drag {
   id: string;
@@ -81,6 +85,10 @@ export default function GroupStrip(props: Props) {
     onOrder,
     spotlightIds,
     onSpotlight,
+    onRemove,
+    onClearSpotlights,
+    hasSpotlights,
+    onEmpty,
   } = props;
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
@@ -96,7 +104,7 @@ export default function GroupStrip(props: Props) {
   const suppressClick = useRef(false);
   const [announcement, setAnnouncement] = useState('');
   const shown = preview ?? groups;
-  function focus(id: string) {
+  function focus(id: string, reveal = false) {
     requestAnimationFrame(() => {
       Array.from(
         scroller.current?.querySelectorAll<HTMLButtonElement>(
@@ -104,7 +112,7 @@ export default function GroupStrip(props: Props) {
         ) ?? [],
       )
         .find((button) => button.offsetParent !== null)
-        ?.focus({ preventScroll: true });
+        ?.focus({ preventScroll: !reveal });
     });
   }
   function start(
@@ -270,6 +278,16 @@ export default function GroupStrip(props: Props) {
     );
     requestAnimationFrame(() => control.focus({ preventScroll: true }));
   }
+  function remove(group: Selection) {
+    const index = groups.findIndex(
+      (item) => scheduleKey(item) === scheduleKey(group),
+    );
+    const next = groups[index + 1] ?? groups[index - 1];
+    onRemove(scheduleKey(group));
+    setAnnouncement(`${label(group)} убрано из сравнения.`);
+    if (next) focus(scheduleKey(next), true);
+    else requestAnimationFrame(onEmpty);
+  }
   function renderChip(group: Selection, ghost = false) {
     const loaded = schedules.find(
       (s) => scheduleKey(s.selection) === scheduleKey(group),
@@ -294,7 +312,7 @@ export default function GroupStrip(props: Props) {
     );
     return (
       <div
-        className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue ? 'outline-2 -outline-offset-2 outline-(--u-danger)' : ''} ${!ghost && drag?.id === scheduleKey(group) ? 'opacity-35' : ''} ${ghost ? 'drag-chip pointer-events-none select-none' : ''}`}
+        className={`${chipClassName} ${chipWidth(group)} ${!isGroup(group) && ['lecturer', 'auditorium'].includes(selectionKind(group)) ? `resource-card resource-chip resource-${selectionKind(group)}` : ''} overflow-hidden ${issue && selectionKind(group) !== 'vuc' ? 'outline-2 -outline-offset-2 outline-(--u-danger)' : ''} ${!ghost && drag?.id === scheduleKey(group) ? 'opacity-35' : ''} ${ghost ? 'drag-chip pointer-events-none select-none' : ''}`}
         key={scheduleKey(group)}
         onPointerDownCapture={(event) => {
           if (ghost) return;
@@ -348,6 +366,11 @@ export default function GroupStrip(props: Props) {
                 : undefined
             }
             onManage={() => onOrder(scheduleKey(group))}
+            onRemove={() => remove(group)}
+            onClearSpotlights={onClearSpotlights}
+            hasSpotlights={hasSpotlights}
+            color={chipColor(colors[scheduleKey(group)] ?? 0)}
+            status={issueText}
             cardsHidden={hiddenKinds.includes(selectionKind(group))}
             groupKey={scheduleKey(group)}
             label={group.label}
@@ -368,6 +391,18 @@ export default function GroupStrip(props: Props) {
                 : undefined
             }
             onManage={() => onOrder(scheduleKey(group))}
+            onRemove={() => remove(group)}
+            onClearSpotlights={onClearSpotlights}
+            hasSpotlights={hasSpotlights}
+            color={chipColor(colors[scheduleKey(group)] ?? 0)}
+            resourceKind={
+              selectionKind(group) === 'lecturer'
+                ? 'lecturer'
+                : selectionKind(group) === 'auditorium'
+                  ? 'auditorium'
+                  : undefined
+            }
+            status={issueText}
             trigger={
               <button
                 type="button"

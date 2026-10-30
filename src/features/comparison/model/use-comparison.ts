@@ -7,6 +7,10 @@ import { assignColors, type GroupColors } from '../../../lib/colors.ts';
 import { addDays, monday, omskToday, validDate } from '../../../lib/dates.ts';
 import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
 import {
+  implicitDateOpening,
+  nextInitialDay,
+} from '../../../lib/initial-date.ts';
+import {
   rememberGroups,
   resolveReadable,
 } from '../../../lib/group-directory.ts';
@@ -49,6 +53,7 @@ export type Notify = (
 ) => void;
 
 export interface ComparisonView extends ViewState {
+  cancelInitialDate(): void;
   current(): ViewState;
   apply(value: ViewState): void;
   reorder(groups: Selection[]): void;
@@ -259,6 +264,13 @@ export function useComparison(notify: Notify, vucOnly = false) {
   const client = useQueryClient();
   const [state, setState] = useState(initialView);
   const stateRef = useRef(state);
+  const [openedAt] = useState(() =>
+    typeof location === 'undefined'
+      ? undefined
+      : implicitDateOpening(new URL(location.href), new Date()),
+  );
+  const initialDate = useRef(openedAt);
+  const canonicalizeRef = useRef<() => void>(() => {});
   const notifyRef = useRef(notify);
   notifyRef.current = notify;
   const changedRef = useRef<() => void>(() => {});
@@ -275,11 +287,18 @@ export function useComparison(notify: Notify, vucOnly = false) {
   // Stable methods read synchronously updated refs. A date/subgroup change and
   // its URL are one operation even before React commits the next render.
   const view = useMemo<ComparisonView>(() => {
+    function cancelInitialDate() {
+      if (initialDate.current === undefined) return;
+      initialDate.current = undefined;
+      // Establish the original entry before an intentional change pushes one.
+      canonicalizeRef.current();
+    }
     function apply(value: ViewState) {
       stateRef.current = value;
       setState(value);
     }
     function change(value: Partial<ViewState>) {
+      cancelInitialDate();
       apply({ ...stateRef.current, ...value });
       // Explicit links are temporary views. Only an intentional selection edit
       // adopts their VUC set as the saved workspace; dates and copying do not.
@@ -318,6 +337,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
         });
     }
     return {
+      cancelInitialDate,
       get groups() {
         return stateRef.current.groups;
       },
@@ -463,7 +483,12 @@ export function useComparison(notify: Notify, vucOnly = false) {
       setLinkState(linkRef.current);
     }
     function canonicalize() {
-      if (linkRef.current.opening || linkRef.current.error) return;
+      if (
+        initialDate.current !== undefined ||
+        linkRef.current.opening ||
+        linkRef.current.error
+      )
+        return;
       const value = view.current();
       if (!vucOnly) rememberSelection(value.groups, false);
       history.replaceState(
@@ -504,6 +529,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
       },
       async copy() {
         if (linkRef.current.sharing) return;
+        view.cancelInitialDate();
         update({ sharing: true, manual: '' });
         const value = view.current(),
           url = viewURL(
@@ -545,6 +571,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
     };
   }, [view, vucOnly]);
   changedRef.current = links.sync;
+  canonicalizeRef.current = links.canonicalize;
 
   useEffect(() => {
     function update(next: Partial<typeof linkState>) {
@@ -629,6 +656,8 @@ export function useComparison(notify: Notify, vucOnly = false) {
         history.replaceState({ campusView: view.current() }, '', location.href);
     }
     function onBack(event: PopStateEvent) {
+      // History is explicit navigation, including entries without campusView.
+      initialDate.current = undefined;
       if (
         !event.state?.campusView ||
         (vucOnly &&
@@ -662,8 +691,38 @@ export function useComparison(notify: Notify, vucOnly = false) {
   const fetching = linkState.opening || source.fetching;
 
   useEffect(() => {
-    if (view.resolveSubgroups(subgroupCatalog)) links.canonicalize();
-  }, [state.groups, subgroupCatalog, view, links]);
+    const known = { ...subgroupCatalog };
+    for (const row of source.schedules) {
+      if (isGroup(row.selection) && row.snapshot)
+        known[row.selection.id] = mergeSubgroups(
+          known[row.selection.id] ?? [],
+          row.snapshot.data.subgroups ?? [],
+        );
+    }
+    if (view.resolveSubgroups(known)) links.canonicalize();
+  }, [state.groups, subgroupCatalog, source.schedules, view, links]);
+
+  useEffect(() => {
+    if (
+      initialDate.current === undefined ||
+      linkState.opening ||
+      linkState.error ||
+      stateRef.current !== state ||
+      source.fetching ||
+      source.pending
+    )
+      return;
+    // Decide once, at initial settlement. Later refreshes and clock/deadline
+    // ticks cannot take an active page away from its selected day.
+    const next = nextInitialDay(
+      source.schedules,
+      initialDate.current,
+      Date.now(),
+    );
+    initialDate.current = undefined;
+    if (next) view.apply({ ...view.current(), week: monday(next), day: next });
+    if (view.groups.length) links.canonicalize();
+  }, [linkState.opening, linkState.error, state, source, view, links]);
 
   const colorKey = JSON.stringify(state.groups.map(scheduleKey));
   useEffect(() => {

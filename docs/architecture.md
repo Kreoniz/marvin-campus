@@ -43,7 +43,10 @@
   weeks with per-platoon covered/unresolved dates and source evidence; it accepts
   no public uploads or request-controlled filesystem paths. Optional configured
   originals are hash-verified at startup and served as the unchanged PDF/DOCX bytes
-  by canonical VUC ID; availability is independent of date coverage. See `docs/vuc.md`.
+  by canonical VUC ID; availability is independent of date coverage.
+  `scripts/update-vuc.py` freezes explicit current-semester inputs, invokes the
+  importer and publishes a new dataset/originals directory together without
+  changing live settings or removing prior sets. See `docs/vuc.md`.
 - `presentation-cohort` and `use-presentation-cohort`: publication policy above
   independent query caches. A week and typed selection set define a generation;
   cold responses wait at most two seconds, later changes coalesce for 1.2 seconds

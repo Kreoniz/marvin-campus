@@ -19,6 +19,7 @@ export default function MilitaryInline({
     times,
     catalogue,
     expired,
+    missingPreferred,
   } = useMilitarySchedule(date);
   const body = useRef<HTMLSpanElement>(null);
   const entries = useRef<HTMLSpanElement>(null);
@@ -69,7 +70,9 @@ export default function MilitaryInline({
         <span className="mt-1 block">
           {catalogue.isError || expired
             ? 'Список ВУЦ недоступен · подробнее →'
-            : 'Выбрать в подробностях →'}
+            : missingPreferred
+              ? 'Расписания нет в текущем наборе · подробнее →'
+              : 'Выбрать в подробностях →'}
         </span>
       ) : result.isPending && !snapshot ? (
         <span className="mt-1 block">Загрузка…</span>

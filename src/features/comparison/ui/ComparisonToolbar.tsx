@@ -25,6 +25,9 @@ interface Props {
   onOrder: (id: string) => void;
   spotlightIds: string[];
   onSpotlight: (id: string) => void;
+  onRemove: (key: string) => void;
+  onClearSpotlights: () => void;
+  hasSpotlights: boolean;
   addGroupRef: RefObject<HTMLButtonElement | null>;
   onGroups: () => void;
   onToday: () => void;
@@ -39,6 +42,9 @@ export default function ComparisonToolbar({
   onOrder,
   spotlightIds,
   onSpotlight,
+  onRemove,
+  onClearSpotlights,
+  hasSpotlights,
   addGroupRef,
   onGroups,
   onToday,
@@ -76,6 +82,10 @@ export default function ComparisonToolbar({
             onOrder={onOrder}
             spotlightIds={spotlightIds}
             onSpotlight={onSpotlight}
+            onRemove={onRemove}
+            onClearSpotlights={onClearSpotlights}
+            hasSpotlights={hasSpotlights}
+            onEmpty={() => addGroupRef.current?.click()}
           />
         )}
         <div className="flex shrink-0 items-center pb-2">

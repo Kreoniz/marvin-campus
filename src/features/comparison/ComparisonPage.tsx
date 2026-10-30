@@ -147,11 +147,13 @@ export default function ComparisonPage({
     }
   }
   function selectFormat(value: ScheduleView) {
+    view.cancelInitialDate();
     if (value === scheduleView) return;
     setScheduleView(value);
     track('mobile_view_changed', { view: value });
   }
   function selectToday() {
+    view.cancelInitialDate();
     const today = omskToday();
     if (view.day !== today || view.week !== monday(today))
       view.selectDate(today);
@@ -363,6 +365,9 @@ export default function ComparisonPage({
                         setOrderOpen(true);
                       }}
                       spotlightIds={spotlightIds}
+                      onRemove={view.remove}
+                      onClearSpotlights={() => setSpotlightGroupIds([])}
+                      hasSpotlights={spotlightGroupIds.length > 0}
                       onSpotlight={(id) =>
                         setSpotlightGroupIds((current) =>
                           current.includes(id)
@@ -469,11 +474,7 @@ export default function ComparisonPage({
                             />
                           </div>
                         )}
-                        <VucSources
-                          schedules={source.schedules}
-                          day={day}
-                          onSelectDate={view.selectDate}
-                        />
+                        <VucSources schedules={source.schedules} />
                         {(mobile || vucOnly) && (
                           <ComparisonStatus
                             schedules={source.schedules}

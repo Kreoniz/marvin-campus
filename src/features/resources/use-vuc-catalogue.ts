@@ -4,8 +4,8 @@ import { snapshotChangeAt, usableSnapshot } from '../../lib/cache-policy.ts';
 import { monday, omskToday } from '../../lib/dates.ts';
 import { vucSearchOptions } from './api.ts';
 
-export default function useVucCatalogue() {
-  const query = useQuery(vucSearchOptions(''));
+export default function useVucCatalogue(enabled = true) {
+  const query = useQuery({ ...vucSearchOptions(''), enabled });
   const [clock, setClock] = useState(Date.now);
   const now = Math.max(clock, Date.now());
   const week = monday(omskToday(new Date(now)));

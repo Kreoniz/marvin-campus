@@ -1,19 +1,11 @@
-import { validSelection } from '../../lib/schedule-ref.ts';
 import type { VucRef } from '../../lib/types.ts';
+import { vucOriginalAvailable } from '../../lib/vuc-documents.ts';
+import useVucCatalogue from './use-vuc-catalogue.ts';
 
-export default function VucOriginalLink({
-  ref,
-  available,
-}: {
-  ref: VucRef | undefined;
-  available?: boolean;
-}) {
+export default function VucOriginalLink({ ref }: { ref: VucRef | undefined }) {
+  const { entries, query } = useVucCatalogue(!!ref);
   if (!ref) return null;
-  if (
-    !validSelection(ref) ||
-    !/^d[0-9a-f]{12}-p[0-9]{3}[a-z]?$/.test(ref.id) ||
-    (available ?? ref.originalAvailable) !== true
-  )
+  if (query.isError || !vucOriginalAvailable(ref, entries))
     return (
       <span className="inline-flex min-h-8 items-center text-xs text-u-muted">
         Оригинал недоступен
@@ -23,9 +15,10 @@ export default function VucOriginalLink({
     <a
       className="inline-flex min-h-8 items-center rounded-sm text-xs underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-u-ink"
       href={`/api/vuc/${encodeURIComponent(ref.id)}/original`}
+      aria-label={`Скачать документ ${ref.label}`}
       download
     >
-      Скачать оригинал
+      Скачать
     </a>
   );
 }

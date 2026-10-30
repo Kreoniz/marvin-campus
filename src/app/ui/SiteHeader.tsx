@@ -40,7 +40,7 @@ export default function SiteHeader({
         </span>
       </a>
       <nav
-        className="mr-auto ml-2 flex items-center gap-3 text-sm max-[1000px]:hidden"
+        className="ml-2 flex items-center gap-3 text-sm max-[1000px]:hidden"
         aria-label="Разделы расписаний"
       >
         <a
@@ -59,7 +59,7 @@ export default function SiteHeader({
         </a>
       </nav>
       <div
-        className="space-doodle hidden min-[1300px]:flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
+        className="space-doodle ml-5 hidden min-[1300px]:flex items-center gap-2 text-[11px] leading-[1.4] font-semibold compact:hidden"
         aria-hidden="true"
       >
         <span className="rotate-[-12deg] bg-[#ffe393] px-[7px] py-[3px] text-[17px] text-[#171b18] dark:bg-[#ddc36d]">

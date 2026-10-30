@@ -27,7 +27,7 @@ import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { track } from '../../../lib/analytics.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import { participantClasses } from './participant-style.ts';
-import { eventOwner } from '../model/event-owner.ts';
+import { compactAudience } from '../model/lesson-audience.ts';
 import {
   LessonRoom,
   LessonTeachers,
@@ -49,6 +49,7 @@ interface LessonCardProps {
   hiddenKinds?: ScheduleKind[];
   trackMember?: Selection;
   reference?: boolean;
+  compact?: boolean;
 }
 
 const compactPopupQuery =
@@ -64,6 +65,7 @@ export default function LessonCard({
   hiddenKinds = [],
   trackMember,
   reference = false,
+  compact = false,
 }: LessonCardProps) {
   const { lesson } = block;
   const { openResource, schedules } = useResourceInspector();
@@ -85,8 +87,7 @@ export default function LessonCard({
   const surfaceMembers = members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
-  const primaryMember =
-    trackMember ?? eventOwner(surfaceMembers) ?? block.members[0];
+  const primaryMember = trackMember ?? surfaceMembers[0] ?? block.members[0];
   const resourceKind = selectionKind(primaryMember);
   const resourceSurface =
     resourceKind === 'lecturer' || resourceKind === 'auditorium';
@@ -94,6 +95,7 @@ export default function LessonCard({
   const sharedEvent = members.length > 1;
   const allGroups = members.every(isGroup);
   const events = block.parallel ?? [lesson];
+  const audience = compactAudience(events);
   const badges = [
     ...new Map(
       events.flatMap((event) => {
@@ -425,7 +427,7 @@ export default function LessonCard({
             } as CSSProperties
           }
           data-resource-kind={resourceKind}
-          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) p-[5px] [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''} ${reference ? 'shared-reference' : ''}`}
+          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) ${compact ? 'p-1' : 'p-[5px]'} [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''} ${reference ? 'shared-reference' : ''}`}
 
           onClick={() => {
             setHovering(false);
@@ -446,7 +448,7 @@ export default function LessonCard({
               </span>
             )}
             <span
-              className={`card-subject min-w-0 flex-1 truncate ${trackMember ? 'text-xs' : 'text-[11px]'} font-bold ${!horizontal && !block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
+              className={`card-subject min-w-0 flex-1 truncate ${trackMember && !compact ? 'text-xs' : 'text-[11px]'} font-bold ${!horizontal && !block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
             >
               {block.parallel
                 ? `${events.length} занятия`
@@ -461,17 +463,30 @@ export default function LessonCard({
               </span>
               <span className="relative z-[1] truncate text-[10px] [@container(height<65px)]:hidden">
                 {timeLabel(lesson.start)}–{timeLabel(lesson.end)} ·{' '}
-                {eventOwner(surfaceMembers)?.label}
+                {surfaceMembers[0]?.label}
               </span>
             </>
           ) : (
             <>
-              {!horizontal && (long || trackMember) && (
+              {!horizontal && (long || (trackMember && !compact)) && (
                 <span className="card-time relative z-[1] text-[10px] [@container(height<38px)]:hidden">
                   {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
                 </span>
               )}
-              {(!trackMember || shared) && (
+              {!shared && resourceKind === 'auditorium' && audience && (
+                <span
+                  className="card-audience relative z-[1] truncate text-[10px] font-semibold [@container(height<52px)]:hidden"
+                  title={events
+                    .map(
+                      (event) => event.audiences?.join('; ') || event.audience,
+                    )
+                    .filter(Boolean)
+                    .join('; ')}
+                >
+                  {audience}
+                </span>
+              )}
+              {shared || (!trackMember && resourceKind !== 'auditorium') ? (
                 <span
                   className={`participant-sectors relative z-[1] min-w-0 flex-none [@container(height<42px)]:hidden ${shared ? 'shared-sectors grid' : 'flex items-center font-semibold'}`}
                   style={
@@ -563,13 +578,15 @@ export default function LessonCard({
                     </span>
                   )}
                 </span>
-              )}
+              ) : null}
             </>
           )}
           <span
             className={`card-meta relative z-[1] flex min-w-0 flex-none items-center gap-[3px] text-[10px] ${reference ? '[@container(height<86px)]:hidden' : '[@container(height<52px)]:hidden'}`}
           >
-            <span className="card-room min-w-0 flex-1 truncate">{place}</span>
+            <span className="card-room min-w-0 flex-1 truncate">
+              {shared && resourceKind === 'auditorium' ? audience : place}
+            </span>
             {trackMember && !shared && saved && <Icon name="clock" size={10} />}
             <span className="kind-badges flex shrink-0 gap-0.5">
               {badges.map((kind) => (

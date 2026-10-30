@@ -1,16 +1,17 @@
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
 import type { Selection } from '../../../lib/types.ts';
 import { scheduleKey, selectionKind } from '../../../lib/schedule-ref.ts';
-import { eventOwner } from './event-owner.ts';
-import {
-  verticalLayout,
-  VERTICAL_CARD_WIDTH,
-  VERTICAL_LANE_PITCH,
-  type VerticalPlacement,
-} from './vertical-layout.ts';
+import { verticalLayout, type VerticalPlacement } from './vertical-layout.ts';
 
 export const SOURCE_GAP = 16;
 export const SOURCE_INSET = 9;
+const LANE_GAP = 6;
+
+// Density is presentation-only. Keep readable cards and scroll the canvas;
+// never compress thirty sources into thin strips or change their time scale.
+export function sourceCardWidth(count: number) {
+  return count <= 3 ? 160 : count <= 6 ? 144 : count <= 12 ? 128 : 112;
+}
 export interface SourceOccurrence extends VerticalPlacement {
   member: Selection;
   reference: boolean;
@@ -20,6 +21,8 @@ export interface SourceTrack {
   selection: Selection;
   left: number;
   width: number;
+  cardWidth: number;
+  lanePitch: number;
   occurrences: SourceOccurrence[];
 }
 // References reuse a canonical block; they never enter lesson counts or calculations.
@@ -29,15 +32,18 @@ export function sourceTracks(
   origin: number,
   scale: number,
 ): SourceTrack[] {
-  const visible = new Set(selections.map(scheduleKey));
   const owners = new Map(
     blocks.map((block) => [
       block.identity,
-      eventOwner(
-        block.members.filter((member) => visible.has(scheduleKey(member))),
+      selections.find((selection) =>
+        block.members.some(
+          (member) => scheduleKey(member) === scheduleKey(selection),
+        ),
       ),
     ]),
   );
+  const cardWidth = sourceCardWidth(selections.length);
+  const lanePitch = cardWidth + LANE_GAP;
   let left = SOURCE_INSET;
   return selections.map((selection, index) => {
     if (index)
@@ -55,14 +61,14 @@ export function sourceTracks(
       scale,
     );
     const lanes = Math.max(1, ...placed.map((entry) => entry.columns));
-    const width =
-      VERTICAL_CARD_WIDTH * lanes +
-      (lanes - 1) * (VERTICAL_LANE_PITCH - VERTICAL_CARD_WIDTH);
+    const width = cardWidth * lanes + (lanes - 1) * LANE_GAP;
     const track = {
       key,
       selection,
       left,
       width,
+      cardWidth,
+      lanePitch,
       occurrences: placed.map((entry) => ({
         ...entry,
         member: selection,
@@ -74,8 +80,36 @@ export function sourceTracks(
   });
 }
 
+// Week omits confirmed-empty bands. Missing/ambiguous sources are reported by
+// the day's status, independently of this projection of known occurrences.
+export function activeSourceTracks(
+  blocks: LessonBlock[],
+  selections: Selection[],
+  origin: number,
+  scale: number,
+) {
+  const active = new Set(
+    blocks.flatMap((block) => block.members.map(scheduleKey)),
+  );
+  return sourceTracks(
+    blocks,
+    selections.filter((selection) => active.has(scheduleKey(selection))),
+    origin,
+    scale,
+  );
+}
+
+export function sourceTracksWidth(tracks: SourceTrack[]) {
+  const last = tracks.at(-1);
+  return last
+    ? last.left + last.width + SOURCE_INSET
+    : sourceCardWidth(0) + 2 * SOURCE_INSET;
+}
+
 export function sourceAnchor(
-  tracks: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
+  tracks: (Pick<SourceTrack, 'key' | 'left' | 'width'> & {
+    cardWidth?: number;
+  })[],
   offset: number,
 ) {
   const track =
@@ -88,7 +122,9 @@ export function sourceAnchor(
 export function restoreSourceAnchor(
   anchor: ReturnType<typeof sourceAnchor>,
   previous: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
-  tracks: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
+  tracks: (Pick<SourceTrack, 'key' | 'left' | 'width'> & {
+    cardWidth?: number;
+  })[],
 ): number | undefined {
   if (!anchor || !tracks.length) return undefined;
   let target = tracks.find((track) => track.key === anchor.key);
@@ -107,7 +143,7 @@ export function restoreSourceAnchor(
   }
   const max = Math.max(
     -SOURCE_INSET,
-    target.width - VERTICAL_CARD_WIDTH - SOURCE_INSET,
+    target.width - (target.cardWidth ?? sourceCardWidth(0)) - SOURCE_INSET,
   );
   return Math.max(
     0,

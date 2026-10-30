@@ -116,8 +116,11 @@ export default function DisplaySettings({
                 />
                 <span
                   aria-hidden="true"
-                  className={`h-3 w-3 border-l-[3px] ${layer === 'presence' ? 'border-campus-presence-border' : 'border-y border-u-accent-border bg-u-accent-soft'}`}
-                />
+                  className="calendar-layer-icon"
+                  data-layer={layer}
+                >
+                  <Icon name={layer} size={18} />
+                </span>
                 {layer === 'presence' ? 'В вузе' : 'Общие окна'}
               </label>
             ))}
@@ -140,10 +143,10 @@ export default function DisplaySettings({
                 variant="ghost"
                 className="min-h-11 w-full justify-start text-sm [&>.u-button-label]:justify-start"
                 onClick={onClearSpotlight}
-                aria-label={`Снять подсветку ${spotlightLabel}`}
+                aria-label="Снять все выделения"
               >
                 <Icon name="focus" size={18} />
-                Снять подсветку
+                Снять все выделения
               </Button>
             )}
           </div>

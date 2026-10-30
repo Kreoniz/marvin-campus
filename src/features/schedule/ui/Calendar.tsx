@@ -6,7 +6,11 @@ import type {
   Subgroup,
   ScheduleKind,
 } from '../../../lib/types.ts';
-import { selectionKind } from '../../../lib/schedule-ref.ts';
+import {
+  selectionKind,
+  kindIcon,
+  kindLabel,
+} from '../../../lib/schedule-ref.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
@@ -14,19 +18,17 @@ import {
   comparisonScope,
 } from '../../../lib/domain.ts';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
-import type { GroupColors } from '../../../lib/colors.ts';
+import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import {
-  dayMinimum,
-  verticalLayout,
-  VERTICAL_CARD_WIDTH,
-  VERTICAL_LANE_PITCH,
-  VERTICAL_DAY_INSET,
-} from '../model/vertical-layout.ts';
+  activeSourceTracks,
+  sourceTracksWidth,
+} from '../model/source-layout.ts';
 import { calendarBounds } from '../model/calendar-bounds.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 import ComparisonHighlights, {
   type CalendarLayers,
 } from './ComparisonHighlights.tsx';
@@ -116,12 +118,10 @@ export default function Calendar({
       complete: visible.every((group) => !comparisonIssue(group, date)),
       hidden:
         (schedules.length > 0 && visible.length === 0) || blocks.length > 0,
-      placed: verticalLayout(
-        blocks.filter((block) =>
-          block.members.some(
-            (member) => !hiddenKinds.includes(selectionKind(member)),
-          ),
-        ),
+      unavailable: visible.filter((group) => comparisonIssue(group, date)),
+      tracks: activeSourceTracks(
+        blocks,
+        visible.map((group) => group.selection),
         start,
         scale,
       ),
@@ -129,25 +129,17 @@ export default function Calendar({
   });
   const railWidth = compact ? 32 : 44;
   const minima = layout.map((column) =>
-    dayMinimum(
-      column.placed,
+    Math.max(
+      sourceTracksWidth(column.tracks),
       compact && !singleDay ? Math.max(0, (viewportWidth - railWidth) / 2) : 0,
     ),
   );
   return (
     <>
-      <AutoHideScrollArea
-        className="calendar-scroll h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]"
-        style={
-          {
-            '--calendar-viewport': `${calendarHeight}px`,
-            '--calendar-header': singleDay ? '0px' : '44px',
-          } as CSSProperties
-        }
-      >
+      <AutoHideScrollArea className="calendar-scroll">
         <ScrollArea.Viewport
           ref={scroller}
-          style={{ overflowY: 'hidden' }}
+          style={{ overflowY: 'hidden', height: 'auto' }}
           onFocusCapture={(event) => {
             const card = event.target;
             if (!(card instanceof HTMLElement) || !card.matches('.lesson-card'))
@@ -183,12 +175,13 @@ export default function Calendar({
         >
           <ScrollArea.Content className="pr-0">
             <div
-              className={`week-grid grid w-full ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
+              className="week-grid grid w-full"
               data-schedule-days
               style={
                 {
                   '--calendar-height': `${calendarHeight}px`,
                   '--hour-height': `${60 * scale}px`,
+                  gridTemplateRows: `${singleDay ? '' : '44px '}auto ${calendarHeight}px`,
                   gridTemplateColumns: `${railWidth}px ${minima.map((minimum) => `minmax(${minimum}px,1fr)`).join(' ')}`,
                   minWidth:
                     railWidth +
@@ -199,11 +192,11 @@ export default function Calendar({
               {!singleDay && (
                 <>
                   <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-                  {layout.map(({ date, scope }) => (
+                  {layout.map(({ date, scope, unavailable }) => (
                     <button
                       type="button"
                       key={date}
-                      className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
+                      className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-left text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
                       data-schedule-day={date}
                       disabled={placeholder}
                       aria-pressed={!placeholder && day === date}
@@ -211,7 +204,7 @@ export default function Calendar({
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long',
-                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}` : ''}`}
+                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}` : ''}${unavailable.length ? `. Нет подтверждённых данных: ${unavailable.map((group) => label(group.selection)).join(', ')}` : ''}`}
                       title={
                         scope.excluded.length
                           ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}`
@@ -222,7 +215,7 @@ export default function Calendar({
                       {placeholder ? (
                         <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
                       ) : (
-                        <>
+                        <span className="sticky left-[calc(var(--rail-width)+8px)] inline-block px-2">
                           <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
                           {Number(date.slice(8))}
                           {scope.excluded.length > 0 &&
@@ -235,12 +228,74 @@ export default function Calendar({
                                 {scope.included.length + scope.excluded.length}
                               </span>
                             )}
-                        </>
+                        </span>
                       )}
                     </button>
                   ))}
                 </>
               )}
+              <div className="time-header sticky left-0 z-[5] border-b border-u-line-soft bg-u-surface" />
+              {layout.map((column) => (
+                <div
+                  key={column.date}
+                  className="week-source-headings grid border-r border-b border-u-line-soft"
+                  style={{
+                    gridTemplateColumns: `${minima[layout.indexOf(column)]}px`,
+                  }}
+                >
+                  <div className="flex">
+                    {column.tracks.map((track, index) => (
+                      <div
+                        key={track.key}
+                        data-source-heading={track.key}
+                        className="flex shrink-0 items-start gap-1 border-b-[3px] px-1 py-1.5 text-[11px] leading-4 wrap-anywhere"
+                        title={`${label(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
+                        style={{
+                          width: track.width,
+                          marginLeft:
+                            track.left -
+                            (index
+                              ? column.tracks[index - 1].left +
+                                column.tracks[index - 1].width
+                              : 0),
+                          borderColor: lessonColor(
+                            colors[track.key] ?? 0,
+                            spotlightIds.length > 0 &&
+                              !spotlightIds.includes(track.key),
+                          ),
+                        }}
+                      >
+                        <span className="mt-0.5 shrink-0">
+                          <Icon
+                            name={kindIcon(selectionKind(track.selection))}
+                            size={12}
+                          />
+                        </span>
+                        <strong className="min-w-0">
+                          {label(track.selection)}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                  {column.unavailable.length > 0 &&
+                    !(loading && !hasSnapshot) && (
+                      <p
+                        className="m-0 px-2 py-1 text-[10px] leading-4 text-u-muted"
+                        role="status"
+                        title={`Нет подтверждённых данных: ${column.unavailable.map((group) => label(group.selection)).join(', ')}`}
+                      >
+                        Нет данных: {column.unavailable.length}/{visible.length}
+                        <span className="sr-only">
+                          {' '}
+                          ·{' '}
+                          {column.unavailable
+                            .map((group) => label(group.selection))
+                            .join(', ')}
+                        </span>
+                      </p>
+                    )}
+                </div>
+              ))}
               <div className="time-rail sticky left-0 z-[4] bg-u-surface">
                 {hours.map((hour) => (
                   <span
@@ -292,27 +347,44 @@ export default function Calendar({
                           start={start}
                           scale={scale}
                         />
-                        {column.placed.map(
-                          ({ block, top, height, column: lane }) => (
-                            <LessonCard
-                              key={block.identity}
-                              block={block}
-                              colors={colors}
-                              subgroupCatalog={subgroupCatalog}
-                              spotlightIds={spotlightIds}
-                              hiddenKinds={hiddenKinds}
-                              style={{
+                        {column.tracks.map((track) => (
+                          <div
+                            key={track.key}
+                            data-source-key={track.key}
+                            className="source-band absolute top-0 h-full border-r border-u-line-soft"
+                            style={{ left: track.left, width: track.width }}
+                          >
+                            {track.occurrences.map(
+                              ({
+                                block,
                                 top,
                                 height,
-                                left:
-                                  lane * VERTICAL_LANE_PITCH +
-                                  VERTICAL_DAY_INSET,
-                                width: VERTICAL_CARD_WIDTH,
-                              }}
-                            />
-                          ),
-                        )}
-                        {!column.placed.length && (
+                                column: lane,
+                                member,
+                                reference,
+                              }) => (
+                                <LessonCard
+                                  key={block.identity}
+                                  block={block}
+                                  colors={colors}
+                                  subgroupCatalog={subgroupCatalog}
+                                  spotlightIds={spotlightIds}
+                                  hiddenKinds={hiddenKinds}
+                                  trackMember={member}
+                                  reference={reference}
+                                  compact
+                                  style={{
+                                    top,
+                                    height,
+                                    left: lane * track.lanePitch,
+                                    width: track.cardWidth,
+                                  }}
+                                />
+                              ),
+                            )}
+                          </div>
+                        ))}
+                        {!column.tracks.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
                               {!column.complete
@@ -369,8 +441,14 @@ export default function Calendar({
                 layers[layer] && (
                   <span
                     key={layer}
-                    className={`mode-legend inline-flex items-center gap-1.5 before:h-2.5 before:content-[''] ${layer === 'free' ? 'free-legend before:w-2.5 before:border before:border-u-accent-border before:bg-u-accent-soft' : 'before:w-1 before:border-l-[3px] before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}
+                    className="mode-legend inline-flex items-center gap-1.5"
                   >
+                    <span
+                      className={`calendar-layer-icon ${saved ? 'border-b border-dashed' : ''}`}
+                      data-layer={layer}
+                    >
+                      <Icon name={layer} size={14} />
+                    </span>
                     {layer === 'presence' ? 'В вузе' : 'Общие окна'}
                   </span>
                 ),

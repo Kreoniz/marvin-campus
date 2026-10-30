@@ -25,7 +25,7 @@ export default function VucDocumentNotes({
           <ul className="my-2 pl-5">
             {current.map((cell, index) => (
               <li className="mb-2" key={`${cell.sourceOrigin}:${index}`}>
-                <p className="my-0">{cell.rawText}</p>
+                <p className="my-0 whitespace-pre-wrap">{cell.rawText}</p>
                 <p className="my-0 text-xs text-u-muted">
                   {cell.reason} · {cell.sourceOrigin}
                 </p>

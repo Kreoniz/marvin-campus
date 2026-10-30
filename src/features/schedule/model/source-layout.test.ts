@@ -8,6 +8,9 @@ import {
   sourceAnchor,
   restoreSourceAnchor,
   SOURCE_INSET,
+  activeSourceTracks,
+  sourceCardWidth,
+  sourceTracksWidth,
 } from './source-layout.ts';
 import { verticalLayout } from './vertical-layout.ts';
 const date = '2026-10-26';
@@ -68,7 +71,7 @@ test('nonadjacent source references retain one canonical block and typed ownersh
   assert.equal(tracks[3].occurrences[0].reference, true);
   assert.equal(tracks[0].occurrences[0].block, tracks[3].occurrences[0].block);
   assert.notEqual(tracks[0].key, tracks[2].key);
-  assert.ok(tracks.every((t) => t.width >= 160));
+  assert.ok(tracks.every((t) => t.width === 144));
   assert.equal(tracks[1].left - (tracks[0].left + tracks[0].width), 16);
   assert.equal(tracks[2].left - (tracks[1].left + tracks[1].width), 32);
   const hiddenOwner = sourceTracks(blocks, [teacher, room], 480, 0.9);
@@ -76,8 +79,17 @@ test('nonadjacent source references retain one canonical block and typed ownersh
   assert.equal(hiddenOwner[1].occurrences[0].reference, true);
   const reordered = sourceTracks(blocks, [room, teacher, b, a], 480, 0.9);
   assert.equal(
-    reordered.find((t) => t.key === scheduleKey(a))!.occurrences[0].reference,
+    reordered.find((t) => t.key === scheduleKey(room))!.occurrences[0]
+      .reference,
     false,
+  );
+  assert.equal(
+    reordered.find((t) => t.key === scheduleKey(a))!.occurrences[0].reference,
+    true,
+  );
+  assert.equal(
+    reordered.flatMap((t) => t.occurrences).filter((o) => !o.reference).length,
+    blocks.length,
   );
   assert.deepEqual(input, before);
 });
@@ -111,8 +123,102 @@ test('thirty sources keep readable bands, including empty sources, with no ident
   const tracks = sourceTracks([], selections, 480, 0.9);
   assert.equal(tracks.length, 30);
   assert.equal(new Set(tracks.map((t) => t.key)).size, 30);
-  assert.equal(tracks.at(-1)!.left + tracks.at(-1)!.width + SOURCE_INSET, 5282);
-  assert.ok(tracks.every((t) => t.width === 160 && t.occurrences.length === 0));
+  assert.equal(sourceTracksWidth(tracks), 3842);
+  assert.ok(tracks.every((t) => t.width === 112 && t.occurrences.length === 0));
+});
+
+test('density tiers use visible band count and keep every source and internal collision lane', () => {
+  for (const [count, width] of [
+    [2, 160],
+    [3, 160],
+    [5, 144],
+    [8, 128],
+    [30, 112],
+  ]) {
+    const selections = Array.from({ length: count }, (_, i): Selection => ({
+      id: i + 1,
+      label: `Г-${i + 1}`,
+    }));
+    const input = selections.map((s) =>
+      schedule(s, [
+        event(`early-${s.id}`, 480, 485),
+        event(`late-${s.id}`, 485, 490),
+        event(`end-${s.id}`, 800, 900),
+      ]),
+    );
+    const before = structuredClone(input);
+    const blocks = lessonBlocks(input, date);
+    const tracks = activeSourceTracks(blocks, selections, 480, 0.72);
+    assert.equal(sourceCardWidth(count), width);
+    assert.equal(tracks.length, count);
+    assert.deepEqual(
+      tracks.map((t) => t.key),
+      selections.map(scheduleKey),
+    );
+    for (const track of tracks) {
+      assert.equal(track.cardWidth, width);
+      assert.equal(track.width, width * 2 + 6);
+      assert.deepEqual(
+        track.occurrences.map((o) => o.column),
+        [0, 1, 0],
+      );
+      for (let i = 0; i < track.occurrences.length; i++) {
+        const x = track.occurrences[i];
+        for (const y of track.occurrences.slice(i + 1)) {
+          if (x.top < y.top + y.height && y.top < x.top + x.height)
+            assert.notEqual(x.column, y.column);
+        }
+      }
+    }
+    assert.deepEqual(input, before);
+  }
+});
+
+test('Week omits empty bands, keeps daily source order and never moves later lessons to another source', () => {
+  const empty: Selection = { id: 9, label: 'Пусто' };
+  const input = [
+    schedule(a, [event('a-early', 480, 540), event('a-late', 800, 860)]),
+    schedule(b, [event('b-middle', 600, 660)]),
+    schedule(empty, []),
+  ];
+  const blocks = lessonBlocks(input, date);
+  const selected = [empty, b, a];
+  const tracks = activeSourceTracks(blocks, selected, 480, 0.72);
+  assert.deepEqual(
+    tracks.map((t) => t.key),
+    [scheduleKey(b), scheduleKey(a)],
+  );
+  assert.equal(tracks[1].occurrences.length, 2);
+  assert.ok(tracks[1].occurrences.every((o) => o.column === 0));
+  assert.equal(sourceTracks(blocks, selected, 480, 1).length, 3);
+  const reversed = activeSourceTracks(
+    blocks,
+    [...selected].reverse(),
+    480,
+    0.72,
+  );
+  assert.equal(reversed[0].key, scheduleKey(a));
+  assert.equal(reversed[0].left, SOURCE_INSET);
+  assert.equal(activeSourceTracks([], selected, 480, 0.72).length, 0);
+});
+
+test('variable-width anchor contraction exposes a full last lane without assuming 160px', () => {
+  assert.equal(
+    restoreSourceAnchor(
+      { key: 'a', offset: 400 },
+      [{ key: 'a', left: 9, width: 492 }],
+      [{ key: 'a', left: 9, width: 230, cardWidth: 112 }],
+    ),
+    118,
+  );
+  assert.equal(
+    restoreSourceAnchor(
+      { key: 'a', offset: 118 },
+      [{ key: 'a', left: 9, width: 230 }],
+      [{ key: 'a', left: 9, width: 112, cardWidth: 112 }],
+    ),
+    0,
+  );
 });
 
 test('source anchoring retains typed identity and pixel offset when widths or order change', () => {
