@@ -121,7 +121,7 @@ export default function ComparisonSummary({
             )}
             {!!overlays.length && (
               <p className="my-1 text-u-muted">
-                Аудитории показаны для справки:{' '}
+                Аудитории не участвуют в расчёте:{' '}
                 {overlays
                   .map((schedule) => schedule.selection.label)
                   .join(', ')}
@@ -160,7 +160,11 @@ export default function ComparisonSummary({
           </>
         ) : !hasLessons ? (
           <>
-            <strong>На этот день занятий нет.</strong>
+            <strong>
+              {excluded.length || overlays.length
+                ? 'У учтённых участников на этот день занятий нет.'
+                : 'На этот день занятий нет.'}
+            </strong>
             <p>Выбери другой день — проверим общее время.</p>
           </>
         ) : compact ? (

@@ -31,6 +31,7 @@ import {
 
 interface Props {
   selected: Selection[];
+  hiddenKinds?: ScheduleKind[];
   onAdd: (selection: Selection) => void;
   children: ReactNode;
   returnFocus: RefObject<HTMLButtonElement | null>;
@@ -54,6 +55,7 @@ const plurals: Record<ScheduleKind, string> = {
 
 export default function GroupPicker({
   selected,
+  hiddenKinds = [],
   onAdd,
   children,
   returnFocus,
@@ -280,6 +282,7 @@ export default function GroupPicker({
                     ' из 30 — убери одно, чтобы добавить другое'}
                 </h3>
                 <GroupOrder
+                  hiddenKinds={hiddenKinds}
                   groups={selected}
                   colors={colors}
                   onMove={onMove}

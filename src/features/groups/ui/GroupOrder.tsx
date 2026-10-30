@@ -6,7 +6,7 @@ import {
   kindIcon,
 } from '../../../lib/schedule-ref.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
-import type { Selection } from '../../../lib/types.ts';
+import type { Selection, ScheduleKind } from '../../../lib/types.ts';
 import { chipColor, type GroupColors } from '../../../lib/colors.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import { selectionLabel } from '../../../lib/subgroups.ts';
@@ -16,6 +16,7 @@ const moveButtonClassName =
 
 interface Props {
   groups: Selection[];
+  hiddenKinds?: ScheduleKind[];
   colors: GroupColors;
   onMove: (id: string, offset: number) => void;
   onRemove: (id: string) => void;
@@ -23,6 +24,7 @@ interface Props {
 }
 export default function GroupOrder({
   groups,
+  hiddenKinds = [],
   colors,
   onMove,
   onRemove,
@@ -73,6 +75,11 @@ export default function GroupOrder({
               <span className="flex items-center gap-1 text-[11px]">
                 <Icon name={kindIcon(selectionKind(group))} size={11} />
                 {kindLabel(selectionKind(group))}
+                {hiddenKinds.includes(selectionKind(group)) && (
+                  <>
+                    <Icon name="hidden" size={11} /> Скрыто
+                  </>
+                )}
               </span>
             </span>
             <IconButton

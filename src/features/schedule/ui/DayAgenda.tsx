@@ -22,6 +22,7 @@ import { participantClasses } from './participant-style.ts';
 import {
   LessonRoom,
   LessonTeachers,
+  LessonTeacherSources,
 } from '../../resources/LessonResources.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
 
@@ -209,6 +210,7 @@ export default function DayAgenda({
                             </span>
                           )}
                         </p>
+                        <LessonTeacherSources entry={entry} />
                         <LessonDocument lesson={lesson} />
                       </article>
                     </li>

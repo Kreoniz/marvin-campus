@@ -326,6 +326,7 @@ export default function GroupStrip(props: Props) {
                   </button>
                   {isGroup(group) ? (
                     <SubgroupPicker
+                      cardsHidden={hiddenKinds.includes(selectionKind(group))}
                       groupKey={scheduleKey(group)}
                       label={group.label}
                       subgroups={subgroups}
@@ -361,6 +362,11 @@ export default function GroupStrip(props: Props) {
                           : selectionKind(group) === 'auditorium'
                             ? 'Ауд.'
                             : 'ВУЦ'}
+                        {hiddenKinds.includes(selectionKind(group)) && (
+                          <span title="Карточки этого вида скрыты">
+                            <Icon name="hidden" size={11} />
+                          </span>
+                        )}
                       </span>
                     </button>
                   )}

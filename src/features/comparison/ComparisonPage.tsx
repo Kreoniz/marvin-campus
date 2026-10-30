@@ -23,7 +23,8 @@ import type { CalendarLayers } from '../schedule/ui/ComparisonHighlights.tsx';
 import DayAgenda from '../schedule/ui/DayAgenda.tsx';
 import type { ScheduleKind, Selection } from '../../lib/types.ts';
 import { scheduleKey, selectionKind } from '../../lib/schedule-ref.ts';
-import VucSources, { nearestVucDate } from '../resources/VucSources.tsx';
+import VucSources from '../resources/VucSources.tsx';
+import { nearestVucDate } from '../../lib/vuc-navigation.ts';
 import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
@@ -290,6 +291,7 @@ export default function ComparisonPage() {
                   aria-busy={busy}
                 >
                   <GroupPicker
+                    hiddenKinds={hiddenKinds}
                     selected={groups}
                     onAdd={(selection) =>
                       fromSearch(() => addSchedule(selection))

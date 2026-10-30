@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -37,6 +38,7 @@ import { participantClasses } from './participant-style.ts';
 import {
   LessonRoom,
   LessonTeachers,
+  LessonTeacherSources,
 } from '../../resources/LessonResources.tsx';
 import { useResourceInspector } from '../../resources/ResourceInspector.tsx';
 import LessonDocument from '../../resources/LessonDocument.tsx';
@@ -63,6 +65,8 @@ export default function LessonCard({
   const { lesson } = block;
   const { openResource } = useResourceInspector();
   const cardTrigger = useRef<HTMLButtonElement>(null);
+  const popover = useRef<HTMLDivElement>(null);
+  const preferredFocusKey = useRef<string | undefined>(undefined);
   const surfaceMembers = block.members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
@@ -189,6 +193,48 @@ export default function LessonCard({
       : { name: label, number: '' };
   }
   const [open, setOpen] = useState(false);
+  // A bundle may split when another source joins one of its events. Keep the
+  // user's logical event focused, unless they have moved to another control.
+  useLayoutEffect(() => {
+    const trigger = cardTrigger.current;
+    const content = popover.current;
+    return () => {
+      if (
+        !trigger ||
+        (document.activeElement !== trigger &&
+          !content?.contains(document.activeElement))
+      )
+        return;
+      const region = trigger.closest<HTMLElement>('[role="region"]');
+      const keys: string[] = JSON.parse(trigger.dataset.lessonKeys ?? '[]');
+      const preferred = preferredFocusKey.current;
+      requestAnimationFrame(() => {
+        if (
+          trigger.isConnected ||
+          (document.activeElement !== document.body &&
+            document.activeElement?.isConnected)
+        )
+          return;
+        const cards = Array.from(
+          region?.querySelectorAll<HTMLButtonElement>('[data-lesson-keys]') ??
+            [],
+        );
+        const matches = (card: HTMLButtonElement, key: string) =>
+          (JSON.parse(card.dataset.lessonKeys ?? '[]') as string[]).includes(
+            key,
+          );
+        const next =
+          (preferred && cards.find((card) => matches(card, preferred))) ||
+          cards.find((card) => keys.some((key) => matches(card, key)));
+        (
+          next ??
+          region ??
+          document.querySelector<HTMLButtonElement>('.add-group')
+        )?.focus({ preventScroll: true });
+      });
+    };
+  }, [open]);
+
   const hovering = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const cancel = () => clearTimeout(timer.current);
@@ -238,6 +284,9 @@ export default function LessonCard({
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
           ref={cardTrigger}
+          data-lesson-keys={JSON.stringify(
+            events.filter((event) => event.id).map(lessonKey),
+          )}
           render={<button type="button" aria-label={accessibleLabel} />}
           style={
             {
@@ -280,8 +329,25 @@ export default function LessonCard({
             </span>
           )}
           <span
-            className={`card-heading flex min-w-0 items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px' : ''}`}
+            className={`card-heading flex min-w-0 flex-none items-center gap-[3px] [@container(width<95px)]:flex-wrap [@container(width<95px)]:gap-0.5 ${horizontal && long ? 'px-[5px] py-[3px]' : shared ? 'px-1 py-px' : ''}`}
           >
+            {!horizontal && (shared || !isGroup(primaryMember)) && (
+              <span
+                className="hidden shrink-0 [@container(height<36px)]:inline-flex"
+                title={
+                  shared
+                    ? `${surfaceMembers.length} расписания`
+                    : kindLabel(selectionKind(primaryMember))
+                }
+              >
+                <Icon
+                  name={
+                    shared ? 'groups' : kindIcon(selectionKind(primaryMember))
+                  }
+                  size={11}
+                />
+              </span>
+            )}
             <span
               className={`card-subject min-w-0 flex-1 truncate font-bold [@container(width<95px)]:text-[10px] [@container(height<58px)]:text-[10px] ${!horizontal && !block.parallel ? '[@container(width>=140px)_and_(height>=72px)]:line-clamp-2 [@container(width>=140px)_and_(height>=72px)]:whitespace-normal' : ''} ${horizontal && long ? 'text-xs' : 'text-[11px]'}`}
             >
@@ -299,7 +365,7 @@ export default function LessonCard({
           )}
           {shared ? (
             <span
-              className={`participant-sectors flex min-w-0 flex-none gap-px ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
+              className={`participant-sectors flex min-w-0 flex-none gap-px ${!horizontal ? '[@container(height<36px)]:hidden' : ''} ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
             >
               {visibleMembers.map((group) => {
                 const parts = groupParts(group);
@@ -325,14 +391,31 @@ export default function LessonCard({
                       </span>
                     ) : (
                       <>
-                        <span className="group-prefix flex items-center justify-center gap-px truncate text-[10px]">
+                        {!horizontal && (
+                          <span className="hidden min-w-0 items-center justify-center gap-0.5 text-[10px] [@container(height<58px)]:flex">
+                            {spotlightIds.includes(scheduleKey(group)) && (
+                              <Icon name="tick" size={9} />
+                            )}
+                            <span className="truncate">
+                              {groupLabel(group)}
+                            </span>
+                            {savedMember(group) && (
+                              <Icon name="clock" size={10} />
+                            )}
+                          </span>
+                        )}
+                        <span
+                          className={`group-prefix flex items-center justify-center gap-px truncate text-[10px] ${!horizontal ? '[@container(height<58px)]:hidden' : ''}`}
+                        >
                           {spotlightIds.includes(scheduleKey(group)) && (
                             <Icon name="tick" size={9} />
                           )}
                           <span className="truncate">{parts.name}</span>
                         </span>
                         {parts.number && (
-                          <span className="group-number flex items-center justify-center gap-0.5 truncate text-[11px] [@container(width<120px)]:text-[10px]">
+                          <span
+                            className={`group-number flex items-center justify-center gap-0.5 truncate text-[11px] [@container(width<120px)]:text-[10px] ${!horizontal ? '[@container(height<58px)]:hidden' : ''}`}
+                          >
                             {parts.number}
                             {savedMember(group) && (
                               <Icon name="clock" size={10} />
@@ -368,14 +451,20 @@ export default function LessonCard({
               )}
             </span>
           ) : (
-            <span className="single-group flex min-w-0 flex-col gap-px text-[13px] font-[650]">
+            <span
+              className={`single-group flex min-w-0 flex-none items-center gap-1 text-[13px] font-[650] ${!horizontal ? '[@container(height<36px)]:hidden [@container(height<58px)]:text-[10px]' : ''}`}
+            >
               {!isGroup(primaryMember) && (
                 <span className="flex items-center gap-1 text-[10px]">
                   <Icon
                     name={kindIcon(selectionKind(primaryMember))}
                     size={11}
                   />
-                  {kindLabel(selectionKind(primaryMember))}
+                  {selectionKind(primaryMember) === 'vuc'
+                    ? 'ВУЦ'
+                    : selectionKind(primaryMember) === 'lecturer'
+                      ? 'Преп.'
+                      : 'Ауд.'}
                 </span>
               )}
               <span className="flex min-w-0 items-center gap-[3px]">
@@ -392,7 +481,7 @@ export default function LessonCard({
             </span>
           )}
           <span
-            className={`card-meta flex min-w-0 items-center gap-[3px] font-medium [@container(width<95px)]:text-[10px] ${shared ? 'px-1 py-px text-[10px]' : 'text-[11px]'} ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
+            className={`card-meta flex min-w-0 flex-none items-center gap-[3px] font-medium [@container(width<95px)]:text-[10px] ${!horizontal ? '[@container(height<44px)]:hidden' : ''} ${shared ? 'px-1 py-px text-[10px]' : 'text-[11px]'} ${horizontal && long ? 'w-[min(260px,100%)]' : ''}`}
           >
             <span className="card-room min-w-0 flex-1 truncate">{place}</span>
             <span className="kind-badges flex flex-none gap-0.5">
@@ -410,6 +499,7 @@ export default function LessonCard({
           </span>
         </Popover.Trigger>
         <Popover.Content
+          ref={popover}
           className="lesson-popover max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{ sideOffset: 7 }}
           initialFocus={hovering.current ? false : undefined}
@@ -463,6 +553,7 @@ export default function LessonCard({
                 <LessonRoom
                   lesson={event}
                   onOpen={(resource, _trigger, date) => {
+                    preferredFocusKey.current = lessonKey(event);
                     cancel();
                     hovering.current = false;
                     setOpen(false);
@@ -475,6 +566,7 @@ export default function LessonCard({
                   <LessonTeachers
                     lesson={event}
                     onOpen={(resource, _trigger, date) => {
+                      preferredFocusKey.current = lessonKey(event);
                       cancel();
                       hovering.current = false;
                       setOpen(false);
@@ -483,6 +575,18 @@ export default function LessonCard({
                   />
                 </p>
               )}
+              <LessonTeacherSources
+                entry={{
+                  ...block,
+                  lesson: event,
+                  memberLessons: Object.fromEntries(
+                    block.members.map((member) => [
+                      scheduleKey(member),
+                      eventMemberLessons(block, scheduleKey(member), event),
+                    ]),
+                  ),
+                }}
+              />
               <LessonDocument lesson={event} />
             </div>
           ))}

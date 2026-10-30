@@ -17,6 +17,7 @@ import {
   ExternalLink,
   GripVertical,
   Focus,
+  EyeOff,
   Ellipsis,
   Info,
   List,
@@ -63,6 +64,7 @@ const icons: Record<string, LucideIcon> = {
   up: ChevronUp,
   clock: Clock3,
   focus: Focus,
+  hidden: EyeOff,
   more: Ellipsis,
 };
 export default function Icon({

@@ -27,7 +27,7 @@ export default function ScheduleViewPicker({
         <label
           key={item.value}
           title={item.label}
-          className={`relative flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-u-control border has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-u-ink ${disabled ? 'cursor-default opacity-50' : ''} ${value === item.value ? 'border-u-selection-border bg-u-selection text-u-selection-ink forced-colors:border-[Highlight] forced-colors:text-[Highlight]' : 'border-transparent hover:bg-u-well forced-colors:border-transparent'}`}
+          className={`relative flex h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-u-control border px-2 max-[359px]:px-0 has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-u-ink ${disabled ? 'cursor-default opacity-50' : ''} ${value === item.value ? 'border-u-selection-border bg-u-selection text-u-selection-ink forced-colors:border-[Highlight] forced-colors:text-[Highlight]' : 'border-transparent hover:bg-u-well forced-colors:border-transparent'}`}
         >
           <input
             className="sr-only"
@@ -40,7 +40,16 @@ export default function ScheduleViewPicker({
             onChange={() => onChange(item.value)}
           />
           <span className="text-xs font-medium">
-            {item.value === 'list' ? 'Список' : item.label}
+            {item.value === 'week' ? (
+              <>
+                <span className="max-[359px]:hidden">Неделя</span>
+                <span className="hidden max-[359px]:inline">Нед.</span>
+              </>
+            ) : item.value === 'list' ? (
+              'Список'
+            ) : (
+              item.label
+            )}
           </span>
         </label>
       ))}

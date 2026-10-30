@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import type { Lesson, ResourceRef } from '../../lib/types.ts';
 import { useResourceInspector } from './ResourceInspector.tsx';
+import type { AgendaEntry } from '../../lib/agenda.ts';
+import {
+  kindLabel,
+  scheduleKey,
+  selectionKind,
+} from '../../lib/schedule-ref.ts';
 
 type Open = (
   resource: ResourceRef,
@@ -65,7 +71,7 @@ export function LessonTeachers({
               (onOpen ?? openResource)(ref, event.currentTarget, lesson.date)
             }
           >
-            {teachers.length === 1 ? lesson.teacher || ref.label : ref.label}
+            {ref.label}
           </button>
         </span>
       ))}
@@ -85,5 +91,33 @@ export function LessonTeachers({
         </button>
       )}
     </>
+  );
+}
+
+// Conflicting raw labels remain inspectable without assigning them an identity.
+export function LessonTeacherSources({ entry }: { entry: AgendaEntry }) {
+  const sources = entry.members.flatMap((member) =>
+    (entry.memberLessons[scheduleKey(member)] ?? []).flatMap((lesson) =>
+      lesson.teacher.trim()
+        ? [
+            {
+              label: `${kindLabel(selectionKind(member))}: ${member.label}`,
+              text: lesson.teacher.trim(),
+            },
+          ]
+        : [],
+    ),
+  );
+  if (new Set(sources.map((source) => source.text)).size < 2) return null;
+  return (
+    <div className="teacher-sources my-2 text-xs leading-relaxed">
+      <strong>Преподаватели в исходных расписаниях</strong>
+      {sources.map((source, index) => (
+        <p className="my-1" key={`${source.label}:${index}`}>
+          <span className="text-u-muted">{source.label}: </span>
+          {source.text}
+        </p>
+      ))}
+    </div>
   );
 }

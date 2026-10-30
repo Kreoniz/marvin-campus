@@ -187,11 +187,11 @@ export default function Calendar({
                       data-schedule-day={date}
                       disabled={placeholder}
                       aria-pressed={!placeholder && day === date}
-                      aria-label={formatDay(date, {
+                      aria-label={`${formatDay(date, {
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long',
-                      })}
+                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => selectionLabel(group.selection)).join(', ')}` : ''}`}
                       title={
                         scope.excluded.length
                           ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
@@ -340,7 +340,9 @@ export default function Calendar({
         <ScrollArea.Corner />
       </AutoHideScrollArea>
       <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {included.length >= 2 && (
+        {(singleDay
+          ? included.length >= 2
+          : layout.some(({ scope }) => scope.included.length >= 2)) && (
           <>
             {(['presence', 'free'] as const).map(
               (layer) =>
@@ -353,12 +355,17 @@ export default function Calendar({
                   </span>
                 ),
             )}
-            {(layers.presence || layers.free) && (
+            {singleDay && (layers.presence || layers.free) && (
               <span className="mr-3">
                 {excluded.length
                   ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
                   : `Для всех ${included.length} участников`}
                 {saved && ' · по сохранённым данным'}.
+              </span>
+            )}
+            {!singleDay && (layers.presence || layers.free) && (
+              <span className="mr-3">
+                Состав сравнения указан для каждого дня.
               </span>
             )}
           </>

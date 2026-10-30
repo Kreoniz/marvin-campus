@@ -1,20 +1,10 @@
 import { Button } from 'unlikely-ui/button';
-import type { GroupSchedule, Selection } from '../../lib/types.ts';
-import { formatDay, validDate } from '../../lib/dates.ts';
-import { importedDate, scheduleKey } from '../../lib/schedule-ref.ts';
-
-export function nearestVucDate(selection: Selection, day: string) {
-  if (selection.kind !== 'vuc') return undefined;
-  return (
-    selection.coveredDates
-      ?.filter(validDate)
-      .sort(
-        (a, b) =>
-          Math.abs(Date.parse(a) - Date.parse(day)) -
-            Math.abs(Date.parse(b) - Date.parse(day)) || a.localeCompare(b),
-      )[0] ?? importedDate(selection)
-  );
-}
+import { useQuery } from '@tanstack/react-query';
+import { vucSearchOptions } from './api.ts';
+import { nearestVucDate } from '../../lib/vuc-navigation.ts';
+import type { GroupSchedule } from '../../lib/types.ts';
+import { formatDay } from '../../lib/dates.ts';
+import { scheduleKey } from '../../lib/schedule-ref.ts';
 
 export default function VucSources({
   schedules,
@@ -28,6 +18,38 @@ export default function VucSources({
   const sources = schedules.filter(
     (schedule) => schedule.selection.kind === 'vuc',
   );
+  const catalogue = useQuery({
+    ...vucSearchOptions(''),
+    enabled: sources.length > 0,
+  });
+  const nearest = (schedule: GroupSchedule) =>
+    nearestVucDate(
+      schedule.selection,
+      day,
+      schedule.snapshot?.data.coveredDates,
+      catalogue.data?.data.find((ref) => ref.id === schedule.selection.id),
+    );
+  const years = [
+    ...new Set(
+      sources.flatMap((schedule) => {
+        const selection = schedule.selection;
+        const period =
+          schedule.snapshot?.data.sourcePeriod ||
+          (selection.kind === 'vuc' ? selection.sourcePeriod : '') ||
+          '';
+        return (
+          period.match(/\b(?:19|20)\d{2}\b/g) ??
+          (selection.kind === 'vuc'
+            ? [
+                selection.firstDate?.slice(0, 4),
+                selection.lastDate?.slice(0, 4),
+              ].filter((year): year is string => !!year)
+            : [])
+        );
+      }),
+    ),
+  ].sort();
+  const yearLabel = years.length > 1 ? `${years[0]}–${years.at(-1)}` : years[0];
   if (!sources.length) return null;
   return (
     <section
@@ -40,7 +62,7 @@ export default function VucSources({
           schedule.snapshot.data.coveredDates?.includes(day)
         )
           return null;
-        const date = nearestVucDate(schedule.selection, day);
+        const date = nearest(schedule);
         return (
           <div
             className="mb-1 flex flex-wrap items-center justify-between gap-2"
@@ -73,13 +95,13 @@ export default function VucSources({
       })}
       <details>
         <summary className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-u-ink">
-          ВУЦ: расписание из документов, не онлайн
+          ВУЦ · документы{yearLabel && ` ${yearLabel}`} · не онлайн
         </summary>
         {sources.map((schedule) => {
           const data = schedule.snapshot?.data;
           const covered = data?.coveredDates?.includes(day);
           const unresolved = data?.unresolvedDates?.includes(day);
-          const first = nearestVucDate(schedule.selection, day);
+          const first = nearest(schedule);
           const cells =
             data?.unparsedCells?.filter((cell) => cell.date === day) ?? [];
           return (

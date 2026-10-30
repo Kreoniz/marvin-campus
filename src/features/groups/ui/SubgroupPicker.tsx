@@ -11,6 +11,7 @@ interface Props {
   value?: number;
   subgroupNumber?: number;
   describedBy?: string;
+  cardsHidden?: boolean;
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
   onChange: (value?: number) => void;
 }
@@ -22,6 +23,7 @@ export default function SubgroupPicker({
   value,
   subgroupNumber,
   describedBy,
+  cardsHidden = false,
   onKeyDown,
   onChange,
 }: Props) {
@@ -69,6 +71,11 @@ export default function SubgroupPicker({
           <span className="subgroup-caption inline-flex shrink-0 items-center gap-0.5 text-[11px] whitespace-nowrap">
             {number ? `Подгр. ${number}` : value ? 'Подгр.' : 'Все'}
             <Icon name="down" size={10} />
+            {cardsHidden && (
+              <span title="Карточки этого вида скрыты">
+                <Icon name="hidden" size={11} />
+              </span>
+            )}
           </span>
         </span>
       </Select.Trigger>

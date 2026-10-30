@@ -34,6 +34,14 @@ export function ResourceProvider({
       if (!validSelection(resource)) return;
       onAdd(resource);
       requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (
+          active &&
+          active !== document.body &&
+          active !== trigger &&
+          active.isConnected
+        )
+          return;
         (trigger?.isConnected
           ? trigger
           : document.querySelector<HTMLButtonElement>('.add-group')
