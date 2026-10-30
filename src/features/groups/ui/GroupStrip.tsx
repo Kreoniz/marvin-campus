@@ -304,7 +304,10 @@ export default function GroupStrip(props: Props) {
           if (trigger) start(event, group, trigger);
         }}
         onClickCapture={(event) => {
-          if (suppressClick.current && event.detail !== 0) {
+          // React capture also visits this chip for its portaled menu.
+          if (!event.currentTarget.contains(event.target as Node)) return;
+          if (event.detail === 0) suppressClick.current = false;
+          else if (suppressClick.current) {
             event.preventDefault();
             event.stopPropagation();
             suppressClick.current = false;
