@@ -51,6 +51,9 @@ interface LessonCardProps {
   reference?: boolean;
 }
 
+const compactPopupQuery =
+  '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
+
 export default function LessonCard({
   block,
   colors,
@@ -248,11 +251,10 @@ export default function LessonCard({
     participantClasses(savedMember(group), memberDimmed(group, inCard));
   const [open, setOpen] = useState(false);
   const [compactPopup, setCompactPopup] = useState(false);
+  const [hoverSide, setHoverSide] = useState<'left' | 'right'>();
   useLayoutEffect(() => {
     if (!open) return;
-    const size = matchMedia(
-      '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)',
-    );
+    const size = matchMedia(compactPopupQuery);
     const resize = () => setCompactPopup(size.matches);
     resize();
     size.addEventListener('change', resize);
@@ -342,6 +344,7 @@ export default function LessonCard({
       <Popover.Root
         open={open}
         onOpenChange={(next, details) => {
+          if (next && !open) setHoverSide(undefined);
           if (details.reason === 'focus-out') focusLeft.current = true;
           if (details.reason === 'trigger-press') {
             // The first click on a hover preview pins it; the second closes it.
@@ -360,6 +363,26 @@ export default function LessonCard({
               return;
             }
             if (next) {
+              if (
+                matchMedia(compactPopupQuery).matches &&
+                matchMedia('(hover: hover) and (pointer: fine)').matches
+              ) {
+                const anchor = cardTrigger.current?.getBoundingClientRect();
+                const width = Math.min(440, innerWidth - 24);
+                const side =
+                  anchor && innerWidth - anchor.right - 23 >= width
+                    ? 'right'
+                    : anchor && anchor.left - 23 >= width
+                      ? 'left'
+                      : undefined;
+                // A hover preview must leave its press target exposed. When
+                // neither side fits, an explicit press uses the bounded popup.
+                if (!side) {
+                  details.cancel();
+                  return;
+                }
+                setHoverSide(side);
+              }
               setHovering(true);
               pinned.current = false;
             }
@@ -595,11 +618,14 @@ export default function LessonCard({
           className="lesson-popover motion-safe:duration-100 max-h-[min(calc(100dvh-24px),var(--available-height))] w-[min(340px,calc(100vw-28px))] overflow-y-auto overscroll-contain text-xs leading-[1.4] compact:w-[min(440px,calc(100vw-24px))] compact:p-4"
           positionerProps={{
             sideOffset: 7,
-            // Compact popups may overlap tall anchors to keep useful space.
-            // Desktop retains side flipping and the hover-to-trigger path.
-            collisionAvoidance: compactPopup
-              ? { side: 'shift', align: 'shift' }
-              : undefined,
+            side: hoverSide,
+            // Press-opened compact popups may overlap tall anchors; mouse
+            // previews stay beside the card, including after the pinning click.
+            collisionAvoidance: hoverSide
+              ? { side: 'flip', align: 'shift', fallbackAxisSide: 'none' }
+              : compactPopup
+                ? { side: 'shift', align: 'shift' }
+                : undefined,
           }}
           initialFocus={hovering ? false : undefined}
           onPointerDownCapture={() => {
