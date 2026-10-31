@@ -208,11 +208,13 @@ Other events keep their group hues with a quieter fill and readable text;
 they remain interactive and retain their positions. Remote dashed
 outlines, parallel-event stripes and saved-data clock markers remain explicit.
 Opening lesson details retains the full participant colors and information.
-Spotlight survives date, subgroup and view changes. Removing a group drops only
+Spotlight survives reloads and date, subgroup and view changes. Its typed IDs are
+saved locally, separately for the general calendar and VUC. Initial link/workspace
+restoration must settle before missing selections are pruned. Removing a group drops only
 that group from the spotlight set. Fewer than two remaining groups clears the
 set. Display settings and day detail can clear all spotlights together.
-Spotlight and day format are transient presentation state, not comparison URL
-parameters or changes to the presence/free calculation.
+Spotlight is a saved local preference and day format is transient presentation
+state; neither enters comparison URLs or changes the presence/free calculation.
 
 Each Week date has its own minimum width derived from its retained rendered
 lanes in the chosen presentation mode. Empty dates retain a column; unknown, failed, expired

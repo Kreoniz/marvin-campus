@@ -25,8 +25,9 @@
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   Compact chips open a schedule menu with subgroup, spotlight and management
   actions; pressed spotlight state uses fill without decorative checks. Multiple
-  spotlight IDs live as local presentation state in `ComparisonPage`; they do
-  not change schedule data. The single schedule-search dialog combines the existing
+  spotlight IDs persist locally per general/VUC workspace. `ComparisonPage`
+  waits for link/workspace restoration before pruning removed selections;
+  spotlights do not change URLs or schedule data. The single schedule-search dialog combines the existing
   combobox search with the reusable ordering/removal list. Removing its last
   selection keeps search available. Management drag passes the final typed
   selection order through `onReorder` to `view.reorder` once; arrow/Alt moves

@@ -29,6 +29,7 @@ import { scheduleKey, selectionKind } from '../../lib/schedule-ref.ts';
 import VucSources from '../resources/VucSources.tsx';
 import VucCatalogue from '../resources/VucCatalogue.tsx';
 import { nearestVucDate } from '../../lib/vuc-navigation.ts';
+import { savedSpotlights, rememberSpotlights } from '../../lib/spotlights.ts';
 import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
@@ -64,7 +65,9 @@ export default function ComparisonPage({
     vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week',
   );
   const [dayReveal, setDayReveal] = useState(0);
-  const [spotlightGroupIds, setSpotlightGroupIds] = useState<string[]>([]);
+  const [spotlightGroupIds, setSpotlightGroupIds] = useState(() =>
+    savedSpotlights(vucOnly),
+  );
   const addGroupRef = useRef<HTMLButtonElement>(null);
   const [orderOpen, setOrderOpen] = useState(false);
   const [layers, setLayers] = useState<CalendarLayers>({
@@ -120,16 +123,18 @@ export default function ComparisonPage({
       .map((group) => group.label)
       .join(', ') || undefined;
   useEffect(() => {
-    setSpotlightGroupIds((current) => {
-      const next =
-        groups.length > 1
-          ? current.filter((id) =>
-              groups.some((group) => scheduleKey(group) === id),
-            )
-          : [];
-      return next.length === current.length ? current : next;
-    });
-  }, [groups]);
+    if (links.opening || links.error) return;
+    // The workspace can restore its selections in an earlier mount effect.
+    const selected = view.groups;
+    const next =
+      selected.length > 1
+        ? spotlightGroupIds.filter((id) =>
+            selected.some((group) => scheduleKey(group) === id),
+          )
+        : [];
+    if (next.length !== spotlightGroupIds.length) setSpotlightGroupIds(next);
+    else rememberSpotlights(next, vucOnly);
+  }, [groups, spotlightGroupIds, links.opening, links.error, view, vucOnly]);
   function addSchedule(selection: Selection) {
     if (
       view.groups.some(
