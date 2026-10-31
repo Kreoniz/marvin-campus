@@ -1,12 +1,56 @@
 # Deployment
 
-Deployment remains manual. GitHub CI validates the repository; automatic delivery
-is deferred by the owner's choice while GitHub Actions billing is unavailable.
-No deployment credentials or SSH key installation is required for this release.
+Deployment remains manual by the owner's choice. GitHub CI validates the
+repository; the 0.2.0 pull request passed its validation job. No deployment
+credentials or SSH key installation was required for this release.
 
-## Current release 2026 10 30
+## Current release 0.2.0 — 2026-10-31
 
-The approved calendar UI is active at <https://campus.kreoniz.ru> from revision
+[Campus 0.2.0](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.0)
+is active at <https://campus.kreoniz.ru> from merge revision
+`440ad797b815387892aa69e12456b47bd791d713`, image
+`marvin-campus:440ad797b815387892aa69e12456b47bd791d713`, with OCI version
+`0.2.0` and image config ID
+`sha256:7a0008afdaedefca83f97fbc879ad826be7ea48b3998f3445767dcdfbe8f871c`.
+The compressed image archive SHA-256 is
+`9dc73ad52a7ce86cfe59304e00e6cbdf15c2d9029b4c6a8afc13d5c6b6549eec`.
+[PR 4](https://github.com/Kreoniz/marvin-campus/pull/4) was merged after successful
+GitHub CI. The tag, image revision and merged source identify the same commit.
+
+The receiver activated the image at `2026-10-31T02:10:23Z`, after verifying its
+provenance and creating a consistent SQLite backup. All 108 legacy comparisons
+retained their count and digest. Non-image environment settings, networking,
+container hardening and the named volume were preserved, apart from the two
+explicit VUC configuration fields described below. The previous healthy
+`marvin-campus:cf8dffa29446d7176d4ad33b19ffcd7e63565780` image and private backups
+remain available for rollback.
+
+The current semester document set is stored in the existing data volume,
+outside the image and Git: six platoons and 476 imported lessons. A separate
+Compose override adds only `VUC_DATA_PATH` and `VUC_ORIGINALS_DIR`; the base
+production Compose file is unchanged. The previous configuration was backed up
+before adding this override. See [the document workflow](vuc.md).
+
+Independent HTTPS verification matched all 35 built file hashes, public health
+and three app-shell routes. All six VUC week endpoints responded with the
+expected type, the current original download matched its supplied 77,053 bytes
+exactly, and a historical original remained unavailable. This release used DOCX;
+successful live PDF parsing was not exercised.
+
+Release checks passed: 140 frontend tests, TypeScript, lint, tracked-tree
+formatting, build, Go race tests/vet, nine importer/updater tests, 17 receiver
+validation/rollback tests and privacy/history/Gitleaks scans. Two compiled-image
+browser scenarios covered the lane setting, shared-card popup and current VUC
+download presentation. Their tested candidate and the merged release image have
+identical runtime layers. The existing frontend bundle-size warning remains.
+
+The first streamed upload timed out before activation. Uploading the same archive
+to private staging and feeding it locally to the unchanged receiver succeeded;
+its checksum, size, provenance, backup and rollback checks were retained.
+
+## Previous release — 2026-10-30
+
+The approved calendar UI was activated at <https://campus.kreoniz.ru> from revision
 `cf8dffa29446d7176d4ad33b19ffcd7e63565780`, image
 `marvin-campus:cf8dffa29446d7176d4ad33b19ffcd7e63565780` with image ID
 `sha256:6018701a838d9d6fcd21d77b2ee6329f6bda918a7cc195dfb9a8e1ebd9bb98d4`.
@@ -23,10 +67,11 @@ matched all 35 built file hashes, health and two app-shell routes. The previous
 Release checks passed: 76 frontend tests, TypeScript, lint, tracked-tree
 formatting, build, Go race tests/vet, 17 receiver validation/rollback tests and
 privacy/history/Gitleaks scans. [PR 3](https://github.com/Kreoniz/marvin-campus/pull/3)
-was merged into `main` as `94d082a6fb975ab211498da0bbf6cc74f77913b3`; the local
-animation and teacher/room work is separate.
-GitHub Actions jobs remain blocked by account payments/spending limits, and the
-owner chose manual delivery. No deployment secrets were installed in GitHub.
+was merged into `main` as `94d082a6fb975ab211498da0bbf6cc74f77913b3`; animation and
+teacher/room work were not included in that release.
+At that time GitHub Actions jobs were blocked by account payments/spending
+limits, and the owner chose manual delivery. No deployment secrets were installed
+in GitHub. This historical restriction did not affect the 0.2.0 validation job.
 
 ## Release artifact
 
@@ -39,6 +84,7 @@ OCI labels at build time:
 
 - `org.opencontainers.image.source=https://github.com/Kreoniz/marvin-campus`
 - `org.opencontainers.image.revision=<the same full commit SHA>`
+- `org.opencontainers.image.version=<the package version, for example 0.2.0>`
 
 An additional build/run URL label is useful for CI-built images but is optional
 for manual releases. Export the single tag with `docker save`, compress it with
