@@ -10,6 +10,7 @@ import {
   restoreEventAnchor,
   sourceCardWidth,
   SOURCE_INSET,
+  type SourceOccurrence,
 } from './source-layout.ts';
 import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
 const date = '2026-10-26';
@@ -49,63 +50,74 @@ function schedule(selection: Selection, lessons: Lesson[]): GroupSchedule {
 }
 
 test('one canonical card uses first-selected visible typed ownership without mutating calculation inputs', () => {
-  const input = [
-    schedule(a, [event('shared')]),
-    schedule(b, [event('other')]),
-    schedule(teacher, [event('shared')]),
-    schedule(room, [event('shared')]),
-  ];
-  const before = structuredClone(input);
-  const calculation = compareDay(input, date);
-  const blocks = lessonBlocks(input, date);
-  for (const selected of [
-    [a, b, teacher, room],
-    [room, teacher, b, a],
-  ]) {
-    const result = sourceLayout(blocks, selected, 480, 0.9);
-    assert.equal(result.occurrences.length, blocks.length);
-    assert.equal(
-      new Set(result.occurrences.map((o) => o.block.identity)).size,
-      blocks.length,
+  for (const orderedLanes of [true, false]) {
+    const input: GroupSchedule[] = [
+      schedule(a, [event('shared')]),
+      schedule(b, [event('other')]),
+      schedule(teacher, [event('shared')]),
+      schedule(room, [event('shared')]),
+    ];
+    const before = structuredClone(input);
+    const calculation = compareDay(input, date);
+    const blocks = lessonBlocks(input, date);
+    const orders: Selection[][] = [
+      [a, b, teacher, room],
+      [room, teacher, b, a],
+    ];
+    for (const selected of orders) {
+      const result = sourceLayout(blocks, selected, 480, 0.9, orderedLanes);
+      assert.equal(result.occurrences.length, blocks.length);
+      assert.equal(
+        new Set(result.occurrences.map((o) => o.block.identity)).size,
+        blocks.length,
+      );
+      const shared = result.occurrences.find(
+        (o) => o.block.lesson.id === 'shared',
+      )!;
+      assert.equal(shared.member, selected[0]);
+      assert.equal(shared.column, 0);
+      assert.equal(shared.block.members.length, 3);
+      assert.equal(result.columns, 2);
+      assert.equal(result.width, 344);
+    }
+    const promoted = sourceLayout(
+      blocks,
+      [teacher, room],
+      480,
+      0.9,
+      orderedLanes,
     );
-    const shared = result.occurrences.find(
-      (o) => o.block.lesson.id === 'shared',
-    )!;
-    assert.equal(shared.member, selected[0]);
-    assert.equal(shared.column, 0);
-    assert.equal(shared.block.members.length, 3);
-    assert.equal(result.columns, 2);
-    assert.equal(result.width, 344);
+    assert.equal(promoted.occurrences.length, 1);
+    assert.equal(promoted.occurrences[0].member, teacher);
+    assert.notEqual(scheduleKey(a), scheduleKey(teacher));
+    assert.notEqual(scheduleKey(room), scheduleKey(teacher));
+    assert.deepEqual(compareDay(input, date), calculation);
+    assert.deepEqual(input, before);
   }
-  const promoted = sourceLayout(blocks, [teacher, room], 480, 0.9);
-  assert.equal(promoted.occurrences.length, 1);
-  assert.equal(promoted.occurrences[0].member, teacher);
-  assert.notEqual(scheduleKey(a), scheduleKey(teacher));
-  assert.notEqual(scheduleKey(room), scheduleKey(teacher));
-  assert.deepEqual(compareDay(input, date), calculation);
-  assert.deepEqual(input, before);
 });
 
 test('three or thirty shared-only selections use one 160px card and one lane', () => {
-  for (const count of [3, 30]) {
-    const selected = Array.from({ length: count }, (_, i): Selection => ({
-      id: i + 1,
-      label: `Г-${i + 1}`,
-    }));
-    const blocks = lessonBlocks(
-      selected.map((s) => schedule(s, [event('shared')])),
-      date,
-    );
-    const result = sourceLayout(blocks, selected, 480, 1);
-    assert.equal(result.occurrences.length, 1);
-    assert.equal(result.columns, 1);
-    assert.equal(result.cardWidth, 160);
-    assert.equal(result.width, 178);
-    assert.equal(result.occurrences[0].block.members.length, count);
+  for (const orderedLanes of [true, false]) {
+    for (const count of [3, 30]) {
+      const selected = Array.from({ length: count }, (_, i): Selection => ({
+        id: i + 1,
+        label: `Г-${i + 1}`,
+      }));
+      const blocks = lessonBlocks(
+        selected.map((s) => schedule(s, [event('shared')])),
+        date,
+      );
+      const result = sourceLayout(blocks, selected, 480, 1, orderedLanes);
+      assert.equal(result.occurrences.length, 1);
+      assert.equal(result.columns, 1);
+      assert.equal(result.cardWidth, 160);
+      assert.equal(result.width, 178);
+      assert.equal(result.occurrences[0].block.members.length, count);
+    }
   }
 });
 
-test('different sources reuse free space between nonoverlapping lessons without identity columns or kind gaps', () => {
+test('compact: different sources reuse free space between nonoverlapping lessons without identity columns or kind gaps', () => {
   const blocks = lessonBlocks(
     [
       schedule(a, [event('a-early', 480, 540), event('a-late', 800, 860)]),
@@ -114,7 +126,7 @@ test('different sources reuse free space between nonoverlapping lessons without 
     ],
     date,
   );
-  const result = sourceLayout(blocks, [a, teacher, room], 480, 0.72);
+  const result = sourceLayout(blocks, [a, teacher, room], 480, 0.72, false);
   assert.equal(result.columns, 1);
   assert.equal(result.width, 178);
   assert.deepEqual(
@@ -124,7 +136,7 @@ test('different sources reuse free space between nonoverlapping lessons without 
   assert.ok(result.occurrences.every((o) => o.left === SOURCE_INSET));
 });
 
-test('simultaneous events follow selected order and retain affinity only in existing free lanes', () => {
+test('compact: simultaneous events follow selected order and retain affinity only in existing free lanes', () => {
   const c: Selection = { id: 3, label: 'Г-В' };
   const blocks = lessonBlocks(
     [
@@ -138,7 +150,7 @@ test('simultaneous events follow selected order and retain affinity only in exis
     [a, b, c],
     [c, b, a],
   ]) {
-    const result = sourceLayout(blocks, selected, 480, 0.9);
+    const result = sourceLayout(blocks, selected, 480, 0.9, false);
     assert.equal(result.columns, 3);
     assert.deepEqual(
       result.occurrences.slice(0, 3).map((o) => scheduleKey(o.member)),
@@ -185,7 +197,7 @@ test('density tiers depend on concurrent painted lanes, not selected set or tota
       ),
       date,
     );
-    const compact = sourceLayout(sequential, selected, 480, 1);
+    const compact = sourceLayout(sequential, selected, 480, 1, false);
     assert.equal(compact.columns, 1);
     assert.equal(compact.cardWidth, 160);
     assert.equal(compact.width, 178);
@@ -255,7 +267,7 @@ test('empty, failed, expired and uncovered sources create no visual lanes or fal
   const expiredSchedule: GroupSchedule = { selection: expired };
   const vuc = schedule(uncovered, []);
   vuc.snapshot!.data.coveredDates = [];
-  const input = [
+  const input: GroupSchedule[] = [
     schedule(a, [event('shared')]),
     schedule(b, [event('shared')]),
     schedule(empty, []),
@@ -324,7 +336,7 @@ test('event anchoring survives reorder, width contraction and removal with typed
   assert.equal(restoreEventAnchor(undefined, reduced), undefined);
 });
 
-test('affinity reclaims a lower free lane after a temporary overlap ends', () => {
+test('compact: affinity reclaims a lower free lane after a temporary overlap ends', () => {
   const blocks = lessonBlocks(
     [
       schedule(a, [event('long', 480, 1100)]),
@@ -337,7 +349,7 @@ test('affinity reclaims a lower free lane after a temporary overlap ends', () =>
     ],
     date,
   );
-  const result = sourceLayout(blocks, [a, teacher, room], 480, 1);
+  const result = sourceLayout(blocks, [a, teacher, room], 480, 1, false);
   assert.equal(result.columns, 3);
   assert.deepEqual(
     result.occurrences.filter((o) => o.member === room).map((o) => o.column),
@@ -369,4 +381,134 @@ test('a clamped jump anchors the focused event rather than a disappearing left n
     restoreEventAnchor(anchor, after),
     after.occurrences.at(-1)!.left - 9,
   );
+});
+
+test('default keeps distinct source bands in selection order for the whole date', () => {
+  const blocks = lessonBlocks(
+    [
+      schedule(a, [event('a-early', 480, 540), event('a-late', 900, 960)]),
+      schedule(teacher, [event('teacher', 600, 690)]),
+      schedule(room, [event('room', 700, 790)]),
+    ],
+    date,
+  );
+  const before = structuredClone(blocks);
+  for (const selected of [
+    [a, teacher, room],
+    [room, a, teacher],
+  ] as Selection[][]) {
+    const layout = sourceLayout(blocks, selected, 480, 1);
+    assert.equal(layout.columns, 3);
+    for (const entry of layout.occurrences) {
+      assert.equal(entry.column, selected.indexOf(entry.member));
+      assert.equal(entry.left, 9 + selected.indexOf(entry.member) * 166);
+    }
+    assert.equal(sourceLayout(blocks, selected, 480, 1, false).columns, 1);
+  }
+  assert.deepEqual(blocks, before);
+});
+
+test('ordered mixed unique/shared bands reserve only owned geometry and internal painted overlaps', () => {
+  for (const scale of [0.72, 1]) {
+    const blocks = lessonBlocks(
+      [
+        schedule(a, [
+          event('solo', 480, 485),
+          event('next', 485, 490),
+          event('shared', 600, 690),
+        ]),
+        schedule(b, [event('shared', 600, 690)]),
+        schedule(teacher, [
+          event('shared', 600, 690),
+          event('teacher', 480, 540),
+        ]),
+        schedule(room, [event('room', 800, 890)]),
+      ],
+      date,
+    );
+    const layout = sourceLayout(blocks, [a, b, teacher, room], 480, scale);
+    assert.equal(layout.columns, 4); // two painted sublanes + teacher + room
+    assert.equal(layout.cardWidth, 144);
+    assert.equal(layout.occurrences.length, 5);
+    assert.deepEqual(
+      layout.occurrences.filter((e) => e.member === a).map((e) => e.column),
+      [0, 1, 0],
+    );
+    assert.equal(
+      layout.occurrences.find((e) => e.member === teacher)!.column,
+      2,
+    );
+    assert.equal(layout.occurrences.find((e) => e.member === room)!.column, 3);
+    assert(!layout.occurrences.some((e) => e.member === b));
+    assert.equal(sourceJump(layout, scheduleKey(b))!.block.lesson.id, 'shared');
+    const promoted = sourceLayout(blocks, [teacher, room], 480, scale);
+    assert.equal(sourceJump(promoted, scheduleKey(teacher))!.member, teacher);
+    assert.equal(promoted.columns, 2);
+  }
+});
+
+test('ordered width tiers count retained bands including sequential sources, excluding shared-only aliases', () => {
+  for (const [count, width] of [
+    [2, 160],
+    [3, 160],
+    [5, 144],
+    [8, 128],
+    [30, 112],
+  ]) {
+    const selected = Array.from({ length: count }, (_, i): Selection => ({
+      id: i + 1,
+      label: `Г-${i}`,
+    }));
+    const blocks = lessonBlocks(
+      selected.map((s, i) =>
+        schedule(s, [event(`owned-${i}`, 480 + i * 30, 500 + i * 30)]),
+      ),
+      date,
+    );
+    const layout = sourceLayout(blocks, selected, 480, 1);
+    assert.equal(layout.columns, count);
+    assert.equal(layout.cardWidth, width);
+    assert.equal(layout.width, 18 + count * width + (count - 1) * 6);
+    const alias = lessonBlocks(
+      selected.map((s) => schedule(s, [event('one')])),
+      date,
+    );
+    assert.equal(sourceLayout(alias, selected, 480, 1).width, 178);
+  }
+});
+
+test('shared jump and focused event anchor survive mode switch and contraction', () => {
+  const blocks = lessonBlocks(
+    [
+      schedule(a, [event('early', 480, 540), event('shared', 900, 960)]),
+      schedule(b, [event('shared', 900, 960)]),
+      schedule(teacher, [event('teacher', 600, 690)]),
+      schedule(room, [event('room', 700, 790)]),
+    ],
+    date,
+  );
+  for (const ordered of [true, false]) {
+    const layout = sourceLayout(blocks, [a, b, teacher, room], 480, 1, ordered);
+    const focused: SourceOccurrence = sourceJump(layout, scheduleKey(room))!;
+    const anchor: ReturnType<typeof eventAnchor> = eventAnchor(
+      layout,
+      focused.left - 9,
+      focused.block.identity,
+    )!;
+    const switched = sourceLayout(
+      blocks,
+      [a, b, teacher, room],
+      480,
+      1,
+      !ordered,
+    );
+    assert.equal(
+      restoreEventAnchor(anchor, switched),
+      sourceJump(switched, scheduleKey(room))!.left - 9,
+    );
+    assert.equal(
+      sourceJump(switched, scheduleKey(b))!.block.lesson.id,
+      'shared',
+    );
+  }
 });

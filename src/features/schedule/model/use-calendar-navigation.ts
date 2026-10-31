@@ -15,6 +15,8 @@ export default function useCalendarNavigation(
   compact: boolean,
   dayReveal = 0,
   ready = true,
+  focusedCard?: RefObject<HTMLElement | null>,
+  orderedLanes = true,
 ) {
   const [viewportWidth, setViewportWidth] = useState(0);
   const previous = useRef<{
@@ -24,6 +26,7 @@ export default function useCalendarNavigation(
     anchor?: DayAnchor;
     pendingReveal: boolean;
     left: number;
+    orderedLanes: boolean;
   }>(undefined);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -58,7 +61,7 @@ export default function useCalendarNavigation(
       // Initial/date navigation can first measure narrow loading columns.
       // Consume its deferred reveal at the first published cohort, only once.
       const revealing = navigating || (old.pendingReveal && ready);
-      const left = revealing
+      let left = revealing
         ? singleDay
           ? 0
           : revealDay(
@@ -71,6 +74,22 @@ export default function useCalendarNavigation(
             )
         : (restoreDayAnchor(columns, old.anchor, rail, max) ??
           element!.scrollLeft);
+      const card = focusedCard?.current;
+      if (
+        !revealing &&
+        old.orderedLanes !== orderedLanes &&
+        card?.isConnected
+      ) {
+        // Preserve the keyed event when a presentation switch moves it inside
+        // its date. Save the resulting date/offset for later resize callbacks.
+        const box = card.getBoundingClientRect();
+        const viewport = element!.getBoundingClientRect();
+        const cardLeft = box.left - viewport.left + element!.scrollLeft;
+        const cardRight = cardLeft + box.width;
+        if (cardLeft < left + rail + 9) left = cardLeft - rail - 9;
+        else if (cardRight > left + width - 9) left = cardRight - width + 9;
+        left = Math.max(0, Math.min(left, max));
+      }
       previous.current = {
         key,
         columns,
@@ -78,6 +97,7 @@ export default function useCalendarNavigation(
         anchor: dayAnchor(columns, left, rail),
         pendingReveal: navigating ? !ready : old.pendingReveal && !ready,
         left,
+        orderedLanes,
       };
       setViewportWidth(width);
       if (Math.abs(element!.scrollLeft - left) > 0.5)
@@ -145,6 +165,16 @@ export default function useCalendarNavigation(
       element.removeEventListener('pointerdown', cancelPendingReveal);
       element.removeEventListener('keydown', keyboard);
     };
-  }, [ref, week, day, singleDay, compact, dayReveal, ready]);
+  }, [
+    ref,
+    week,
+    day,
+    singleDay,
+    compact,
+    dayReveal,
+    ready,
+    focusedCard,
+    orderedLanes,
+  ]);
   return viewportWidth;
 }

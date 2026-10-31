@@ -42,6 +42,7 @@ interface CalendarProps {
   hiddenKinds?: ScheduleKind[];
   vucOnly?: boolean;
   dayReveal?: number;
+  orderedLanes?: boolean;
 }
 
 export default function Calendar({
@@ -60,9 +61,23 @@ export default function Calendar({
   hiddenKinds = [],
   vucOnly = false,
   dayReveal = 0,
+  orderedLanes = true,
 }: CalendarProps) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
+  const focusedCard = useRef<HTMLElement | null>(null);
+  function revealCard(card: HTMLElement) {
+    const viewport = scroller.current;
+    if (!viewport || !card.isConnected) return;
+    const box = card.getBoundingClientRect();
+    const bounds = viewport.getBoundingClientRect();
+    const rail =
+      viewport.querySelector('.time-rail')?.getBoundingClientRect().right ??
+      bounds.left;
+    if (box.left < rail + 3) viewport.scrollLeft += box.left - rail - 3;
+    else if (box.right > bounds.right - 3)
+      viewport.scrollLeft += box.right - bounds.right + 3;
+  }
   const viewportWidth = useCalendarNavigation(
     scroller,
     week,
@@ -71,6 +86,8 @@ export default function Calendar({
     compact,
     dayReveal,
     !placeholder && schedules.some((group) => group.snapshot),
+    focusedCard,
+    orderedLanes,
   );
   const dates = singleDay
     ? [day]
@@ -117,6 +134,7 @@ export default function Calendar({
         visible.map((group) => group.selection),
         start,
         scale,
+        orderedLanes,
       ),
     };
   });
@@ -133,10 +151,20 @@ export default function Calendar({
         <ScrollArea.Viewport
           ref={scroller}
           style={{ overflowY: 'hidden', height: 'auto' }}
+          onScroll={() => {
+            const viewport = scroller.current;
+            const card = focusedCard.current;
+            if (!viewport || !card) return;
+            const box = card.getBoundingClientRect();
+            const bounds = viewport.getBoundingClientRect();
+            if (box.right <= bounds.left || box.left >= bounds.right)
+              focusedCard.current = null;
+          }}
           onFocusCapture={(event) => {
             const card = event.target;
             if (!(card instanceof HTMLElement) || !card.matches('.lesson-card'))
               return;
+            focusedCard.current = card;
             requestAnimationFrame(() => {
               const viewport = scroller.current;
               if (
@@ -145,15 +173,7 @@ export default function Calendar({
                 document.activeElement !== card
               )
                 return;
-              const box = card.getBoundingClientRect();
-              const bounds = viewport.getBoundingClientRect();
-              const rail =
-                viewport.querySelector('.time-rail')?.getBoundingClientRect()
-                  .right ?? bounds.left;
-              if (box.left < rail + 3)
-                viewport.scrollLeft += box.left - rail - 3;
-              else if (box.right > bounds.right - 3)
-                viewport.scrollLeft += box.right - bounds.right + 3;
+              revealCard(card);
             });
           }}
           className={`week-scroll [overflow-anchor:none] [--rail-width:44px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}

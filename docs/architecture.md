@@ -57,23 +57,33 @@
   same consolidated `lessonBlocks` events. `features/schedule/model` allocates
   vertical presentation lanes against semantic and painted bounds. Calendar
   display bounds are independent of domain intervals; VUC defaults to 09:00
-  while preserving real earlier events. Presence gutters clear external card outlines. Rendering uses
-  `source-layout` projections in both Day and Week reuse `verticalLayout`'s
-  semantic/painted-bound collision allocator. Canonical blocks render once.
+  while preserving real earlier events. Presence gutters clear external card outlines.
+  Rendering in both Day and Week uses `source-layout` projections based on
+  `verticalLayout`'s semantic/painted-bound collision allocator. Canonical blocks render once.
   Their first selected visible member owns presentation; hidden kinds promote
-  the next visible member. Equal-start placement uses selection priority, and
-  source affinity reuses existing free lanes without reserving source columns.
-  Width tiers (160/144/128/112 pixels) follow each day's actual peak painted
-  concurrency; adjacent cards have six-pixel gaps. Card member labels/colors
-  replace source headers, since a lane can hold different sources through a day.
-  Genuine empty/unknown sources reserve no geometry. Week reports unavailable
+  the next visible member. By default, active owned blocks get stable source
+  bands in selection order, with internal overlap sublanes. Shared-only aliases
+  reserve no geometry. The compact opt-out retains selection-priority ties and
+  source affinity within free occupied lanes. Width tiers (160/144/128/112 pixels)
+  follow retained rendered lanes, with six-pixel gaps and nine-pixel clearance.
+  Card member labels/colors provide orientation without source headers.
+  `ComparisonPage` owns the `orderedLanes` boolean and passes it to settings and
+  both primary calendars. Guarded localStorage reads/writes use
+  `campus-ordered-lanes` (`on`/`off`; only `off` disables lanes). Missing,
+  unrecognized or inaccessible storage defaults to on. This local presentation
+  choice never enters URLs/history, schedule data or calculation inputs and
+  leaves the secondary horizontal timeline and List unchanged.
+  Sources without owned cards reserve no geometry; known cards remain visible
+  even when coverage is incomplete. Week reports unavailable
   sources by date; Day keeps all selected sources in its chooser and exposes
   honest empty/unknown/coverage notices. `sourceJump` resolves an owned first
   occurrence or an existing shared card containing the requested member; hidden
   choices explain their state without redirecting or changing visibility.
   Day anchoring retains logical event identity with typed-source fallback,
   clamping offsets on contraction. Week navigation measures date columns and
-  preserves date/offset anchors. Initial/date/Today reveals stay pending until
+  preserves date/offset anchors, including a previously focused keyed card when
+  switching presentation modes. Day also remembers the focused card while
+  settings owns keyboard focus. Initial/date/Today reveals stay pending until
   usable cohort geometry, unless deliberate scrolling cancels them. Repeated
   Today reveals without writing duplicate date history. All calendars use page
   vertical scrolling, horizontal navigation and focus reveal clearing the rail.

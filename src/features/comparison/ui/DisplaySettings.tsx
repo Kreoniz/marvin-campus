@@ -14,6 +14,8 @@ const kinds = [
 ] as const;
 
 export default function DisplaySettings({
+  orderedLanes,
+  onOrderedLanes,
   vimHotkeys,
   onVimHotkeys,
   layers,
@@ -23,6 +25,8 @@ export default function DisplaySettings({
   spotlightLabel,
   onClearSpotlight,
 }: {
+  orderedLanes: boolean;
+  onOrderedLanes: (enabled: boolean) => void;
   vimHotkeys: boolean;
   onVimHotkeys: (enabled: boolean) => void;
   layers: CalendarLayers;
@@ -59,8 +63,21 @@ export default function DisplaySettings({
             />
           </div>
           <Dialog.Description className="sr-only">
-            Видимость карточек, слои календаря и подсветка расписаний.
+            Дорожки расписаний, видимость карточек, слои календаря и подсветка.
           </Dialog.Description>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-u-selection-ink"
+              checked={orderedLanes}
+              onChange={(event) => onOrderedLanes(event.target.checked)}
+              aria-describedby="ordered-lanes-note"
+            />
+            Дорожки расписаний
+          </label>
+          <p id="ordered-lanes-note" className="m-0 mb-3 text-xs text-u-muted">
+            В порядке выбора. Выключите для компактного вида.
+          </p>
           <fieldset
             className="m-0 mb-3 border-0 p-0"
             aria-describedby="visibility-note"

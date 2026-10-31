@@ -45,6 +45,7 @@ interface Props {
   spotlightIds: string[];
   hiddenKinds: ScheduleKind[];
   vucOnly?: boolean;
+  orderedLanes?: boolean;
 }
 const scale = 1;
 const rail = 44;
@@ -59,12 +60,14 @@ export default function SourceDayCalendar({
   spotlightIds,
   hiddenKinds,
   vucOnly = false,
+  orderedLanes = true,
 }: Props) {
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLDivElement>(null);
   const noticeElement = useRef<HTMLParagraphElement>(null);
   const anchor = useRef<ReturnType<typeof eventAnchor>>(undefined);
+  const focusedCard = useRef<HTMLElement | null>(null);
   const pendingJump = useRef<string | null>(null);
   const [jumped, setJumped] = useState('');
   const requested = schedules.find(
@@ -83,6 +86,7 @@ export default function SourceDayCalendar({
     visible.map((schedule) => schedule.selection),
     start,
     scale,
+    orderedLanes,
   );
   const destination = sourceJump(events, jumped);
   const notice = !requested
@@ -115,15 +119,18 @@ export default function SourceDayCalendar({
     const viewport = scroller.current;
     if (!viewport) return;
     const cards = Array.from(viewport.querySelectorAll('.lesson-card'));
-    const focused = cards.indexOf(document.activeElement!);
+    const focused = cards.indexOf(focusedCard.current!);
     const bounds = viewport.getBoundingClientRect();
     const card = cards[focused]?.getBoundingClientRect();
+    const focusedVisible =
+      card && card.right > bounds.left + rail && card.left < bounds.right;
+    if (!focusedVisible) focusedCard.current = null;
     // At the right edge a jump is clamped before its card can reach the left
     // rail. Retain that focused event, rather than an incidental left neighbor.
     anchor.current = eventAnchor(
       eventsRef.current,
       viewport.scrollLeft,
-      card && card.right > bounds.left + rail && card.left < bounds.right
+      focusedVisible
         ? eventsRef.current.occurrences[focused]?.block.identity
         : undefined,
     );
@@ -286,6 +293,7 @@ export default function SourceDayCalendar({
             !target.matches('.lesson-card')
           )
             return;
+          focusedCard.current = target;
           requestAnimationFrame(() => {
             if (document.activeElement === target) reveal(target);
           });

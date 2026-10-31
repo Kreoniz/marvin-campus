@@ -73,6 +73,19 @@ export default function ComparisonPage({
   });
   const [orderFocus, setOrderFocus] = useState('');
   const [hiddenKinds, setHiddenKinds] = useState<ScheduleKind[]>([]);
+  const [orderedLanes, setOrderedLanes] = useState(() => {
+    try {
+      return localStorage.getItem('campus-ordered-lanes') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  function toggleOrderedLanes(value: boolean) {
+    setOrderedLanes(value);
+    try {
+      localStorage.setItem('campus-ordered-lanes', value ? 'on' : 'off');
+    } catch {}
+  }
   const [vimHotkeys, setVimHotkeys] = useState(() => {
     try {
       return localStorage.getItem('campus-vim-hotkeys') !== 'off';
@@ -281,6 +294,8 @@ export default function ComparisonPage({
             }
             settingsControl={
               <DisplaySettings
+                orderedLanes={orderedLanes}
+                onOrderedLanes={toggleOrderedLanes}
                 vimHotkeys={vimHotkeys}
                 onVimHotkeys={toggleVimHotkeys}
                 layers={layers}
@@ -411,6 +426,7 @@ export default function ComparisonPage({
                           />
                         ) : scheduleView === 'day' ? (
                           <SourceDayCalendar
+                            orderedLanes={orderedLanes}
                             vucOnly={vucOnly}
                             schedules={source.schedules}
                             colors={colors}
@@ -424,6 +440,7 @@ export default function ComparisonPage({
                           />
                         ) : (
                           <Calendar
+                            orderedLanes={orderedLanes}
                             vucOnly={vucOnly}
                             schedules={source.schedules}
                             colors={colors}

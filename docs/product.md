@@ -115,14 +115,25 @@ lecturer names retain their full labels without ellipsis and redundant role capt
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.
 
-Day and Week pack canonical events into reusable lanes. Only actual time or
-minimum painted-height overlaps require adjacent lanes, with a six-pixel gap.
-Sources do not reserve columns, kind-transition gaps or source headers. Colors,
-member labels and kind icons identify the schedules on each card. Selection
-order breaks equal-start placement ties and supplies affinity to existing free
-lanes; it never reserves vacant space. Card width follows each day's peak painted
-concurrency: 160 pixels for up to three lanes, 144 for four to six, 128 for seven
-to twelve, and 112 above twelve. Cards do not stretch into spare viewport space.
+Day and Week default to stable schedule lanes in current selection order for
+that date. Only sources owning visible canonical cards reserve a band; shared-only
+aliases, hidden sources and sources without owned cards reserve none. Known cards
+remain visible when their source has incomplete coverage. Actual or minimum
+painted-height overlaps within a band get internal sublanes. Adjacent cards and
+bands have six-pixel gaps and nine-pixel rail/presence/focus clearance, without
+kind-transition gaps or source headers. Colors, member labels and kind icons
+identify schedules. Width follows retained rendered lanes: 160 pixels for up to
+three, 144 for four to six, 128 for seven to twelve, and 112 above twelve.
+Cards do not stretch into spare viewport space.
+
+Display settings offer “Дорожки расписаний”, checked by default, with the help
+“В порядке выбора. Выключите для компактного вида.” Turning it off immediately
+packs events into reusable lanes in both Day and Week. Compact placement preserves
+semantic/painted collision safety, selection-order ties and bounded source
+affinity. The choice persists locally across reloads, dates, workspace changes
+and resizing; missing, unrecognized or blocked storage defaults to lanes on.
+It affects only the primary vertical calendar, leaving the secondary timeline,
+List, URLs, history, counts and calculations unchanged.
 
 One full shared card belongs to the first selected visible participating source,
 including a lecturer or room moved ahead of its groups. Every canonical block
@@ -142,7 +153,7 @@ skip an owner's earlier solo lesson. Hidden-kind choices explain the hidden
 state without changing visibility or redirecting focus to a card. Genuinely
 empty, unknown and uncovered sources create no visual columns; their distinct
 states remain in the chooser, compact notices and data details. A shared-only
-member is labelled as shared, never empty. Headers no longer imply source lanes.
+member is labelled as shared, never empty. Shared-only aliases add no empty bands.
 Logical event anchoring retains the event through reorder or width changes,
 with a source fallback if it disappears. Keyboard focus clears the actual rail.
 
@@ -203,14 +214,14 @@ set. Display settings and day detail can clear all spotlights together.
 Spotlight and day format are transient presentation state, not comparison URL
 parameters or changes to the presence/free calculation.
 
-Each compact Week date has its own minimum width derived from its peak
-painted event concurrency. Empty dates retain a column; unknown, failed, expired
+Each Week date has its own minimum width derived from its retained rendered
+lanes in the chosen presentation mode. Empty dates retain a column; unknown, failed, expired
 or uncovered sources remain explicitly named in the day's unavailable status
 and calculation details. Known lessons remain visible even when their source is
 excluded from calculation. Navigation measures actual date columns and preserves
 the visible date/offset across geometry changes. Lane allocation reserves both
 the true interval and the minimum painted height, so short events cannot collide.
-Nonoverlapping events from different sources can reuse the same lane. An isolated
+In compact mode, nonoverlapping events from different sources can reuse the same lane. An isolated
 lesson stays compact. Pressing a card highlights it without moving its geometry.
 Their height still represents duration, including long military classes.
 Simultaneous distinct lessons of one group use stripes. The selected-day timeline uses event rows and

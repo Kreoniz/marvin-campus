@@ -6,7 +6,7 @@ import { verticalLayout, type VerticalPlacement } from './vertical-layout.ts';
 export const SOURCE_INSET = 9;
 const LANE_GAP = 6;
 
-// Density follows actual painted concurrency, never the number of selections.
+// Density follows retained painted lanes, never the number of selections.
 export function sourceCardWidth(count: number) {
   return count <= 3 ? 160 : count <= 6 ? 144 : count <= 12 ? 128 : 112;
 }
@@ -22,13 +22,14 @@ export interface SourceLayout {
   width: number;
 }
 
-// Reuse the painted-safe event allocator. Selection priority only orders ties
-// and supplies source affinity; no lane or gap belongs to a source all day.
+// Only sources owning actual cards reserve a band. Both modes reuse the same
+// painted-safe allocator and canonical blocks, including shared membership.
 export function sourceLayout(
   blocks: LessonBlock[],
   selections: Selection[],
   origin: number,
   scale: number,
+  orderedLanes = true,
 ): SourceLayout {
   const owners = new Map(
     blocks.map((block) => [
@@ -38,12 +39,30 @@ export function sourceLayout(
       ),
     ]),
   );
-  const placed = verticalLayout(
-    blocks.filter((b) => owners.get(b.identity)),
-    origin,
-    scale,
-    selections,
-  );
+  const retained = blocks.filter((b) => owners.get(b.identity));
+  let placed: VerticalPlacement[];
+  if (orderedLanes) {
+    let offset = 0;
+    placed = selections.flatMap((selection) => {
+      const owned = retained.filter(
+        (block) => owners.get(block.identity) === selection,
+      );
+      if (!owned.length) return [];
+      const band = verticalLayout(owned, origin, scale, [selection]);
+      const columns = Math.max(...band.map((entry) => entry.columns));
+      const entries = band.map((entry) => ({
+        ...entry,
+        column: offset + entry.column,
+      }));
+      offset += columns;
+      return entries;
+    });
+    // Keep chronological navigation/tab order across the source bands.
+    placed.sort((a, b) => a.top - b.top || a.column - b.column);
+    placed = placed.map((entry) => ({ ...entry, columns: offset }));
+  } else {
+    placed = verticalLayout(retained, origin, scale, selections);
+  }
   const columns = Math.max(1, ...placed.map((p) => p.columns));
   const cardWidth = sourceCardWidth(columns);
   const lanePitch = cardWidth + LANE_GAP;
