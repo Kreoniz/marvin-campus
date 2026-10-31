@@ -1,13 +1,52 @@
 # Deployment
 
 Deployment remains manual by the owner's choice. GitHub CI validates the
-repository; the 0.2.2 main revision passed its validation job. No deployment
+repository; the 0.2.3 main revision passed its validation job. No deployment
 credentials or SSH key installation was required for this release.
 
-## Current release 0.2.2 — 2026-10-31
+## Current release 0.2.3 — 2026-10-31
+
+[Campus 0.2.3](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.3)
+is active at <https://campus.kreoniz.ru> from revision
+`b0ef82e3bffe642df64dce742887449babfc4d9d`, image
+`marvin-campus:b0ef82e3bffe642df64dce742887449babfc4d9d`, with OCI version
+`0.2.3` and image config ID
+`sha256:696835cf82d6b4157598acd65d619c873ff058d3cacbff210422a66d1be26b18`.
+The compressed image archive SHA-256 is
+`05c6546067f5512d0248463d6e7bf7beab6ddcc1578b1a6803dbebd78f3ef259`.
+[GitHub CI](https://github.com/Kreoniz/marvin-campus/actions/runs/41205979844) passed
+on the exact tagged source revision.
+
+The receiver activated the healthy image at `2026-10-31T13:44:01Z` after a
+consistent SQLite backup. All 108 legacy comparisons retained their count and
+digest. Before/after hashes confirmed unchanged Compose, non-image environment
+and VUC dataset/originals. Container hardening, networking and the data volume
+were preserved. The previous healthy
+`marvin-campus:4165588c1b3b6690851c999a7fa9c1199f45858b` image and
+private backups remain available for rollback.
+
+Independent HTTPS verification matched all 35 built files, health, three
+app-shell routes, six VUC week responses and the exact 77,053-byte original.
+The isolated local runtime passed the same HTTP checks before activation.
+An initial local health-event harness timed out despite a healthy container;
+state inspection and the subsequent HTTP checks passed without an image change.
+
+Before/after captures and focused Chromium checks covered 320px, 390px and
+desktop layouts, scrolling, theme changes, settings layering, Escape/focus return,
+schedule menus, Day/Week switching and clearance below the compact header.
+Physical iPhone/PWA behavior remains unverified; local WebKit could not launch
+due to a missing system library. The native iOS blur was not reproduced in
+Chromium. See [release behavior and limits](releases/0.2.3.md).
+
+Release checks passed: 134 frontend tests, TypeScript, lint, tracked formatting,
+production build and privacy/Gitleaks scans. CI also passed Go race/vet.
+Unchanged importer/updater and receiver checks were reused. The existing
+bundle-size warning remains.
+
+## Previous release 0.2.2 — 2026-10-31
 
 [Campus 0.2.2](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.2)
-is active at <https://campus.kreoniz.ru> from revision
+was activated at <https://campus.kreoniz.ru> from revision
 `4165588c1b3b6690851c999a7fa9c1199f45858b`, image
 `marvin-campus:4165588c1b3b6690851c999a7fa9c1199f45858b`, with OCI version
 `0.2.2` and image config ID
