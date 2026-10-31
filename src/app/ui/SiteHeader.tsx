@@ -17,7 +17,7 @@ export default function SiteHeader({
   settingsControl: ReactNode;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-1.5 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:-mx-3 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0 compact:border-b-0 compact:px-1 compact:py-0">
+    <header className="site-header mb-5 flex items-center gap-1.5 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:sticky compact:top-0 compact:z-20 compact:-mx-3 compact:-mt-1 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0 compact:border-b-0 compact:bg-[var(--u-canvas)] compact:px-1 compact:py-0">
       <a
         className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"

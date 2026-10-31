@@ -227,7 +227,7 @@ export default function SourceDayCalendar({
     >
       <div
         ref={header}
-        className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface"
+        className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface compact:top-11"
       >
         <div className="border-b border-u-line-soft px-2 py-1">
           <Select.Root

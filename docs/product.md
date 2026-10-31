@@ -77,6 +77,9 @@ subgroup scope visible. Display settings hold layer and kind visibility and
 clearing all spotlights. Kind visibility changes cards only, not selection or
 calculation; hidden selections remain marked and can be restored directly.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
+Its header stays at the viewport edge on an opaque theme-colored surface,
+providing a solid boundary for native mobile scroll-edge effects. The Day source
+header sticks below it; keyboard scrolling reserves room for the app header.
 The mobile calendar follows the date controls immediately. Its brief result, partial count, freshness and a deduplicated VUC document download follow the timetable. The full included/excluded roster and calculation qualifications live in a closed-by-default disclosure. Desktop result cards also show only the result and a short partial count by default; they grow naturally when details are expanded, without an internal scrollbar. Day, Week and the secondary timeline at every viewport
 expand to their full time range/row count and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
