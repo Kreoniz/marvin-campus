@@ -1,13 +1,46 @@
 # Deployment
 
 Deployment remains manual by the owner's choice. GitHub CI validates the
-repository; the 0.2.1 main revision passed its validation job. No deployment
+repository; the 0.2.2 main revision passed its validation job. No deployment
 credentials or SSH key installation was required for this release.
 
-## Current release 0.2.1 — 2026-10-31
+## Current release 0.2.2 — 2026-10-31
+
+[Campus 0.2.2](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.2)
+is active at <https://campus.kreoniz.ru> from revision
+`4165588c1b3b6690851c999a7fa9c1199f45858b`, image
+`marvin-campus:4165588c1b3b6690851c999a7fa9c1199f45858b`, with OCI version
+`0.2.2` and image config ID
+`sha256:00beaf8ceadfc4b4f196a8a0c6376f966f4572c00d78d34239090a696b6d812f`.
+The compressed image archive SHA-256 is
+`ef2368072db4bd1b51e9f4e6f431041b3a1223b936c0bfd801832ac835b84de2`.
+[GitHub CI](https://github.com/Kreoniz/marvin-campus/actions/runs/41166394948) passed
+on the exact source revision identified by the Git tag and image.
+
+The receiver activated the healthy image at `2026-10-31T04:00:21Z` after a
+consistent SQLite backup. All 108 legacy comparisons retained their count and
+digest. Separate before/after hashes confirmed unchanged Compose, non-image
+environment and VUC dataset/originals. Hardening, networking and the existing
+volume were preserved. The previous healthy
+`marvin-campus:988ea766bcc9120e417b04a6282aaf96a97a4e34` image and
+private backups remain available for rollback.
+
+Independent HTTPS verification matched all 35 built files, health, three
+app-shell routes, six VUC week responses and the exact 77,053-byte original.
+The isolated local runtime passed the same HTTP checks before activation.
+
+The spotlight reload failure was reproduced before the fix. Two new storage
+regressions and nine focused app browser scenarios passed, including delayed
+link/workspace restoration, removal, clearing, separate VUC preferences and
+320px layouts. Release checks passed: all 134 frontend tests, TypeScript, lint,
+formatting, production build and privacy/Gitleaks scans; CI also passed Go
+race/vet. Unchanged importer/updater and receiver checks were reused. The existing
+bundle-size warning remains. See [release behavior and browser limits](releases/0.2.2.md).
+
+## Previous release 0.2.1 — 2026-10-31
 
 [Campus 0.2.1](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.1)
-is active at <https://campus.kreoniz.ru> from revision
+was activated at <https://campus.kreoniz.ru> from revision
 `988ea766bcc9120e417b04a6282aaf96a97a4e34`, image
 `marvin-campus:988ea766bcc9120e417b04a6282aaf96a97a4e34`, with OCI version
 `0.2.1` and image config ID
