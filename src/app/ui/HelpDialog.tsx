@@ -21,6 +21,7 @@ export default function HelpDialog({
         />
       )}
       <Dialog.Content
+        showCloseButton={false}
         className="help-dialog max-h-[calc(100dvh-40px)] overflow-auto"
         finalFocus={returnFocus}
       >

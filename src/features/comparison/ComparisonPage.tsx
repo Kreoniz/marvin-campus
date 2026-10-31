@@ -268,6 +268,7 @@ export default function ComparisonPage({
   return (
     <Theme
       appearance={theme}
+      lang="ru"
       className="campus-theme min-h-svh bg-u-canvas text-u-ink"
       tokens={{ '--u-accent': '#87f19d' }}
     >

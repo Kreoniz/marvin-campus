@@ -49,7 +49,10 @@ export default function DisplaySettings({
             />
           }
         />
-        <Dialog.Content className="w-[min(380px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto p-4">
+        <Dialog.Content
+          showCloseButton={false}
+          className="w-[min(380px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto p-4"
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <Dialog.Title className="m-0 text-lg">Отображение</Dialog.Title>
             <Dialog.Close

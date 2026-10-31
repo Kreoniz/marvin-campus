@@ -203,6 +203,7 @@ export default function GroupPicker({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {children}
       <Dialog.Content
+        showCloseButton={false}
         className="schedule-search flex h-[min(640px,calc(100dvh-24px))] w-[min(500px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] flex-col overflow-y-auto p-4"
         initialFocus={() =>
           (focusScheduleKey
