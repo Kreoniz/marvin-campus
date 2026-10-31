@@ -37,7 +37,7 @@ function layout(intervals: [number, number][], scale = 0.72) {
   return verticalLayout(lessonBlocks(schedules(intervals), date), 480, scale);
 }
 
-test('a future blocker stops E while F expands into an entirely free neighboring lane', () => {
+test('a long overlap chain reserves its peak lanes without changing domain events', () => {
   const input = schedules([
     [480, 840],
     [480, 570],
@@ -50,18 +50,18 @@ test('a future blocker stops E while F expands into an entirely free neighboring
   const blocks = lessonBlocks(input, date);
   const placed = verticalLayout(blocks, 480, 0.72);
   assert.deepEqual(
-    placed.map((p) => [p.block.lesson.id, p.column, p.columns, p.span]),
+    placed.map((p) => [p.block.lesson.id, p.column, p.columns]),
     [
-      ['A', 0, 4, 1],
-      ['B', 1, 4, 1],
-      ['C', 2, 4, 1],
-      ['D', 3, 4, 1],
-      ['E', 1, 4, 1],
-      ['F', 2, 4, 2],
+      ['A', 0, 4],
+      ['B', 1, 4],
+      ['C', 2, 4],
+      ['D', 3, 4],
+      ['E', 1, 4],
+      ['F', 2, 4],
     ],
   );
-  assert.equal(dayMinimum(placed), 536);
-  assert.equal(dayMinimum([]), 166);
+  assert.equal(dayMinimum(placed), 671);
+  assert.equal(dayMinimum([]), 173);
   assert.deepEqual(input, before);
   assert.deepEqual(
     placed.map((p) => p.block),
@@ -69,7 +69,7 @@ test('a future blocker stops E while F expands into an entirely free neighboring
   );
 });
 
-test('expansion uses an interior vacancy but never jumps over a blocker', () => {
+test('an interior vacancy reuses its lane while the day retains its peak width', () => {
   const placed = layout([
     [480, 840],
     [481, 540],
@@ -78,7 +78,7 @@ test('expansion uses an interior vacancy but never jumps over a blocker', () => 
     [540, 660],
   ]);
   assert.equal(placed.at(-1)!.column, 1);
-  assert.equal(placed.at(-1)!.span, 2);
+  assert.equal(placed.at(-1)!.columns, 4);
 });
 
 test('connected chains use peak depth and touching ordinary events reuse lanes', () => {
@@ -113,9 +113,7 @@ test('short touching events reserve their painted extent at both calendar scales
       placed.map((p) => p.column),
       [0, 1, 2],
     );
-    assert.ok(
-      placed.every((p) => p.columns === 3 && p.height === 18 && p.span === 1),
-    );
+    assert.ok(placed.every((p) => p.columns === 3 && p.height === 18));
     assert.deepEqual(
       placed.map((p) => p.top),
       [0, 5 * scale, 10 * scale],
@@ -178,12 +176,9 @@ test('generated layouts have no semantic or painted collisions and use the reser
             b.block.lesson.start < a.block.lesson.end;
           const painted = a.top < b.top + b.height && b.top < a.top + a.height;
           if (semantic || painted) {
-            const pitch = Math.min(536 / a.columns, 166);
+            const pitch = 166;
             assert.equal(a.columns, b.columns);
-            const right = (p: typeof a) =>
-              p.column * pitch +
-              3 +
-              Math.min(p.span * pitch - 6, p.span > 1 ? 320 : 160);
+            const right = (p: typeof a) => p.column * pitch + 3 + 160;
             assert.ok(
               right(a) <= b.column * pitch + 3 ||
                 right(b) <= a.column * pitch + 3,

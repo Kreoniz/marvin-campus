@@ -2,11 +2,13 @@ import { Button } from 'unlikely-ui/button';
 import { Input } from 'unlikely-ui/input';
 import { Popover } from 'unlikely-ui/popover';
 import type { GroupSchedule } from '../../../lib/types.ts';
+import { scheduleKey } from '../../../lib/schedule-ref.ts';
 import { comparisonIssue } from '../../../lib/domain.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { ComparisonLinks } from '../model/use-comparison.ts';
 import IconButton from '../../../shared/ui/IconButton.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
+import VucScheduleNotes from '../../resources/VucScheduleNotes.tsx';
 
 const checkedLabel = (value: string) =>
   new Intl.DateTimeFormat('ru-RU', {
@@ -18,13 +20,16 @@ const checkedLabel = (value: string) =>
   }).format(new Date(value));
 export default function ComparisonStatus({
   schedules,
+  day,
   fetching,
   links,
 }: {
   schedules: GroupSchedule[];
+  day?: string;
   fetching: boolean;
   links: ComparisonLinks;
 }) {
+  const label = scheduleLabels(schedules);
   const checked = schedules
     .flatMap((g) => (g.snapshot ? [g.snapshot.checkedAt] : []))
     .sort()[0];
@@ -32,11 +37,14 @@ export default function ComparisonStatus({
     (g) => g.snapshot && (g.snapshot.stale || g.error),
   );
   const missing = schedules.some((g) => !g.snapshot && !g.loading);
-  const unresolved = schedules.some((g) => comparisonIssue(g) === 'subgroup');
+  const unresolved = schedules.some(
+    (g) => comparisonIssue(g, day) === 'subgroup',
+  );
   const commonCheck =
     checked &&
     schedules.every(
       (group) =>
+        group.selection.kind !== 'vuc' &&
         group.snapshot &&
         !group.loading &&
         !group.error &&
@@ -119,24 +127,30 @@ export default function ComparisonStatus({
                 {schedules.map((group) => {
                   const snapshot = group.snapshot;
                   const warning = group.error ?? snapshot?.warning;
-                  const unresolved = comparisonIssue(group) === 'subgroup';
+                  const unresolved = comparisonIssue(group, day) === 'subgroup';
+                  const imported = group.selection.kind === 'vuc';
+                  const coverage = comparisonIssue(group, day) === 'coverage';
                   const state = group.loading
                     ? 'Загружаем…'
-                    : unresolved
-                      ? 'Не учтена в расчёте'
-                      : snapshot
-                        ? snapshot.stale || warning
-                          ? 'Сохранено'
-                          : 'Актуально'
-                        : 'Недоступно';
+                    : coverage
+                      ? 'Нет подтверждённых данных на день'
+                      : unresolved
+                        ? 'Не учтена в расчёте'
+                        : snapshot
+                          ? imported
+                            ? 'Из документа'
+                            : snapshot.stale || warning
+                              ? 'Сохранено'
+                              : 'Актуально'
+                          : 'Недоступно';
                   return (
                     <li
-                      key={group.selection.id}
+                      key={scheduleKey(group.selection)}
                       className="group-data-status py-2.5"
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                         <strong className="text-sm font-semibold">
-                          {selectionLabel(group.selection)}
+                          {label(group.selection)}
                         </strong>
                         <span className="text-xs text-u-muted">{state}</span>
                       </div>
@@ -151,6 +165,9 @@ export default function ComparisonStatus({
                         <p className="mt-1 text-xs leading-[18px] text-u-muted">
                           {warning}
                         </p>
+                      )}
+                      {imported && (
+                        <VucScheduleNotes schedule={group} date={day} />
                       )}
                       {!snapshot && !group.loading && !warning && (
                         <p className="mt-1 text-xs text-u-muted">
@@ -171,7 +188,11 @@ export default function ComparisonStatus({
                               : 'mt-1 block text-xs text-u-muted'
                           }
                         >
-                          Проверено {checkedLabel(snapshot.checkedAt)}.
+                          {imported ? 'Импортирован' : 'Проверено'}{' '}
+                          {checkedLabel(
+                            snapshot.data.importedAt || snapshot.checkedAt,
+                          )}
+                          .
                         </time>
                       )}
                     </li>

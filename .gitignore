@@ -5,6 +5,10 @@ data/
 *.sqlite*
 *.tar
 .cache/
+/.local/vuc/
+/.local/go-cache/
+/.local/go-tmp/
+/scripts/__pycache__/
 /.private/
 /handoff/
 /HANDOFF.md

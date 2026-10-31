@@ -5,17 +5,19 @@ import IconButton from '../../shared/ui/IconButton.tsx';
 
 export default function SiteHeader({
   theme,
+  vucOnly = false,
   onToggleTheme,
   viewControl,
   settingsControl,
 }: {
   theme: string;
+  vucOnly?: boolean;
   onToggleTheme: () => void;
   viewControl?: ReactNode;
   settingsControl: ReactNode;
 }) {
   return (
-    <header className="site-header mb-5 flex items-center gap-4 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0.5 compact:border-b-0 compact:py-0">
+    <header className="site-header mb-5 flex items-center gap-1.5 border-b border-[var(--u-line-soft)] pt-2 pb-4 compact:-mx-3 compact:mb-1 compact:min-h-11 compact:flex-nowrap compact:gap-0 compact:border-b-0 compact:px-1 compact:py-0">
       <a
         className="brand flex items-center gap-2 no-underline compact:gap-1"
         href="/"
@@ -28,20 +30,36 @@ export default function SiteHeader({
           height="60"
           alt=""
         />
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-3 compact:max-[420px]:hidden">
           <span className="brand-name whitespace-nowrap text-[26px] font-extrabold tracking-[-1px] compact:text-lg compact:tracking-[-0.7px]">
             Кампус
           </span>
-          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] compact:hidden">
+          <Badge className="border-u-accent-border bg-[var(--u-accent-soft)] text-[11px] tracking-[1px] text-[var(--u-accent-text)] max-[1160px]:hidden">
             Don't Panic
           </Badge>
         </span>
       </a>
-      <span className="mr-auto text-sm text-u-muted compact:hidden">
-        Расписание ОмГТУ
-      </span>
+      <nav
+        className="ml-2 flex items-center gap-3 text-sm max-[1000px]:hidden"
+        aria-label="Разделы расписаний"
+      >
+        <a
+          href="/"
+          aria-current={!vucOnly ? 'page' : undefined}
+          className={!vucOnly ? 'font-semibold' : 'text-u-muted'}
+        >
+          Расписания
+        </a>
+        <a
+          href="/vuc"
+          aria-current={vucOnly ? 'page' : undefined}
+          className={vucOnly ? 'font-semibold' : 'text-u-muted'}
+        >
+          ВУЦ
+        </a>
+      </nav>
       <div
-        className="space-doodle flex items-center gap-3 text-[11px] leading-[1.4] font-semibold compact:hidden"
+        className="space-doodle ml-5 hidden min-[1300px]:flex items-center gap-2 text-[11px] leading-[1.4] font-semibold compact:hidden"
         aria-hidden="true"
       >
         <span className="rotate-[-12deg] bg-[#ffe393] px-[7px] py-[3px] text-[17px] text-[#171b18] dark:bg-[#ddc36d]">
@@ -59,7 +77,8 @@ export default function SiteHeader({
           <br />и время летит приятнее.
         </span>
       </div>
-      <div className="header-actions flex gap-1 compact:hidden">
+      <div className="ml-auto flex shrink-0 items-center">{viewControl}</div>
+      <div className="header-actions flex shrink-0 items-center gap-0">
         <HelpDialog />
         <IconButton
           name={theme === 'dark' ? 'sun' : 'moon'}
@@ -69,11 +88,8 @@ export default function SiteHeader({
           aria-pressed={theme === 'dark'}
           onClick={onToggleTheme}
         />
+        {settingsControl}
       </div>
-      <div className="ml-auto hidden shrink-0 items-center compact:flex">
-        {viewControl}
-      </div>
-      {settingsControl}
     </header>
   );
 }

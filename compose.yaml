@@ -9,6 +9,8 @@ services:
     environment:
       UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
       TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      VUC_DATA_PATH: ${VUC_DATA_PATH:-}
+      VUC_ORIGINALS_DIR: ${VUC_ORIGINALS_DIR:-}
     volumes:
       - cache:/data
     mem_limit: 192m

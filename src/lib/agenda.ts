@@ -1,6 +1,7 @@
 import { eventMemberLessons, lessonBlocks } from './lesson-layout.ts';
 import type { LessonBlock } from './lesson-layout.ts';
 import type { GroupSchedule } from './types.ts';
+import { scheduleKey } from './schedule-ref.ts';
 
 export type AgendaEntry = Pick<
   LessonBlock,
@@ -18,8 +19,8 @@ export function dayAgenda(
       members: block.members,
       memberLessons: Object.fromEntries(
         block.members.map((member) => [
-          member.id,
-          eventMemberLessons(block, member.id, lesson),
+          scheduleKey(member),
+          eventMemberLessons(block, scheduleKey(member), lesson),
         ]),
       ),
       staleMembers: block.staleMembers,

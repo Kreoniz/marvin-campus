@@ -37,11 +37,24 @@ export function formatDay(
   }).format(new Date(`${date}T12:00:00Z`));
 }
 
-export function weekLabel(week: string): string {
+export function weekLabel(
+  week: string,
+  compact = false,
+  today = omskToday(),
+): string {
   const end = addDays(week, 6);
-  return week.slice(0, 7) === end.slice(0, 7)
-    ? `${Number(week.slice(8))}–${formatDay(end, { day: 'numeric', month: 'long' })}`
-    : `${formatDay(week, { day: 'numeric', month: 'short' })} – ${formatDay(end, { day: 'numeric', month: 'short' })}`;
+  const year = week.slice(0, 4),
+    endYear = end.slice(0, 4);
+  if (year !== endYear) {
+    if (compact)
+      return `${formatDay(week, { day: '2-digit', month: '2-digit', year: 'numeric' })} – ${formatDay(end, { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    return `${formatDay(week, { day: 'numeric', month: 'short' })} ${year} – ${formatDay(end, { day: 'numeric', month: 'short' })} ${endYear}`;
+  }
+  const range =
+    week.slice(0, 7) === end.slice(0, 7)
+      ? `${Number(week.slice(8))}–${formatDay(end, { day: 'numeric', month: compact ? 'short' : 'long' })}`
+      : `${formatDay(week, { day: 'numeric', month: 'short' })}${compact ? '–' : ' – '}${formatDay(end, { day: 'numeric', month: 'short' })}`;
+  return `${range}${year !== today.slice(0, 4) ? ` ${year}` : ''}`;
 }
 
 export function timeLabel(minutes: number): string {

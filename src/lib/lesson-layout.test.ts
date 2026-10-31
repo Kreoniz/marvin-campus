@@ -1,9 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { scheduleKey } from './schedule-ref.ts';
 import { lessonBlocks } from './lesson-layout.ts';
 import { lessonKind } from './lesson-kind.ts';
 import { lessonGroupLabel } from './subgroups.ts';
-import type { GroupSchedule, Lesson } from './types.ts';
+import type {
+  GroupSchedule,
+  GroupSelection,
+  Snapshot,
+  Week,
+  Lesson,
+} from './types.ts';
 const date = '2026-10-12';
 const lesson = (id: string, fields: Partial<Lesson> = {}): Lesson => ({
   id,
@@ -23,7 +30,7 @@ const group = (
   id: number,
   lessons: Lesson[],
   subgroup?: number,
-): GroupSchedule => ({
+): GroupSchedule & { selection: GroupSelection; snapshot: Snapshot<Week> } => ({
   selection: { id, label: `Г-${id}`, subgroup },
   snapshot: {
     data: { groupId: id, lessons, subgroups: [] },
@@ -63,16 +70,16 @@ test('shared events retain each participant subgroup membership in either group 
   assert.equal(blocks.length, 1);
   assert.equal(blocks[0].common, true);
   assert.deepEqual(blocks[0].memberLessons, {
-    1: a.snapshot!.data.lessons,
-    2: b.snapshot!.data.lessons,
+    'rasp:group:1': a.snapshot!.data.lessons,
+    'rasp:group:2': b.snapshot!.data.lessons,
   });
   assert.deepEqual(
     blocks[0].members.map((member) =>
       lessonGroupLabel(
         member,
-        blocks[0].memberLessons[member.id],
+        blocks[0].memberLessons[scheduleKey(member)],
         [a, b].find((g) => g.selection.id === member.id)!.snapshot!.data
-          .subgroups,
+          .subgroups ?? [],
       ),
     ),
     ['Г-1/1', 'Г-2/2'],
@@ -94,7 +101,7 @@ test('a selected subgroup does not relabel shared whole-group membership', () =>
     blocks[0].members.map((member) =>
       lessonGroupLabel(
         member,
-        blocks[0].memberLessons[member.id],
+        blocks[0].memberLessons[scheduleKey(member)],
         catalogs[member.id as keyof typeof catalogs],
       ),
     ),
@@ -111,9 +118,12 @@ test('merging a source event retains multiple subgroup copies for one participan
   const blocks = lessonBlocks([a, b], date);
   assert.equal(blocks.length, 1);
   assert.equal(blocks[0].members.length, 2);
-  assert.deepEqual(blocks[0].memberLessons[1], a.snapshot!.data.lessons);
+  assert.deepEqual(
+    blocks[0].memberLessons['rasp:group:1'],
+    a.snapshot!.data.lessons,
+  );
   assert.equal(
-    lessonGroupLabel(a.selection, blocks[0].memberLessons[1], [
+    lessonGroupLabel(a.selection, blocks[0].memberLessons['rasp:group:1'], [
       { id: 101, label: 'Г-1/1' },
       { id: 102, label: 'Г-1/2' },
     ]),
@@ -129,12 +139,12 @@ test('shared blocks identify stale and failed-refresh participants without inven
   c.snapshot!.stale = true;
   const missing = { selection: { id: 4, label: 'Г-4' }, error: 'Нет данных' };
   const blocks = lessonBlocks([c, missing, b, a], date);
-  assert.deepEqual(blocks[0].staleMembers, [1, 3]);
+  assert.deepEqual(blocks[0].staleMembers, ['rasp:group:1', 'rasp:group:3']);
   assert.deepEqual(
     blocks[0].members.map((member) => member.id),
     [1, 2, 3],
   );
-  assert.equal(blocks[0].memberLessons[4], undefined);
+  assert.equal(blocks[0].memberLessons['rasp:group:4'], undefined);
   assert.equal(blocks[0].common, false);
   assert.deepEqual(lessonBlocks([a, b, missing, c], date), blocks);
 });
@@ -230,7 +240,7 @@ test('simultaneous distinct lessons of one group form a visual bundle without in
     bundle.parallel?.map((l) => l.id),
     ['lab1', 'lab2'],
   );
-  assert.deepEqual(bundle.memberLessons[1], bundle.parallel);
+  assert.deepEqual(bundle.memberLessons['rasp:group:1'], bundle.parallel);
   assert.deepEqual(bundle.staleMembers, []);
   assert.equal(bundle.common, false);
   assert.equal(bundle.members.length, 1);
@@ -247,15 +257,15 @@ test('simultaneous distinct lessons of one group form a visual bundle without in
   assert.equal(chosen[0].parallel, undefined);
   assert.equal(chosen[0].lesson.id, 'lab2');
   assert.deepEqual(
-    chosen[0].memberLessons[1].map((l) => l.id),
+    chosen[0].memberLessons['rasp:group:1'].map((l) => l.id),
     ['lab2'],
   );
   const staleBundle = lessonBlocks(
     [{ ...a, error: 'Обновление не удалось' }],
     date,
   )[0];
-  assert.deepEqual(staleBundle.staleMembers, [1]);
-  assert.deepEqual(staleBundle.memberLessons[1], bundle.parallel);
+  assert.deepEqual(staleBundle.staleMembers, ['rasp:group:1']);
+  assert.deepEqual(staleBundle.memberLessons['rasp:group:1'], bundle.parallel);
   const differentTime = lessonBlocks(
     [group(1, [lesson('a'), lesson('b', { end: 600 })])],
     date,
@@ -276,7 +286,7 @@ test('source membership remains distinct from subgroup filtering', () => {
   ];
   const all = lessonBlocks([a], date)[0];
   assert.deepEqual(
-    all.memberLessons[1].map((l) => l.id),
+    all.memberLessons['rasp:group:1'].map((l) => l.id),
     ['first', 'second', 'whole'],
   );
   const selected = lessonBlocks(
@@ -284,22 +294,24 @@ test('source membership remains distinct from subgroup filtering', () => {
     date,
   )[0];
   assert.deepEqual(
-    selected.memberLessons[1].map((l) => l.id),
+    selected.memberLessons['rasp:group:1'].map((l) => l.id),
     ['second', 'whole'],
   );
   assert.equal(
     lessonGroupLabel(
       selected.members[0],
-      selected.memberLessons[1],
-      a.snapshot!.data.subgroups,
+      selected.memberLessons['rasp:group:1'],
+      a.snapshot!.data.subgroups ?? [],
     ),
     'Г-1',
   );
   assert.equal(
     lessonGroupLabel(
       selected.members[0],
-      selected.memberLessons[1].filter((event) => event.id === 'second'),
-      a.snapshot!.data.subgroups,
+      selected.memberLessons['rasp:group:1'].filter(
+        (event) => event.id === 'second',
+      ),
+      a.snapshot!.data.subgroups ?? [],
     ),
     'Г-1/2',
   );

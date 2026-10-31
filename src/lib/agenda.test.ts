@@ -56,8 +56,8 @@ test('agenda retains shared identity and every distinct simultaneous event', () 
     assert.equal(
       lessonGroupLabel(
         a.selection,
-        entry.memberLessons[1],
-        a.snapshot!.data.subgroups,
+        entry.memberLessons['rasp:group:1'],
+        a.snapshot!.data.subgroups ?? [],
       ),
       label,
     );
@@ -81,14 +81,17 @@ test('unknown bundled events retain their own subgroup occurrences in agenda and
     entries.map((e) =>
       lessonGroupLabel(
         a.selection,
-        e.memberLessons[1],
-        a.snapshot!.data.subgroups,
+        e.memberLessons['rasp:group:1'],
+        a.snapshot!.data.subgroups ?? [],
       ),
     ),
     ['Г-1/1', 'Г-1/2'],
   );
   const block = lessonBlocks([a], date)[0];
-  assert.equal(eventMemberLessons(block, 1, block.parallel![0]).length, 1);
+  assert.equal(
+    eventMemberLessons(block, 'rasp:group:1', block.parallel![0]).length,
+    1,
+  );
   assert.notEqual(entries[0].identity, entries[1].identity);
   assert.equal(dayAgenda([a, group(2, [event('')])], date).length, 3);
 });
@@ -112,12 +115,16 @@ test('agenda preserves common membership, filtering and partial/saved status wit
     'second',
   ]);
   assert.ok(
-    entries.every((e) => e.members.length === 1 && e.staleMembers[0] === 1),
+    entries.every(
+      (e) => e.members.length === 1 && e.staleMembers[0] === 'rasp:group:1',
+    ),
   );
   assert.equal(
     lessonGroupLabel(
       a.selection,
-      entries.find((e) => e.lesson.id === 'common')!.memberLessons[1],
+      entries.find((e) => e.lesson.id === 'common')!.memberLessons[
+        'rasp:group:1'
+      ],
       [],
     ),
     'Г-1',

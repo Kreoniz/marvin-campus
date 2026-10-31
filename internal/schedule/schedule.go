@@ -21,18 +21,28 @@ type Subgroup struct {
 	Label string `json:"label"`
 }
 
+type ResourceRef struct {
+	Kind        string `json:"kind"`
+	ID          int    `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+}
+
 type Lesson struct {
-	ID        string `json:"id"`
-	Date      string `json:"date"`
-	Start     int    `json:"start"`
-	End       int    `json:"end"`
-	Subject   string `json:"subject"`
-	Kind      string `json:"kind"`
-	Building  string `json:"building"`
-	Room      string `json:"room"`
-	Teacher   string `json:"teacher"`
-	Remote    bool   `json:"remote"`
-	Subgroups []int  `json:"subgroups"`
+	ID        string        `json:"id"`
+	Date      string        `json:"date"`
+	Start     int           `json:"start"`
+	End       int           `json:"end"`
+	Subject   string        `json:"subject"`
+	Kind      string        `json:"kind"`
+	Building  string        `json:"building"`
+	Room      string        `json:"room"`
+	Teacher   string        `json:"teacher"`
+	Remote    bool          `json:"remote"`
+	Subgroups []int         `json:"subgroups"`
+	Teachers  []ResourceRef `json:"teachers,omitempty"`
+	RoomRef   *ResourceRef  `json:"roomRef,omitempty"`
+	Audience  string        `json:"audience,omitempty"`
 }
 
 type Week struct {
@@ -48,15 +58,26 @@ type rawSubgroup struct {
 }
 
 type rawLesson struct {
-	ID              int           `json:"lessonOid"`
-	Date            string        `json:"date"`
-	Begin           string        `json:"beginLesson"`
-	End             string        `json:"endLesson"`
-	Subject         string        `json:"discipline"`
-	Kind            string        `json:"kindOfWork"`
-	Building        string        `json:"building"`
-	Room            string        `json:"auditorium"`
-	Teacher         string        `json:"lecturer"`
+	ID        int    `json:"lessonOid"`
+	Date      string `json:"date"`
+	Begin     string `json:"beginLesson"`
+	End       string `json:"endLesson"`
+	Subject   string `json:"discipline"`
+	Kind      string `json:"kindOfWork"`
+	Building  string `json:"building"`
+	Room      string `json:"auditorium"`
+	Teacher   string `json:"lecturer"`
+	TeacherID int    `json:"lecturerOid"`
+	Teachers  []struct {
+		ID    int    `json:"lecturerOid"`
+		Label string `json:"lecturer"`
+	} `json:"listOfLecturers"`
+	RoomID int    `json:"auditoriumOid"`
+	Group  string `json:"group"`
+	Groups []struct {
+		Label string `json:"group"`
+	} `json:"listGroups"`
+	Stream          string        `json:"stream"`
 	Subgroup        string        `json:"subGroup"`
 	SubgroupID      int           `json:"subGroupOid"`
 	SubgroupGroupID int           `json:"subgroup_groupOid"`
@@ -64,9 +85,19 @@ type rawLesson struct {
 }
 
 func NormalizeWeek(data []byte, groupID int, start time.Time) ([]byte, error) {
+	week, err := normalizeWeek(data, groupID, start)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(week)
+}
+
+// The resource projection shares lesson validation while keeping group-only
+// subgroup membership out of teacher and room schedules.
+func normalizeWeek(data []byte, groupID int, start time.Time) (Week, error) {
 	var raw []rawLesson
 	if err := json.Unmarshal(data, &raw); err != nil || raw == nil {
-		return nil, fmt.Errorf("invalid schedule array")
+		return Week{}, fmt.Errorf("invalid schedule array")
 	}
 	week := Week{GroupID: groupID, Lessons: []Lesson{}, Subgroups: []Subgroup{}}
 	subgroups := map[int]string{}
@@ -76,15 +107,15 @@ func NormalizeWeek(data []byte, groupID int, start time.Time) ([]byte, error) {
 		begin, beginErr := minutes(r.Begin)
 		end, endErr := minutes(r.End)
 		if err != nil || beginErr != nil || endErr != nil || begin >= end || strings.TrimSpace(r.Subject) == "" {
-			return nil, fmt.Errorf("invalid lesson in source response")
+			return Week{}, fmt.Errorf("invalid lesson in source response")
 		}
 		day := date.Format("2006-01-02")
 		if day < start.Format("2006-01-02") || day > start.AddDate(0, 0, 6).Format("2006-01-02") {
-			return nil, fmt.Errorf("source returned a lesson outside requested week")
+			return Week{}, fmt.Errorf("source returned a lesson outside requested week")
 		}
 		ids := []int{}
 		add := func(id int, label string, owner int) {
-			if id <= 0 || (owner != 0 && owner != groupID) {
+			if groupID <= 0 || id <= 0 || (owner != 0 && owner != groupID) {
 				return
 			}
 			for _, existing := range ids {
@@ -108,6 +139,23 @@ func NormalizeWeek(data []byte, groupID int, start time.Time) ([]byte, error) {
 			id = fmt.Sprint(r.ID)
 		}
 		lesson := Lesson{ID: id, Date: day, Start: begin, End: end, Subject: strings.TrimSpace(r.Subject), Kind: r.Kind, Building: r.Building, Room: r.Room, Teacher: r.Teacher, Remote: strings.Contains(strings.ToLower(r.Building), "виртуаль") || strings.HasPrefix(strings.ToUpper(strings.TrimSpace(r.Room)), "В.А."), Subgroups: ids}
+		lesson.Teachers = teacherRefs(r)
+		if !lesson.Remote && r.RoomID > 0 && r.RoomID <= 10000000 && strings.TrimSpace(r.Room) != "" {
+			lesson.RoomRef = &ResourceRef{Kind: "auditorium", ID: r.RoomID, Label: strings.TrimSpace(r.Room), Description: strings.TrimSpace(r.Building)}
+		}
+		labels := []string{}
+		for _, g := range r.Groups {
+			if label := strings.TrimSpace(g.Label); label != "" {
+				labels = append(labels, label)
+			}
+		}
+		if len(labels) > 0 {
+			lesson.Audience = strings.Join(labels, ", ")
+		} else if strings.TrimSpace(r.Group) != "" {
+			lesson.Audience = strings.TrimSpace(r.Group)
+		} else {
+			lesson.Audience = strings.TrimSpace(r.Stream)
+		}
 		encoded, _ := json.Marshal(lesson)
 		if !seen[string(encoded)] {
 			week.Lessons = append(week.Lessons, lesson)
@@ -128,7 +176,7 @@ func NormalizeWeek(data []byte, groupID int, start time.Time) ([]byte, error) {
 		}
 		return a.End < b.End
 	})
-	return json.Marshal(week)
+	return week, nil
 }
 
 func NormalizeGroups(data []byte) ([]byte, error) {
@@ -174,4 +222,24 @@ func TTL(week, now time.Time) time.Duration {
 		return time.Hour
 	}
 	return 30 * time.Minute
+}
+
+func teacherRefs(r rawLesson) []ResourceRef {
+	refs := []ResourceRef{}
+	add := func(id int, label string) {
+		if id <= 0 || id > 10000000 || strings.TrimSpace(label) == "" {
+			return
+		}
+		for _, ref := range refs {
+			if ref.ID == id {
+				return
+			}
+		}
+		refs = append(refs, ResourceRef{Kind: "lecturer", ID: id, Label: strings.TrimSpace(label)})
+	}
+	for _, teacher := range r.Teachers {
+		add(teacher.ID, teacher.Label)
+	}
+	add(r.TeacherID, r.Teacher)
+	return refs
 }

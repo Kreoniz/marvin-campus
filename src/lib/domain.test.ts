@@ -9,7 +9,13 @@ import {
 } from './domain.ts';
 import { addDays, monday, omskToday } from './dates.ts';
 import { parseView, viewURL } from './url.ts';
-import type { GroupSchedule, Lesson } from './types.ts';
+import type {
+  GroupSchedule,
+  GroupSelection,
+  Snapshot,
+  Week,
+  Lesson,
+} from './types.ts';
 
 const date = '2026-10-12';
 const lesson = (
@@ -34,7 +40,7 @@ const group = (
   id: number,
   lessons: Lesson[],
   subgroup?: number,
-): GroupSchedule => ({
+): GroupSchedule & { selection: GroupSelection; snapshot: Snapshot<Week> } => ({
   selection: { id, label: `Г-${id}`, subgroup },
   snapshot: {
     data: { groupId: id, lessons, subgroups: [] },

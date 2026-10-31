@@ -7,7 +7,7 @@ export default function App() {
   return (
     <QueryClientProvider client={client}>
       <Toast.Provider limit={3}>
-        <ComparisonPage />
+        <ComparisonPage vucOnly={location.pathname === '/vuc'} />
       </Toast.Provider>
     </QueryClientProvider>
   );

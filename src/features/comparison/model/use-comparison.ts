@@ -7,11 +7,21 @@ import { assignColors, type GroupColors } from '../../../lib/colors.ts';
 import { addDays, monday, omskToday, validDate } from '../../../lib/dates.ts';
 import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
 import {
+  implicitDateOpening,
+  nextInitialDay,
+} from '../../../lib/initial-date.ts';
+import {
   rememberGroups,
   resolveReadable,
 } from '../../../lib/group-directory.ts';
-import { scheduleOptions } from '../../../lib/queries.ts';
+import { selectionWeekOptions } from '../../../lib/schedule-queries.ts';
+import {
+  isGroup,
+  scheduleKey,
+  validSelection,
+} from '../../../lib/schedule-ref.ts';
 import { readSavedSchedule } from '../../../lib/saved-schedules.ts';
+import usePresentationCohort from './use-presentation-cohort.ts';
 import { selectionData } from '../../../lib/selection-analytics.ts';
 import {
   mergeSubgroups,
@@ -43,18 +53,20 @@ export type Notify = (
 ) => void;
 
 export interface ComparisonView extends ViewState {
+  cancelInitialDate(): void;
   current(): ViewState;
   apply(value: ViewState): void;
   reorder(groups: Selection[]): void;
   selectDate(value: string): void;
   add(group: Group): void;
-  remove(id: number): void;
-  subgroup(id: number, value?: number): void;
+  addSchedule(selection: Selection, date?: string): void;
+  remove(key: string): void;
+  subgroup(key: string, value?: number): void;
   resolveSubgroups(catalog: Record<number, Subgroup[]>): boolean;
   selectWeek(value: string): void;
   selectDay(value: string): void;
   selectMode(value: Mode): void;
-  move(id: number, offset: number): void;
+  move(key: string, offset: number): void;
   example(): void;
 }
 
@@ -102,7 +114,17 @@ function savedColors(): GroupColors {
   try {
     const saved = JSON.parse(localStorage.getItem('campus-colors') ?? '{}');
     return saved && typeof saved === 'object' && !Array.isArray(saved)
-      ? saved
+      ? Object.fromEntries(
+          Object.entries(saved)
+            .filter(
+              (entry): entry is [string, number] =>
+                typeof entry[1] === 'number',
+            )
+            .map(([key, value]) => [
+              /^\d+$/.test(key) ? `rasp:group:${key}` : key,
+              value,
+            ]),
+        )
       : {};
   } catch {
     return {};
@@ -112,48 +134,53 @@ function savedColors(): GroupColors {
 function useSchedules(selection: Selection[], week: string, enabled: boolean) {
   const client = useQueryClient();
   const [now, setNow] = useState(Date.now);
-  // Subgroup and visual ordering only reselect an existing full-week response.
-  const idKey = enabled
-    ? selection
-        .map((group) => group.id)
-        .sort((a, b) => a - b)
-        .join(',')
-    : '';
-  const ids = useMemo(
-    () => (idKey ? idKey.split(',').map(Number) : []),
-    [idKey],
+  const latestSelection = useRef(selection);
+  latestSelection.current = selection;
+  // Ordering, labels and subgroup changes only reselect the same typed week.
+  const idKey = JSON.stringify(
+    enabled ? selection.map(scheduleKey).sort() : [],
   );
+  const ids = useMemo<string[]>(() => JSON.parse(idKey), [idKey]);
   const queries = useQueries({
-    queries: ids.map((id) => scheduleOptions(id, week)),
+    queries: ids.map((key) =>
+      selectionWeekOptions(
+        selection.find((ref) => scheduleKey(ref) === key)!,
+        week,
+      ),
+    ),
   });
   const [saved, setSaved] = useState<{
     week: string;
-    snapshots: Record<number, Snapshot<Week>>;
+    snapshots: Record<string, Snapshot<Week>>;
   }>({ week: '', snapshots: {} });
-
   useEffect(() => {
     let cancelled = false;
     setSaved((previous) => ({
       week,
       snapshots: Object.fromEntries(
-        ids.flatMap((id) =>
-          previous.week === week && previous.snapshots[id]
-            ? [[id, previous.snapshots[id]]]
+        ids.flatMap((key) =>
+          previous.week === week && previous.snapshots[key]
+            ? [[key, previous.snapshots[key]]]
             : [],
         ),
       ),
     }));
-    for (const id of ids) {
-      if (client.getQueryData(scheduleOptions(id, week).queryKey)) continue;
-      void readSavedSchedule(id, week).then((snapshot) => {
+    for (const key of ids) {
+      const ref = latestSelection.current.find(
+        (ref) => scheduleKey(ref) === key,
+      );
+      if (
+        !ref ||
+        !isGroup(ref) ||
+        client.getQueryData(selectionWeekOptions(ref, week).queryKey)
+      )
+        continue;
+      void readSavedSchedule(ref.id, week).then((snapshot) => {
         if (cancelled || !snapshot) return;
         setSaved((previous) =>
           previous.week !== week
             ? previous
-            : {
-                week,
-                snapshots: { ...previous.snapshots, [id]: snapshot },
-              },
+            : { week, snapshots: { ...previous.snapshots, [key]: snapshot } },
         );
       });
     }
@@ -161,35 +188,35 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
       cancelled = true;
     };
   }, [client, ids, week]);
-
-  const schedules: GroupSchedule[] = selection.map((group) => {
-    const query = queries[ids.indexOf(group.id)];
-    // A network response always wins over a slower CacheStorage read. Saved
-    // fallback never replaces Query data or clears a refresh error.
+  const availableSchedules: GroupSchedule[] = selection.map((ref) => {
+    const key = scheduleKey(ref),
+      query = queries[ids.indexOf(key)];
     const data =
-      query?.data ??
-      (saved.week === week ? saved.snapshots[group.id] : undefined);
+      query?.data ?? (saved.week === week ? saved.snapshots[key] : undefined);
     const snapshot = usableSnapshot(
       data,
       week,
       Math.max(now, Date.now(), query?.dataUpdatedAt ?? 0),
     );
+    const paused = query?.fetchStatus === 'paused';
     return {
-      selection: group,
+      selection: ref,
       snapshot,
       error:
         query?.error?.message ||
-        (data && !snapshot
-          ? 'Сохранённый снимок слишком старый. Нужны данные источника.'
-          : undefined),
-      loading: !snapshot && (query?.isPending ?? false),
+        (paused && !snapshot
+          ? 'Нет сети. Это расписание ещё не сохранено на устройстве.'
+          : data && !snapshot
+            ? 'Сохранённый снимок слишком старый. Нужны данные источника.'
+            : undefined),
+      loading: !snapshot && !!query?.isPending && !paused,
+      fetching: query?.isFetching ?? false,
     };
   });
-
-  const deadlines = ids.flatMap((id, index) => {
+  const deadlines = ids.flatMap((key, index) => {
     const data =
       queries[index]?.data ??
-      (saved.week === week ? saved.snapshots[id] : undefined);
+      (saved.week === week ? saved.snapshots[key] : undefined);
     const change = snapshotChangeAt(data, week, now);
     return change === undefined ? [] : [change];
   });
@@ -211,10 +238,10 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
       window.removeEventListener('online', updateClock);
     };
   }, []);
-
+  const schedules = usePresentationCohort(availableSchedules, week, enabled);
   return {
     schedules,
-    pending: schedules.some((group) => group.loading),
+    pending: schedules.some((row) => row.loading),
     fetching: queries.some((query) => query.isFetching),
     revision: queries.map((query) => [
       query.dataUpdatedAt,
@@ -223,10 +250,27 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
   };
 }
 
-export function useComparison(notify: Notify) {
+function rememberSelection(selection: Selection[], vucOnly: boolean) {
+  if (!vucOnly) {
+    rememberGroups(selection);
+    return;
+  }
+  try {
+    localStorage.setItem('campus-vuc-selection', JSON.stringify(selection));
+  } catch {}
+}
+
+export function useComparison(notify: Notify, vucOnly = false) {
   const client = useQueryClient();
   const [state, setState] = useState(initialView);
   const stateRef = useRef(state);
+  const [openedAt] = useState(() =>
+    typeof location === 'undefined'
+      ? undefined
+      : implicitDateOpening(new URL(location.href), new Date()),
+  );
+  const initialDate = useRef(openedAt);
+  const canonicalizeRef = useRef<() => void>(() => {});
   const notifyRef = useRef(notify);
   notifyRef.current = notify;
   const changedRef = useRef<() => void>(() => {});
@@ -235,30 +279,65 @@ export function useComparison(notify: Notify) {
   catalogRef.current = subgroupCatalog;
   const reportKey = useRef('');
   const reportedLoads = useRef(new Set<string>());
-  const reportedSelections = useRef(new Map<number, string>());
+  const reportedSelections = useRef(new Map<string, string>());
   const [colors, setColors] = useState(() =>
-    assignColors(
-      state.groups.map((group) => group.id),
-      savedColors(),
-    ),
+    assignColors(state.groups.map(scheduleKey), savedColors()),
   );
 
   // Stable methods read synchronously updated refs. A date/subgroup change and
   // its URL are one operation even before React commits the next render.
   const view = useMemo<ComparisonView>(() => {
+    function cancelInitialDate() {
+      if (initialDate.current === undefined) return;
+      initialDate.current = undefined;
+      // Establish the original entry before an intentional change pushes one.
+      canonicalizeRef.current();
+    }
     function apply(value: ViewState) {
       stateRef.current = value;
       setState(value);
     }
     function change(value: Partial<ViewState>) {
+      cancelInitialDate();
       apply({ ...stateRef.current, ...value });
+      // Explicit links are temporary views. Only an intentional selection edit
+      // adopts their VUC set as the saved workspace; dates and copying do not.
+      if (vucOnly && value.groups) rememberSelection(value.groups, true);
       changedRef.current();
     }
     function reorder(groups: Selection[]) {
       change({ groups });
-      track('groups_reordered', { group_count: groups.length });
+      if (groups.some(isGroup))
+        track('groups_reordered', {
+          group_count: groups.filter(isGroup).length,
+        });
+    }
+    function addSchedule(selection: Selection, requestedDate?: string) {
+      const groups = stateRef.current.groups;
+      if (
+        !validSelection(selection) ||
+        (vucOnly && selection.kind !== 'vuc') ||
+        groups.length >= 30 ||
+        groups.some(
+          (existing) => scheduleKey(existing) === scheduleKey(selection),
+        )
+      )
+        return;
+      const date =
+        requestedDate && validDate(requestedDate) ? requestedDate : undefined;
+      change({
+        groups: [...groups, { ...selection }],
+        ...(date ? { week: monday(date), day: date } : {}),
+      });
+      notifyRef.current(`${selection.label}: расписание добавлено.`);
+      if (isGroup(selection))
+        track('group_added', {
+          ...selectionData(selection),
+          group_count: groups.filter(isGroup).length + 1,
+        });
     }
     return {
+      cancelInitialDate,
       get groups() {
         return stateRef.current.groups;
       },
@@ -274,14 +353,7 @@ export function useComparison(notify: Notify) {
       current() {
         return {
           ...stateRef.current,
-          groups: stateRef.current.groups.map(
-            ({ id, label, subgroup, subgroupNumber }) => ({
-              id,
-              label,
-              subgroup,
-              subgroupNumber,
-            }),
-          ),
+          groups: stateRef.current.groups.map((group) => ({ ...group })),
         };
       },
       apply,
@@ -291,49 +363,49 @@ export function useComparison(notify: Notify) {
         change({ week: monday(value), day: value });
         track('date_selected');
       },
-      add(group) {
-        const groups = stateRef.current.groups;
-        if (
-          groups.length >= 30 ||
-          groups.some((existing) => existing.id === group.id)
-        )
-          return;
-        change({ groups: [...groups, group] });
-        notifyRef.current(`${group.label} добавлена.`);
-        track('group_added', {
-          ...selectionData(group),
-          group_count: groups.length + 1,
-        });
-      },
-      remove(id) {
-        const groups = stateRef.current.groups;
-        const removed = groups.find((group) => group.id === id);
+      add: addSchedule,
+      addSchedule,
+      remove(key) {
+        const groups = stateRef.current.groups,
+          removed = groups.find((group) => scheduleKey(group) === key);
         if (!removed) return;
-        change({ groups: groups.filter((group) => group.id !== id) });
-        notifyRef.current(`${removed.label} убрана из сравнения.`);
-        track('group_removed', {
-          ...selectionData(removed),
-          group_count: groups.length - 1,
+        change({
+          groups: groups.filter((group) => scheduleKey(group) !== key),
         });
+        notifyRef.current(`${removed.label}: расписание убрано.`);
+        if (isGroup(removed))
+          track('group_removed', {
+            ...selectionData(removed),
+            group_count: groups.filter(isGroup).length - 1,
+          });
       },
-      subgroup(id, value) {
+      subgroup(key, value) {
+        const selected = stateRef.current.groups.find(
+          (group) => scheduleKey(group) === key,
+        );
+        if (!selected || !isGroup(selected)) return;
         const number = publicSubgroup(
-          catalogRef.current[id]?.find((subgroup) => subgroup.id === value)
-            ?.label ?? '',
+          catalogRef.current[selected.id]?.find(
+            (subgroup) => subgroup.id === value,
+          )?.label ?? '',
         );
         change({
           groups: stateRef.current.groups.map((group) =>
-            group.id === id
+            scheduleKey(group) === key && isGroup(group)
               ? { ...group, subgroup: value, subgroupNumber: number }
               : group,
           ),
         });
-        const group = stateRef.current.groups.find((group) => group.id === id);
-        if (group) track('subgroup_changed', selectionData(group));
+        const group = stateRef.current.groups.find(
+          (group) => scheduleKey(group) === key,
+        );
+        if (group && isGroup(group))
+          track('subgroup_changed', selectionData(group));
       },
       resolveSubgroups(known) {
         let updated = false;
         const groups = stateRef.current.groups.map((group) => {
+          if (!isGroup(group)) return group;
           const options = known[group.id] ?? [];
           const match = options.find(
             (option) => option.id === selectedSubgroup(group, options),
@@ -376,9 +448,9 @@ export function useComparison(notify: Notify) {
         change({ mode });
         track('mode_changed', { mode });
       },
-      move(id, offset) {
+      move(key, offset) {
         const groups = stateRef.current.groups;
-        const index = groups.findIndex((group) => group.id === id),
+        const index = groups.findIndex((group) => scheduleKey(group) === key),
           target = index + offset;
         if (index < 0 || target < 0 || target >= groups.length) return;
         const next = groups.slice();
@@ -394,7 +466,7 @@ export function useComparison(notify: Notify) {
         });
       },
     };
-  }, []);
+  }, [vucOnly]);
 
   const [linkState, setLinkState] = useState(() => ({
     opening: typeof location !== 'undefined' && location.pathname !== '/',
@@ -411,9 +483,14 @@ export function useComparison(notify: Notify) {
       setLinkState(linkRef.current);
     }
     function canonicalize() {
-      if (linkRef.current.opening || linkRef.current.error) return;
+      if (
+        initialDate.current !== undefined ||
+        linkRef.current.opening ||
+        linkRef.current.error
+      )
+        return;
       const value = view.current();
-      rememberGroups(value.groups);
+      if (!vucOnly) rememberSelection(value.groups, false);
       history.replaceState(
         { campusView: value },
         '',
@@ -443,7 +520,7 @@ export function useComparison(notify: Notify) {
       sync() {
         update({ manual: '' });
         const value = view.current();
-        rememberGroups(value.groups);
+        if (!vucOnly) rememberSelection(value.groups, false);
         history.pushState(
           { campusView: value },
           '',
@@ -452,9 +529,13 @@ export function useComparison(notify: Notify) {
       },
       async copy() {
         if (linkRef.current.sharing) return;
+        view.cancelInitialDate();
         update({ sharing: true, manual: '' });
         const value = view.current(),
-          url = viewURL(value, new URL(location.origin)).href;
+          url = viewURL(
+            value,
+            new URL(location.pathname, location.origin),
+          ).href;
         canonicalize();
         try {
           // No await before writeText: preserve Safari's clipboard activation.
@@ -462,7 +543,7 @@ export function useComparison(notify: Notify) {
           notifyRef.current('Ссылка скопирована. Можно отправлять другу.');
           track('share_link_copied', {
             link_format: 'readable',
-            group_count: value.groups.length,
+            group_count: value.groups.filter(isGroup).length,
             mode: value.mode,
           });
         } catch {
@@ -478,7 +559,7 @@ export function useComparison(notify: Notify) {
           const value = view.current();
           track('share_link_copied', {
             link_format: 'readable',
-            group_count: value.groups.length,
+            group_count: value.groups.filter(isGroup).length,
             mode: value.mode,
           });
           notifyRef.current('Ссылка скопирована.');
@@ -488,8 +569,9 @@ export function useComparison(notify: Notify) {
         }
       },
     };
-  }, [view]);
+  }, [view, vucOnly]);
   changedRef.current = links.sync;
+  canonicalizeRef.current = links.canonicalize;
 
   useEffect(() => {
     function update(next: Partial<typeof linkState>) {
@@ -508,19 +590,35 @@ export function useComparison(notify: Notify) {
         if (!id && url.pathname.startsWith('/s/'))
           throw new Error('Ссылка на сравнение не найдена.');
         const readable = readableGroups(url);
-        const value = id
+        let value = id
           ? normalizeView(await readShare(id, signal))
           : readable !== undefined
             ? await resolveReadable(url, client, signal)
             : parseView(url);
         if (signal.aborted) return;
+        if (vucOnly && !url.searchParams.has('s')) {
+          try {
+            value = normalizeView({
+              ...value,
+              groups: JSON.parse(
+                localStorage.getItem('campus-vuc-selection') ?? '[]',
+              ).filter((ref: Selection) => ref?.kind === 'vuc'),
+            });
+          } catch {}
+        }
+        if (
+          (url.pathname === '/compare' ||
+            (url.pathname === '/vuc' && url.searchParams.has('s'))) &&
+          !value.groups.length
+        )
+          throw new Error('Некорректная ссылка на сравнение.');
         view.apply(value);
         if (id || readable !== undefined) {
           reportKey.current = '';
           reportedSelections.current = new Map();
           track('share_opened', {
             link_format: id ? 'legacy' : 'readable',
-            group_count: value.groups.length,
+            group_count: value.groups.filter(isGroup).length,
             mode: value.mode,
           });
         }
@@ -545,7 +643,7 @@ export function useComparison(notify: Notify) {
     const url = new URL(location.href);
     if (url.pathname !== '/') void openLocation(url);
     else {
-      if (!url.searchParams.has('g')) {
+      if (!url.searchParams.has('g') && !url.searchParams.has('s')) {
         try {
           const groups = JSON.parse(
             localStorage.getItem('campus-groups') ?? '[]',
@@ -558,7 +656,15 @@ export function useComparison(notify: Notify) {
         history.replaceState({ campusView: view.current() }, '', location.href);
     }
     function onBack(event: PopStateEvent) {
-      if (!event.state?.campusView) {
+      // History is explicit navigation, including entries without campusView.
+      initialDate.current = undefined;
+      if (
+        !event.state?.campusView ||
+        (vucOnly &&
+          event.state.campusView.groups?.some(
+            (ref: Selection) => ref?.kind !== 'vuc',
+          ))
+      ) {
         void openLocation(new URL(location.href));
         return;
       }
@@ -574,7 +680,7 @@ export function useComparison(notify: Notify) {
       retryOpeningRef.current = undefined;
       window.removeEventListener('popstate', onBack);
     };
-  }, [client, links, view]);
+  }, [client, links, view, vucOnly]);
 
   const source = useSchedules(
     state.groups,
@@ -585,13 +691,43 @@ export function useComparison(notify: Notify) {
   const fetching = linkState.opening || source.fetching;
 
   useEffect(() => {
-    if (view.resolveSubgroups(subgroupCatalog)) links.canonicalize();
-  }, [state.groups, subgroupCatalog, view, links]);
+    const known = { ...subgroupCatalog };
+    for (const row of source.schedules) {
+      if (isGroup(row.selection) && row.snapshot)
+        known[row.selection.id] = mergeSubgroups(
+          known[row.selection.id] ?? [],
+          row.snapshot.data.subgroups ?? [],
+        );
+    }
+    if (view.resolveSubgroups(known)) links.canonicalize();
+  }, [state.groups, subgroupCatalog, source.schedules, view, links]);
 
-  const colorKey = state.groups.map((group) => group.id).join(',');
+  useEffect(() => {
+    if (
+      initialDate.current === undefined ||
+      linkState.opening ||
+      linkState.error ||
+      stateRef.current !== state ||
+      source.fetching ||
+      source.pending
+    )
+      return;
+    // Decide once, at initial settlement. Later refreshes and clock/deadline
+    // ticks cannot take an active page away from its selected day.
+    const next = nextInitialDay(
+      source.schedules,
+      initialDate.current,
+      Date.now(),
+    );
+    initialDate.current = undefined;
+    if (next) view.apply({ ...view.current(), week: monday(next), day: next });
+    if (view.groups.length) links.canonicalize();
+  }, [linkState.opening, linkState.error, state, source, view, links]);
+
+  const colorKey = JSON.stringify(state.groups.map(scheduleKey));
   useEffect(() => {
     if (!colorKey) return;
-    const ids = colorKey.split(',').map(Number);
+    const ids: string[] = JSON.parse(colorKey);
     setColors((previous) => {
       const next = assignColors(ids, previous);
       return JSON.stringify(previous) === JSON.stringify(next)
@@ -607,15 +743,19 @@ export function useComparison(notify: Notify) {
   }, [colors]);
 
   useEffect(() => {
-    const snapshots = source.schedules.filter((group) => group.snapshot);
+    const snapshots = source.schedules.filter(
+      (group) => group.snapshot && isGroup(group.selection),
+    );
     if (!snapshots.length) return;
     setSubgroupCatalog((previous) => {
       const next = { ...previous };
-      for (const group of snapshots)
+      for (const group of snapshots) {
+        if (!isGroup(group.selection)) continue;
         next[group.selection.id] = mergeSubgroups(
           next[group.selection.id] ?? [],
-          group.snapshot!.data.subgroups,
+          group.snapshot!.data.subgroups ?? [],
         );
+      }
       if (JSON.stringify(next) === JSON.stringify(previous)) return previous;
       return next;
     });
@@ -628,17 +768,17 @@ export function useComparison(notify: Notify) {
   }, [subgroupCatalog]);
 
   useEffect(() => {
-    if (fetching || !state.groups.length) return;
+    if (fetching || !state.groups.some(isGroup)) return;
     const revision = JSON.stringify([
       state.week,
-      state.groups.map((group) => group.id).sort((a, b) => a - b),
+      state.groups.map(scheduleKey).sort(),
       source.revision,
     ]);
     if (reportedLoads.current.has(revision)) return;
     reportedLoads.current.add(revision);
     const currentWeek = monday(omskToday());
     track('schedule_loaded', {
-      group_count: state.groups.length,
+      group_count: state.groups.filter(isGroup).length,
       success: source.schedules.every((group) => !comparisonIssue(group)),
       stale: source.schedules.some((group) => !!group.snapshot?.stale),
       week_relation:
@@ -654,16 +794,16 @@ export function useComparison(notify: Notify) {
     const signature = JSON.stringify([
       state.groups
         .slice()
-        .sort((a, b) => a.id - b.id)
+        .sort((a, b) => scheduleKey(a).localeCompare(scheduleKey(b)))
         .map((group) => [
-          group.id,
+          scheduleKey(group),
           group.subgroupNumber ? `s${group.subgroupNumber}` : group.subgroup,
         ]),
       state.week,
       state.mode,
     ]);
     if (
-      state.groups.length < 2 ||
+      state.groups.filter(isGroup).length < 2 ||
       busy ||
       source.schedules.some((group) => comparisonIssue(group)) ||
       signature === reportKey.current
@@ -674,7 +814,7 @@ export function useComparison(notify: Notify) {
       compareDay(source.schedules, addDays(state.week, index)),
     );
     track('comparison_used', {
-      group_count: state.groups.length,
+      group_count: state.groups.filter(isGroup).length,
       mode: state.mode,
       has_overlap: results.some((result) =>
         state.mode === 'presence'
@@ -687,17 +827,20 @@ export function useComparison(notify: Notify) {
 
   useEffect(() => {
     if (busy) return;
-    const next = new Map<number, string>();
+    const next = new Map<string, string>();
     for (const group of source.schedules) {
-      if (!group.snapshot) continue;
+      if (!group.snapshot || !isGroup(group.selection)) continue;
       const signature = JSON.stringify([
-        group.selection.id,
+        scheduleKey(group.selection),
         group.selection.subgroupNumber
           ? `s${group.selection.subgroupNumber}`
           : group.selection.subgroup,
       ]);
-      next.set(group.selection.id, signature);
-      if (reportedSelections.current.get(group.selection.id) !== signature)
+      next.set(scheduleKey(group.selection), signature);
+      if (
+        reportedSelections.current.get(scheduleKey(group.selection)) !==
+        signature
+      )
         track('group_selected', selectionData(group.selection));
     }
     reportedSelections.current = next;

@@ -1,20 +1,27 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { ScrollArea } from 'unlikely-ui/scroll-area';
-import type { GroupSchedule, Subgroup } from '../../../lib/types.ts';
+import type {
+  GroupSchedule,
+  Subgroup,
+  ScheduleKind,
+} from '../../../lib/types.ts';
+import { selectionKind } from '../../../lib/schedule-ref.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
   comparisonIssue,
   comparisonScope,
 } from '../../../lib/domain.ts';
-import { selectionLabel } from '../../../lib/subgroups.ts';
+import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
-import { dayMinimum, verticalLayout } from '../model/vertical-layout.ts';
+import { sourceLayout } from '../model/source-layout.ts';
+import { calendarBounds } from '../model/calendar-bounds.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
+import Icon from '../../../shared/ui/Icon.tsx';
 import ComparisonHighlights, {
   type CalendarLayers,
 } from './ComparisonHighlights.tsx';
@@ -31,7 +38,11 @@ interface CalendarProps {
   singleDay?: boolean;
   compact?: boolean;
   placeholder?: boolean;
-  spotlightIds?: number[];
+  spotlightIds?: string[];
+  hiddenKinds?: ScheduleKind[];
+  vucOnly?: boolean;
+  dayReveal?: number;
+  orderedLanes?: boolean;
 }
 
 export default function Calendar({
@@ -47,43 +58,43 @@ export default function Calendar({
   compact = false,
   placeholder = false,
   spotlightIds = [],
+  hiddenKinds = [],
+  vucOnly = false,
+  dayReveal = 0,
+  orderedLanes = true,
 }: CalendarProps) {
+  const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
+  const focusedCard = useRef<HTMLElement | null>(null);
+  function revealCard(card: HTMLElement) {
+    const viewport = scroller.current;
+    if (!viewport || !card.isConnected) return;
+    const box = card.getBoundingClientRect();
+    const bounds = viewport.getBoundingClientRect();
+    const rail =
+      viewport.querySelector('.time-rail')?.getBoundingClientRect().right ??
+      bounds.left;
+    if (box.left < rail + 3) viewport.scrollLeft += box.left - rail - 3;
+    else if (box.right > bounds.right - 3)
+      viewport.scrollLeft += box.right - bounds.right + 3;
+  }
   const viewportWidth = useCalendarNavigation(
     scroller,
     week,
     day,
     singleDay,
     compact,
+    dayReveal,
+    !placeholder && schedules.some((group) => group.snapshot),
+    focusedCard,
+    orderedLanes,
   );
-  const [clock, setClock] = useState({ start: 480, end: 1140 });
   const dates = singleDay
     ? [day]
     : Array.from({ length: 7 }, (_, i) => addDays(week, i));
   const scale = singleDay ? 0.65 : 0.72;
   const all = schedules.flatMap((group) => group.snapshot?.data.lessons ?? []);
-  const earliest = Math.min(
-    480,
-    ...all.map((lesson) => Math.floor(lesson.start / 60) * 60),
-  );
-  const latest = Math.max(
-    1140,
-    ...all.map((lesson) => Math.ceil(lesson.end / 60) * 60),
-  );
-  useEffect(() => {
-    if (loading) return;
-    setClock((previous) => {
-      const start = Math.min(previous.start, earliest);
-      const end = Math.max(previous.end, latest);
-      return start === previous.start && end === previous.end
-        ? previous
-        : { start, end };
-    });
-  }, [earliest, latest, loading]);
-  // Saved lessons can arrive while another group is still loading. Their full
-  // bounds must fit immediately, before the settled clock effect runs.
-  const start = Math.min(clock.start, earliest);
-  const end = Math.max(clock.end, latest);
+  const { start, end } = calendarBounds(all, vucOnly);
   const calendarHeight = Math.max(
     (end - start) * scale,
     ...all.map(
@@ -96,42 +107,76 @@ export default function Calendar({
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
   );
-  const { included, excluded } = comparisonScope(schedules);
-  const complete = excluded.length === 0;
+  const { included, excluded } = comparisonScope(schedules, day);
   const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
   const hasSnapshot = schedules.some((group) => group.snapshot);
-  const layout = dates.map((date) => ({
-    date,
-    result: compareDay(schedules, date),
-    placed: verticalLayout(lessonBlocks(schedules, date), start, scale),
-  }));
-  const railWidth = compact ? 32 : 48;
+  const visible = schedules.filter(
+    (group) => !hiddenKinds.includes(selectionKind(group.selection)),
+  );
+  const layout = dates.map((date) => {
+    const blocks = lessonBlocks(schedules, date);
+    const scope = comparisonScope(schedules, date);
+    return {
+      date,
+      result: compareDay(schedules, date),
+      scope,
+      saved: scope.included.some(
+        (group) => group.snapshot && (group.snapshot.stale || group.error),
+      ),
+      complete: visible.every((group) => !comparisonIssue(group, date)),
+      hidden:
+        (schedules.length > 0 && visible.length === 0) || blocks.length > 0,
+      unavailable: visible.filter((group) => comparisonIssue(group, date)),
+      events: sourceLayout(
+        blocks,
+        visible.map((group) => group.selection),
+        start,
+        scale,
+        orderedLanes,
+      ),
+    };
+  });
+  const railWidth = compact ? 32 : 44;
   const minima = layout.map((column) =>
-    dayMinimum(
-      column.placed,
+    Math.max(
+      column.events.width,
       compact && !singleDay ? Math.max(0, (viewportWidth - railWidth) / 2) : 0,
     ),
   );
   return (
     <>
-      <AutoHideScrollArea
-        className={
-          compact
-            ? 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+var(--u-scroll-area-size))]'
-            : 'h-[calc(var(--calendar-viewport)+var(--calendar-header)+8px)]'
-        }
-        style={
-          {
-            '--calendar-viewport': `${compact ? calendarHeight : 660 * scale}px`,
-            '--calendar-header': singleDay ? '0px' : '44px',
-          } as CSSProperties
-        }
-      >
+      <AutoHideScrollArea className="calendar-scroll">
         <ScrollArea.Viewport
           ref={scroller}
-          className={`week-scroll [overflow-anchor:none] [--rail-width:48px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
+          style={{ overflowY: 'hidden', height: 'auto' }}
+          onScroll={() => {
+            const viewport = scroller.current;
+            const card = focusedCard.current;
+            if (!viewport || !card) return;
+            const box = card.getBoundingClientRect();
+            const bounds = viewport.getBoundingClientRect();
+            if (box.right <= bounds.left || box.left >= bounds.right)
+              focusedCard.current = null;
+          }}
+          onFocusCapture={(event) => {
+            const card = event.target;
+            if (!(card instanceof HTMLElement) || !card.matches('.lesson-card'))
+              return;
+            focusedCard.current = card;
+            requestAnimationFrame(() => {
+              const viewport = scroller.current;
+              if (
+                !viewport ||
+                !card.isConnected ||
+                document.activeElement !== card
+              )
+                return;
+              revealCard(card);
+            });
+          }}
+          className={`week-scroll [overflow-anchor:none] [--rail-width:44px] compact:[--rail-width:32px] ${singleDay ? 'day-view [--day-base:0px]' : '[--day-base:80px] compact:[--day-base:calc((100vw-60px)/2)]'}`}
           tabIndex={0}
           role="region"
           aria-label={
@@ -141,14 +186,15 @@ export default function Calendar({
           }
           aria-busy={loading}
         >
-          <ScrollArea.Content>
+          <ScrollArea.Content className="pr-0">
             <div
-              className={`week-grid grid w-full ${singleDay ? 'grid-rows-[var(--calendar-height)]' : 'grid-rows-[var(--calendar-header)_var(--calendar-height)]'}`}
+              className="week-grid grid w-full"
               data-schedule-days
               style={
                 {
                   '--calendar-height': `${calendarHeight}px`,
                   '--hour-height': `${60 * scale}px`,
+                  gridTemplateRows: `${singleDay ? '' : '44px '}auto ${calendarHeight}px`,
                   gridTemplateColumns: `${railWidth}px ${minima.map((minimum) => `minmax(${minimum}px,1fr)`).join(' ')}`,
                   minWidth:
                     railWidth +
@@ -159,33 +205,76 @@ export default function Calendar({
               {!singleDay && (
                 <>
                   <div className="time-header sticky left-0 z-[5] border-b border-(--u-line-soft) bg-u-surface" />
-                  {dates.map((date) => (
+                  {layout.map(({ date, scope, unavailable }) => (
                     <button
                       type="button"
                       key={date}
-                      className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
+                      className={`day-heading border-0 border-r border-b border-(--u-line-soft) text-left text-sm font-bold capitalize compact:text-[13px] ${!placeholder && day === date ? 'selected bg-(--u-selection) text-(--u-selection-ink) shadow-[inset_0_0_0_1.5px_var(--u-selection-border)]' : 'bg-transparent'}`}
                       data-schedule-day={date}
                       disabled={placeholder}
                       aria-pressed={!placeholder && day === date}
-                      aria-label={formatDay(date, {
+                      aria-label={`${formatDay(date, {
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long',
-                      })}
+                      })}${scope.excluded.length ? `. Частичное сравнение: ${scope.included.length} из ${scope.included.length + scope.excluded.length}. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}` : ''}${unavailable.length ? `. Нет подтверждённых данных: ${unavailable.map((group) => label(group.selection)).join(', ')}` : ''}`}
+                      title={
+                        scope.excluded.length
+                          ? `Частичное сравнение. Не учтены: ${scope.excluded.map((group) => label(group.selection)).join(', ')}`
+                          : undefined
+                      }
                       onClick={() => onDay(date)}
                     >
                       {placeholder ? (
                         <Skeleton className="day-label-placeholder mx-auto h-3.5 w-12 min-h-0" />
                       ) : (
-                        <>
+                        <span className="sticky left-[calc(var(--rail-width)+8px)] inline-block px-2">
                           <span>{formatDay(date, { weekday: 'short' })}</span>{' '}
                           {Number(date.slice(8))}
-                        </>
+                          {scope.excluded.length > 0 &&
+                            !(loading && !hasSnapshot) && (
+                              <span
+                                className="ml-1 text-[11px] font-normal"
+                                aria-label="Частичное сравнение"
+                              >
+                                · {scope.included.length}/
+                                {scope.included.length + scope.excluded.length}
+                              </span>
+                            )}
+                        </span>
                       )}
                     </button>
                   ))}
                 </>
               )}
+              <div className="time-header sticky left-0 z-[5] border-b border-u-line-soft bg-u-surface" />
+              {layout.map((column) => (
+                <div
+                  key={column.date}
+                  className="week-source-status grid border-r border-u-line-soft"
+                  style={{
+                    gridTemplateColumns: `${minima[layout.indexOf(column)]}px`,
+                  }}
+                >
+                  {column.unavailable.length > 0 &&
+                    !(loading && !hasSnapshot) && (
+                      <p
+                        className="m-0 px-2 py-1 text-[10px] leading-4 text-u-muted"
+                        role="status"
+                        title={`Нет подтверждённых данных: ${column.unavailable.map((group) => label(group.selection)).join(', ')}`}
+                      >
+                        Нет данных: {column.unavailable.length}/{visible.length}
+                        <span className="sr-only">
+                          {' '}
+                          ·{' '}
+                          {column.unavailable
+                            .map((group) => label(group.selection))
+                            .join(', ')}
+                        </span>
+                      </p>
+                    )}
+                </div>
+              ))}
               <div className="time-rail sticky left-0 z-[4] bg-u-surface">
                 {hours.map((hour) => (
                   <span
@@ -233,57 +322,57 @@ export default function Calendar({
                         <ComparisonHighlights
                           result={column.result}
                           layers={layers}
-                          saved={saved}
+                          saved={column.saved}
                           start={start}
                           scale={scale}
                         />
-                        {column.placed.map(
-                          ({
-                            block,
-                            top,
-                            height,
-                            column: lane,
-                            columns,
-                            span,
-                          }) => (
+                        {column.events.occurrences.map(
+                          ({ block, top, height, left, member }) => (
                             <LessonCard
                               key={block.identity}
                               block={block}
                               colors={colors}
                               subgroupCatalog={subgroupCatalog}
                               spotlightIds={spotlightIds}
+                              hiddenKinds={hiddenKinds}
+                              presentationOwner={member}
+                              compact
                               style={{
                                 top,
                                 height,
-                                left: `calc(min(${(lane * 100) / columns}%, ${lane * 166}px) + 3px)`,
-                                width: `min(${span > 1 ? 320 : 160}px, calc(min(${(span * 100) / columns}%, ${span * 166}px) - 6px))`,
+                                left,
+                                width: column.events.cardWidth,
                               }}
                             />
                           ),
                         )}
-                        {!column.placed.length && (
+                        {!column.events.occurrences.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
-                              {!complete
+                              {!column.complete
                                 ? excluded.some(
                                     (group) =>
                                       comparisonIssue(group) === 'subgroup',
                                   )
                                   ? 'Подгруппа не определена'
-                                  : schedules.some(
+                                  : visible.some(
                                         (group) =>
                                           group.error && !group.snapshot,
                                       )
                                     ? 'Данные недоступны'
-                                    : 'Ждём данные'
-                                : 'Нет занятий'}
+                                    : visible.some((group) => group.loading)
+                                      ? 'Ждём данные'
+                                      : 'Нет данных на этот день'
+                                : column.hidden
+                                  ? 'Занятия скрыты'
+                                  : 'Нет занятий'}
                             </span>
-                            {complete && saved && (
+                            {column.complete && column.saved && (
                               <span className="empty-saved text-[11px]">
                                 По сохранённым данным
                               </span>
                             )}
-                            {complete && (
+                            {column.complete && !column.hidden && (
                               <img
                                 src="/assets/planet.webp"
                                 alt=""
@@ -302,46 +391,32 @@ export default function Calendar({
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        {!compact && <ScrollArea.Scrollbar className="z-[6]" />}
         <ScrollArea.Scrollbar orientation="horizontal" className="z-[6]" />
-        <ScrollArea.Corner />
       </AutoHideScrollArea>
-      <p className="calendar-hint m-0 border-t border-(--u-line-soft) px-3.5 py-2.5 text-[11px] text-u-muted compact:p-[9px] compact:leading-normal">
-        {included.length >= 2 && (
-          <>
+      {(layers.presence || layers.free) &&
+        (singleDay
+          ? included.length >= 2
+          : layout.some(({ scope }) => scope.included.length >= 2)) && (
+          <p className="calendar-hint m-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-(--u-line-soft) px-3 py-2 text-[11px] leading-4 text-u-muted">
             {(['presence', 'free'] as const).map(
               (layer) =>
                 layers[layer] && (
                   <span
                     key={layer}
-                    className={`mode-legend mr-3 inline-flex items-center gap-1 before:h-[9px] before:w-[9px] before:border-l-2 before:content-[''] ${layer === 'free' ? 'free-legend before:border-y before:border-u-accent-border before:bg-u-accent-soft' : 'before:border-campus-presence-border'} ${saved ? 'before:border-dashed' : ''}`}
+                    className="mode-legend inline-flex items-center gap-1.5"
                   >
-                    {layer === 'presence' ? 'В вузе' : 'Без занятий'}
+                    <span
+                      className={`calendar-layer-icon ${saved ? 'border-b border-dashed' : ''}`}
+                      data-layer={layer}
+                    >
+                      <Icon name={layer} size={14} />
+                    </span>
+                    {layer === 'presence' ? 'В вузе' : 'Общие окна'}
                   </span>
                 ),
             )}
-            {(layers.presence || layers.free) && (
-              <span className="mr-3">
-                {excluded.length
-                  ? `Частичное сравнение: ${included.map((group) => selectionLabel(group.selection)).join(' + ')}. Не учтены: ${excluded.map((group) => selectionLabel(group.selection)).join(', ')}`
-                  : `Для всех ${included.length} групп`}
-                {saved && ' · по сохранённым данным'}.
-              </span>
-            )}
-          </>
+          </p>
         )}
-        <span className="lesson-hint inline">
-          Нажми на занятие — подробности.
-          {(!singleDay || minima[0] + railWidth > viewportWidth) && (
-            <span className="mobile-hint hidden compact:inline">
-              {' '}
-              {singleDay
-                ? 'Пары можно прокручивать →'
-                : 'Дни можно прокручивать →'}
-            </span>
-          )}
-        </span>
-      </p>
     </>
   );
 }
