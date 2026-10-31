@@ -115,28 +115,37 @@ lecturer names retain their full labels without ellipsis and redundant role capt
 retain their stripe meaning and omit the decorative resource motif. Remote dashes,
 saved clocks and individual spotlight markers remain independent.
 
-Day assigns each visible selected source a labelled stable band in user order,
-with a 16-pixel gap and an extra 16 pixels at kind transitions. Card width follows
-the visible source count: 160 pixels for up to three, 144 for four to six, 128
-for seven to twelve, and 112 for thirteen to thirty. Distinct overlapping events
-reserve sublanes within their source band, separated by six pixels; cards never
-stretch into spare viewport space. A design-system Select moves to the requested band and focuses its
-first lesson or empty/status band without changing selection or calculation.
-It includes hidden sources with an explicit notice rather than silently unhiding.
-All 30 schedules remain available; there is no automatic mode change or collapse.
-Headers wrap full source names and grow only when their content needs more
-height. Headers and the time rail stay visible while navigating the source canvas.
-Source anchoring clamps offsets when sublanes shrink and uses a surviving
-neighbor when a source disappears. Keyboard focus clears the actual sticky rail
-in both Day and Week.
+Day and Week pack canonical events into reusable lanes. Only actual time or
+minimum painted-height overlaps require adjacent lanes, with a six-pixel gap.
+Sources do not reserve columns, kind-transition gaps or source headers. Colors,
+member labels and kind icons identify the schedules on each card. Selection
+order breaks equal-start placement ties and supplies affinity to existing free
+lanes; it never reserves vacant space. Card width follows each day's peak painted
+concurrency: 160 pixels for up to three lanes, 144 for four to six, 128 for seven
+to twelve, and 112 above twelve. Cards do not stretch into spare viewport space.
 
 One full shared card belongs to the first selected visible participating source,
-including a lecturer or room moved ahead of its groups.
-Other member bands carry an explicit actionable reference to the same complete
-details, at the original time, never spanning unrelated bands. Hidden owner kinds
-promote the next visible member. References never enter counts or calculations.
-Week shows one full card per proven shared event, plus these labelled references;
-List shows the event once. Shared cards follow the selected-source order in every view and in details. Shared vertical cards use full-width categorical member sectors beneath the heading. Capacity follows measured width and available height, with readable leading names and a remainder for dense membership. Horizontal rows keep one fitting row regardless of duration. Full membership remains in details; saved collapsed members retain their clock marker. Spotlight uses fill rather than decorative checks. Presentation ordering does not alter canonical event merging or geometry.
+including a lecturer or room moved ahead of its groups. Every canonical block
+appears once, retaining full membership and details. Hidden owner kinds promote
+the next visible member. Selection, counts, presence and free-window calculations
+are unchanged. Member order follows selection order in every view and details.
+Shared vertical cards use categorical member sectors beneath the heading.
+Capacity follows measured width and available height, with readable leading
+names and a remainder for dense membership. Horizontal rows keep one fitting
+row regardless of duration. Full membership remains in details; saved collapsed
+members retain their clock marker. Spotlight uses fill without decorative checks.
+
+Day's design-system Select includes all selected schedules, up to thirty.
+Choosing one reveals and focuses its first owned occurrence, or an existing
+shared card actually containing it when it has no owned occurrence. This can
+skip an owner's earlier solo lesson. Hidden-kind choices explain the hidden
+state without changing visibility or redirecting focus to a card. Genuinely
+empty, unknown and uncovered sources create no visual columns; their distinct
+states remain in the chooser, compact notices and data details. A shared-only
+member is labelled as shared, never empty. Headers no longer imply source lanes.
+Logical event anchoring retains the event through reorder or width changes,
+with a source fallback if it disappears. Keyboard focus clears the actual rail.
+
 Long vertical event text starts at the top. Short free intervals keep true height;
 inline text appears only when it fits, and exact ranges are visible in the day
 summary outside horizontal scrolling. Long calculation membership is collapsible.
@@ -194,23 +203,15 @@ set. Display settings and day detail can clear all spotlights together.
 Spotlight and day format are transient presentation state, not comparison URL
 parameters or changes to the presence/free calculation.
 
-Each compact Week date has its own minimum width, derived from that day's
-active source bands in selected order. A source keeps its band throughout that
-date; reordering the selection moves the bands. Confirmed-empty bands are
-omitted, while unknown, failed, expired or uncovered sources remain explicitly
-named in the day's unavailable status and calculation details. Known lessons
-remain visible even when their source is excluded from calculation. Empty dates
-retain a column. Each date uses the same 160/144/128/112 card-width tiers as Day,
-based on its active band count rather than the entire selected set.
-Navigation measures actual date columns and preserves
+Each compact Week date has its own minimum width derived from its peak
+painted event concurrency. Empty dates retain a column; unknown, failed, expired
+or uncovered sources remain explicitly named in the day's unavailable status
+and calculation details. Known lessons remain visible even when their source is
+excluded from calculation. Navigation measures actual date columns and preserves
 the visible date/offset across geometry changes. Lane allocation reserves both
 the true interval and the minimum painted height, so short events cannot collide.
-Each source's internal overlap sublanes use a six-pixel gap; only dates with
-more active sources or overlaps grow. Unavailable data is never an empty day.
-An isolated lesson does not stretch across the day.
-Their horizontal pitch is capped too, keeping a six-pixel gap instead of
-spreading narrow cards across a wide day. Pressing a card highlights it without
-moving it on the time scale.
+Nonoverlapping events from different sources can reuse the same lane. An isolated
+lesson stays compact. Pressing a card highlights it without moving its geometry.
 Their height still represents duration, including long military classes.
 Simultaneous distinct lessons of one group use stripes. The selected-day timeline uses event rows and
 reserves the week's peak row count to keep its panel height stable.
@@ -273,7 +274,7 @@ The general calendar still accepts mixed VUC selections. Military-preparation
 lesson details can preview one personally chosen VUC schedule for the same date;
 this preference does not join a comparison or infer a group-to-platoon mapping.
 
-Military-preparation cards from 240px also show the personally chosen VUC for that exact date, including tall shared references. The preview fits as many complete entries as its measured free space permits. The document status and a reserved remaining-count line cannot be pushed out by long entries. Inline topics use at most two lines and include teachers when space permits; all printed intervals wrap. The popup starts its complete-entry list closed under “Все занятия на этот день”, preserving access to every entry without repeating an open inline schedule. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses the design-system Select with short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison. Preview and the source footer offer “Скачать” only for configured, hash-verified PDF/DOCX bytes confirmed by a usable active catalogue; absent originals are explicit. The footer deduplicates by document and has no repeated platoon or period paragraphs. Per-date calculation exclusions, warnings and unparsed source cells remain in the existing data-status disclosure; each known lesson retains its raw source row. Downloads do not require coverage of the selected date.
+Military-preparation cards from 240px also show the personally chosen VUC for that exact date. A shared military event has one card and one inline preview. The preview fits as many complete entries as its measured free space permits. The document status and a reserved remaining-count line cannot be pushed out by long entries. Inline topics use at most two lines and include teachers when space permits; all printed intervals wrap. The popup starts its complete-entry list closed under “Все занятия на этот день”, preserving access to every entry without repeating an open inline schedule. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses the design-system Select with short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison. Preview and the source footer offer “Скачать” only for configured, hash-verified PDF/DOCX bytes confirmed by a usable active catalogue; absent originals are explicit. The footer deduplicates by document and has no repeated platoon or period paragraphs. Per-date calculation exclusions, warnings and unparsed source cells remain in the existing data-status disclosure; each known lesson retains its raw source row. Downloads do not require coverage of the selected date.
 
 Where selected VUC sources share the same compact platoon name, navigation, management, membership details and calculation exclusions add document years and, if needed, an existing source description. Identical metadata falls back to the document-scoped ID. Non-colliding names stay compact; chips retain their 44px height and show the disambiguator on a secondary line. Labels never change source identity or date coverage.
 

@@ -1,152 +1,110 @@
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
 import type { Selection } from '../../../lib/types.ts';
-import { scheduleKey, selectionKind } from '../../../lib/schedule-ref.ts';
+import { scheduleKey } from '../../../lib/schedule-ref.ts';
 import { verticalLayout, type VerticalPlacement } from './vertical-layout.ts';
 
-export const SOURCE_GAP = 16;
 export const SOURCE_INSET = 9;
 const LANE_GAP = 6;
 
-// Density is presentation-only. Keep readable cards and scroll the canvas;
-// never compress thirty sources into thin strips or change their time scale.
+// Density follows actual painted concurrency, never the number of selections.
 export function sourceCardWidth(count: number) {
   return count <= 3 ? 160 : count <= 6 ? 144 : count <= 12 ? 128 : 112;
 }
 export interface SourceOccurrence extends VerticalPlacement {
   member: Selection;
-  reference: boolean;
-}
-export interface SourceTrack {
-  key: string;
-  selection: Selection;
   left: number;
-  width: number;
+}
+export interface SourceLayout {
+  occurrences: SourceOccurrence[];
+  columns: number;
   cardWidth: number;
   lanePitch: number;
-  occurrences: SourceOccurrence[];
+  width: number;
 }
-// References reuse a canonical block; they never enter lesson counts or calculations.
-export function sourceTracks(
+
+// Reuse the painted-safe event allocator. Selection priority only orders ties
+// and supplies source affinity; no lane or gap belongs to a source all day.
+export function sourceLayout(
   blocks: LessonBlock[],
   selections: Selection[],
   origin: number,
   scale: number,
-): SourceTrack[] {
+): SourceLayout {
   const owners = new Map(
     blocks.map((block) => [
       block.identity,
-      selections.find((selection) =>
-        block.members.some(
-          (member) => scheduleKey(member) === scheduleKey(selection),
-        ),
+      selections.find((s) =>
+        block.members.some((m) => scheduleKey(m) === scheduleKey(s)),
       ),
     ]),
   );
-  const cardWidth = sourceCardWidth(selections.length);
-  const lanePitch = cardWidth + LANE_GAP;
-  let left = SOURCE_INSET;
-  return selections.map((selection, index) => {
-    if (index)
-      left +=
-        SOURCE_GAP +
-        (selectionKind(selections[index - 1]) !== selectionKind(selection)
-          ? SOURCE_GAP
-          : 0);
-    const key = scheduleKey(selection);
-    const placed = verticalLayout(
-      blocks.filter((block) =>
-        block.members.some((member) => scheduleKey(member) === key),
-      ),
-      origin,
-      scale,
-    );
-    const lanes = Math.max(1, ...placed.map((entry) => entry.columns));
-    const width = cardWidth * lanes + (lanes - 1) * LANE_GAP;
-    const track = {
-      key,
-      selection,
-      left,
-      width,
-      cardWidth,
-      lanePitch,
-      occurrences: placed.map((entry) => ({
-        ...entry,
-        member: selection,
-        reference: scheduleKey(owners.get(entry.block.identity)!) !== key,
-      })),
-    };
-    left += width;
-    return track;
-  });
-}
-
-// Week omits confirmed-empty bands. Missing/ambiguous sources are reported by
-// the day's status, independently of this projection of known occurrences.
-export function activeSourceTracks(
-  blocks: LessonBlock[],
-  selections: Selection[],
-  origin: number,
-  scale: number,
-) {
-  const active = new Set(
-    blocks.flatMap((block) => block.members.map(scheduleKey)),
-  );
-  return sourceTracks(
-    blocks,
-    selections.filter((selection) => active.has(scheduleKey(selection))),
+  const placed = verticalLayout(
+    blocks.filter((b) => owners.get(b.identity)),
     origin,
     scale,
+    selections,
+  );
+  const columns = Math.max(1, ...placed.map((p) => p.columns));
+  const cardWidth = sourceCardWidth(columns);
+  const lanePitch = cardWidth + LANE_GAP;
+  return {
+    columns,
+    cardWidth,
+    lanePitch,
+    width: 2 * SOURCE_INSET + columns * cardWidth + (columns - 1) * LANE_GAP,
+    occurrences: placed.map((entry) => ({
+      ...entry,
+      member: owners.get(entry.block.identity)!,
+      left: SOURCE_INSET + entry.column * lanePitch,
+    })),
+  };
+}
+
+// Prefer an owned first occurrence, otherwise an actual shared card containing
+// the requested member. Hidden choices must be handled by the caller first.
+export function sourceJump(layout: SourceLayout, key: string) {
+  return (
+    layout.occurrences.find((entry) => scheduleKey(entry.member) === key) ??
+    layout.occurrences.find((entry) =>
+      entry.block.members.some((m) => scheduleKey(m) === key),
+    )
   );
 }
 
-export function sourceTracksWidth(tracks: SourceTrack[]) {
-  const last = tracks.at(-1);
-  return last
-    ? last.left + last.width + SOURCE_INSET
-    : sourceCardWidth(0) + 2 * SOURCE_INSET;
-}
-
-export function sourceAnchor(
-  tracks: (Pick<SourceTrack, 'key' | 'left' | 'width'> & {
-    cardWidth?: number;
-  })[],
+export function eventAnchor(
+  layout: SourceLayout,
   offset: number,
+  focusedIdentity?: string,
 ) {
-  const track =
-    tracks.find((track) => track.left + track.width > offset) ?? tracks.at(-1);
-  return track ? { key: track.key, offset: offset - track.left } : undefined;
+  const entry =
+    layout.occurrences.find(
+      (entry) => entry.block.identity === focusedIdentity,
+    ) ??
+    [...layout.occurrences]
+      .sort((a, b) => a.left - b.left || a.top - b.top)
+      .find((entry) => entry.left + layout.cardWidth > offset + SOURCE_INSET);
+  return (
+    entry && {
+      identity: entry.block.identity,
+      key: scheduleKey(entry.member),
+      offset: offset - entry.left,
+    }
+  );
 }
 
-// A source can lose overlap lanes or disappear after a filter/date update.
-// Keep a complete lane in view and fall back by the prior source order.
-export function restoreSourceAnchor(
-  anchor: ReturnType<typeof sourceAnchor>,
-  previous: Pick<SourceTrack, 'key' | 'left' | 'width'>[],
-  tracks: (Pick<SourceTrack, 'key' | 'left' | 'width'> & {
-    cardWidth?: number;
-  })[],
-): number | undefined {
-  if (!anchor || !tracks.length) return undefined;
-  let target = tracks.find((track) => track.key === anchor.key);
-  let offset = anchor.offset;
-  if (!target) {
-    const index = previous.findIndex((track) => track.key === anchor.key);
-    const neighbors = [
-      ...previous.slice(index + 1),
-      ...previous.slice(0, index).reverse(),
-    ];
-    target =
-      neighbors
-        .map((prior) => tracks.find((track) => track.key === prior.key))
-        .find(Boolean) ?? tracks[0];
-    offset = -SOURCE_INSET;
-  }
-  const max = Math.max(
-    -SOURCE_INSET,
-    target.width - (target.cardWidth ?? sourceCardWidth(0)) - SOURCE_INSET,
-  );
-  return Math.max(
-    0,
-    target.left + Math.max(-SOURCE_INSET, Math.min(offset, max)),
-  );
+export function restoreEventAnchor(
+  anchor: ReturnType<typeof eventAnchor>,
+  layout: SourceLayout,
+) {
+  if (!anchor) return undefined;
+  const entry =
+    layout.occurrences.find(
+      (entry) => entry.block.identity === anchor.identity,
+    ) ?? sourceJump(layout, anchor.key);
+  return entry
+    ? Math.max(
+        0,
+        entry.left + Math.max(-SOURCE_INSET, Math.min(0, anchor.offset)),
+      )
+    : 0;
 }

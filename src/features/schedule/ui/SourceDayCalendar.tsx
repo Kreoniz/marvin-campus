@@ -16,16 +16,15 @@ import {
   scheduleKey,
   selectionKind,
   kindLabel,
-  kindIcon,
 } from '../../../lib/schedule-ref.ts';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
-import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import {
-  sourceTracks,
-  sourceAnchor,
-  restoreSourceAnchor,
-  sourceTracksWidth,
+  sourceLayout,
+  sourceJump,
+  eventAnchor,
+  restoreEventAnchor,
   SOURCE_INSET,
 } from '../model/source-layout.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
@@ -64,16 +63,13 @@ export default function SourceDayCalendar({
   const label = scheduleLabels(schedules);
   const scroller = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLDivElement>(null);
-  const anchor = useRef<ReturnType<typeof sourceAnchor>>(undefined);
+  const noticeElement = useRef<HTMLParagraphElement>(null);
+  const anchor = useRef<ReturnType<typeof eventAnchor>>(undefined);
   const pendingJump = useRef<string | null>(null);
   const [jumped, setJumped] = useState('');
   const requested = schedules.find(
     (schedule) => scheduleKey(schedule.selection) === jumped,
   );
-  const notice =
-    requested && hiddenKinds.includes(selectionKind(requested.selection))
-      ? `${label(requested.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`
-      : '';
   const visible = schedules.filter(
     (schedule) => !hiddenKinds.includes(selectionKind(schedule.selection)),
   );
@@ -82,55 +78,64 @@ export default function SourceDayCalendar({
     blocks.map((block) => block.lesson),
     vucOnly,
   );
-  const tracks = sourceTracks(
+  const events = sourceLayout(
     blocks,
     visible.map((schedule) => schedule.selection),
     start,
     scale,
   );
-  const width = rail + sourceTracksWidth(tracks);
+  const destination = sourceJump(events, jumped);
+  const notice = !requested
+    ? ''
+    : hiddenKinds.includes(selectionKind(requested.selection))
+      ? `${label(requested.selection)}: карточки этого вида скрыты. Включи их в «Отображение» или нажми «Показать всё».`
+      : !destination
+        ? `${label(requested.selection)}: ${status(requested) || 'Нет занятий'}.`
+        : scheduleKey(destination.member) !== jumped
+          ? `${label(requested.selection)}: показано общее занятие.${status(requested) ? ` ${status(requested)}.` : ''}`
+          : '';
+  const width = rail + events.width;
   const height = Math.max(
     (end - start) * scale,
-    ...tracks.flatMap((track) =>
-      track.occurrences.map((occurrence) => occurrence.top + occurrence.height),
-    ),
+    ...events.occurrences.map((entry) => entry.top + entry.height),
   );
   const scope = comparisonScope(schedules, day);
   const result = compareDay(schedules, day);
-  const includedKeys = new Set(
-    scope.included.map((schedule) => scheduleKey(schedule.selection)),
-  );
   const saved = scope.included.some(
     (schedule) =>
       schedule.snapshot && (schedule.snapshot.stale || schedule.error),
   );
-  const geometryKey = tracks
-    .map((track) => `${track.key}:${track.left}:${track.width}`)
+  const geometryKey = events.occurrences
+    .map((entry) => `${entry.block.identity}:${entry.left}:${events.cardWidth}`)
     .join('|');
-  const previousTracks = useRef(tracks);
-  const tracksRef = useRef(tracks);
-  tracksRef.current = tracks;
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
   const hasSnapshot = schedules.some((schedule) => schedule.snapshot);
   function syncScroll() {
     const viewport = scroller.current;
     if (!viewport) return;
-    if (header.current)
-      header.current.style.transform = `translateX(${-viewport.scrollLeft}px)`;
-    anchor.current = sourceAnchor(tracksRef.current, viewport.scrollLeft);
+    const cards = Array.from(viewport.querySelectorAll('.lesson-card'));
+    const focused = cards.indexOf(document.activeElement!);
+    const bounds = viewport.getBoundingClientRect();
+    const card = cards[focused]?.getBoundingClientRect();
+    // At the right edge a jump is clamped before its card can reach the left
+    // rail. Retain that focused event, rather than an incidental left neighbor.
+    anchor.current = eventAnchor(
+      eventsRef.current,
+      viewport.scrollLeft,
+      card && card.right > bounds.left + rail && card.left < bounds.right
+        ? eventsRef.current.occurrences[focused]?.block.identity
+        : undefined,
+    );
   }
   useLayoutEffect(() => {
     const viewport = scroller.current;
     if (!viewport) return;
-    const restored = restoreSourceAnchor(
-      anchor.current,
-      previousTracks.current,
-      tracksRef.current,
-    );
+    const restored = restoreEventAnchor(anchor.current, eventsRef.current);
     if (restored !== undefined) viewport.scrollLeft = restored;
-    previousTracks.current = tracksRef.current;
     syncScroll();
   }, [geometryKey, day]);
-  const status = (schedule: GroupSchedule) => {
+  function status(schedule: GroupSchedule) {
     const issue = comparisonIssue(schedule, day);
     return issue === 'subgroup'
       ? 'Подгруппа не определена'
@@ -145,27 +150,38 @@ export default function SourceDayCalendar({
           : schedule.snapshot?.stale || schedule.error
             ? 'Сохранено'
             : '';
-  };
-  const choices = schedules.map((schedule) => ({
-    value: scheduleKey(schedule.selection),
-    label: `${label(schedule.selection)} · ${kindLabel(selectionKind(schedule.selection))}${hiddenKinds.includes(selectionKind(schedule.selection)) ? ' · скрыто' : status(schedule) ? ` · ${status(schedule)}` : ''}`,
-  }));
+  }
+  const choices = schedules.map((schedule) => {
+    const key = scheduleKey(schedule.selection);
+    const target = sourceJump(events, key);
+    return {
+      value: key,
+      label: `${label(schedule.selection)} · ${kindLabel(selectionKind(schedule.selection))}${hiddenKinds.includes(selectionKind(schedule.selection)) ? ' · скрыто' : `${status(schedule) ? ` · ${status(schedule)}` : !target ? ' · нет занятий' : ''}${target && scheduleKey(target.member) !== key ? ' · общие занятия' : ''}`}`,
+    };
+  });
   function jump(key: string) {
     const schedule = schedules.find(
       (schedule) => scheduleKey(schedule.selection) === key,
     );
-    const track = tracksRef.current.find((track) => track.key === key);
     if (!schedule) return;
     setJumped(key);
-    if (!track) return;
+    const destination = sourceJump(eventsRef.current, key);
+    if (
+      hiddenKinds.includes(selectionKind(schedule.selection)) ||
+      !destination
+    ) {
+      // finalFocus runs before React commits the new notice text/visibility.
+      requestAnimationFrame(() => noticeElement.current?.focus());
+      return;
+    }
     const viewport = scroller.current;
     if (!viewport) return;
-    viewport.scrollLeft = track.left - SOURCE_INSET;
+    viewport.scrollLeft = destination.left - SOURCE_INSET;
     syncScroll();
-    const band = Array.from(
-      viewport.querySelectorAll<HTMLElement>('[data-source-key]'),
-    ).find((element) => element.dataset.sourceKey === key);
-    const target = band?.querySelector<HTMLElement>('button') ?? band;
+    const target =
+      viewport.querySelectorAll<HTMLElement>('.lesson-card')[
+        eventsRef.current.occurrences.indexOf(destination)
+      ];
     if (target) requestAnimationFrame(() => reveal(target));
     return target;
   }
@@ -183,7 +199,7 @@ export default function SourceDayCalendar({
     box = target.getBoundingClientRect();
     const headerBottom = Math.max(
       0,
-      header.current?.parentElement?.getBoundingClientRect().bottom ?? 0,
+      header.current?.getBoundingClientRect().bottom ?? 0,
     );
     if (
       box.top < headerBottom + 8 ||
@@ -199,11 +215,13 @@ export default function SourceDayCalendar({
   return (
     <section
       className="source-day-calendar min-w-0"
-      style={{ '--source-inset': `${SOURCE_INSET}px` } as CSSProperties}
-      aria-label={`Расписания по дорожкам на ${formatDay(day, { day: 'numeric', month: 'long' })}`}
+      aria-label={`Расписание на ${formatDay(day, { day: 'numeric', month: 'long' })}`}
       aria-busy={loading}
     >
-      <div className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface">
+      <div
+        ref={header}
+        className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface"
+      >
         <div className="border-b border-u-line-soft px-2 py-1">
           <Select.Root
             value={null}
@@ -238,59 +256,26 @@ export default function SourceDayCalendar({
             </Select.Content>
           </Select.Root>
         </div>
-        <div
-          ref={header}
-          className="relative grid min-h-[56px]"
-          style={{
-            width,
-            gridTemplateColumns: `${rail + SOURCE_INSET}px ${tracks
-              .flatMap((track, index) => [
-                track.width,
-                (tracks[index + 1]?.left ??
-                  track.left + track.width + SOURCE_INSET) -
-                  track.left -
-                  track.width,
-              ])
-              .map((size) => `${size}px`)
-              .join(' ')}`,
-          }}
-          aria-hidden={placeholder || undefined}
-        >
-          {tracks.map((track, index) => {
-            const schedule = visible.find(
-              (schedule) => scheduleKey(schedule.selection) === track.key,
-            )!;
-            const kind = selectionKind(track.selection);
-            const muted =
-              spotlightIds.length > 0 && !spotlightIds.includes(track.key);
-            return (
-              <div
-                key={track.key}
-                className={`source-label flex min-h-[56px] flex-col justify-center gap-1 border-b-[3px] px-1.5 py-1 ${jumped === track.key ? 'bg-u-selection' : 'bg-u-surface'}`}
-                style={{
-                  gridColumn: 2 + index * 2,
-                  gridRow: 1,
-                  borderColor: lessonColor(colors[track.key] ?? 0, muted),
-                }}
-              >
-                <strong className="text-xs leading-4 wrap-anywhere">
-                  {label(track.selection)}
-                </strong>
-                <span className="flex min-w-0 items-center gap-1 text-[10px] leading-3 text-u-muted">
-                  <Icon name={kindIcon(kind)} size={11} />
-                  {kindLabel(kind)}
-                  {status(schedule) && <span> · {status(schedule)}</span>}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {visible.some((schedule) => comparisonIssue(schedule, day)) &&
+          !(loading && !hasSnapshot) && (
+            <p className="m-0 px-3 py-1 text-xs text-u-muted" role="status">
+              Нет подтверждённых данных:{' '}
+              {visible
+                .filter((schedule) => comparisonIssue(schedule, day))
+                .map((schedule) => label(schedule.selection))
+                .join(', ')}
+            </p>
+          )}
       </div>
-      {notice && (
-        <p className="m-0 px-3 py-2 text-xs text-u-muted" role="status">
-          {notice}
-        </p>
-      )}
+      <p
+        ref={noticeElement}
+        hidden={!notice}
+        tabIndex={-1}
+        className="m-0 px-3 py-2 text-xs text-u-muted focus-visible:outline-2 focus-visible:outline-u-ink"
+        role="status"
+      >
+        {notice}
+      </p>
       <div
         ref={scroller}
         onScroll={syncScroll}
@@ -308,7 +293,7 @@ export default function SourceDayCalendar({
         className="source-scroll relative overflow-x-auto overflow-y-hidden overscroll-x-contain [overflow-anchor:none]"
         role="region"
         tabIndex={0}
-        aria-label="Дорожки расписаний"
+        aria-label="Занятия выбранных расписаний"
         style={
           {
             '--hour-height': `${60 * scale}px`,
@@ -328,74 +313,43 @@ export default function SourceDayCalendar({
               </span>
             ))}
           </div>
-          {tracks.map((track) => {
-            const schedule = visible.find(
-              (schedule) => scheduleKey(schedule.selection) === track.key,
-            )!;
-            return (
-              <div
-                key={track.key}
-                data-source-key={track.key}
-                data-lesson-region
-                tabIndex={-1}
-                role="group"
-                aria-label={`${label(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
-                className="source-band absolute top-0 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_calc(var(--hour-height)-1px),var(--u-line-soft)_calc(var(--hour-height)-1px),var(--u-line-soft)_var(--hour-height))] focus-visible:outline-2 focus-visible:outline-u-ink [&_.presence-highlight]:left-[calc(-1*var(--source-inset))]"
-                style={{ left: rail + track.left, width: track.width, height }}
-              >
-                {includedKeys.has(track.key) && (
-                  <ComparisonHighlights
-                    result={result}
-                    layers={layers}
-                    saved={saved}
-                    start={start}
-                    scale={scale}
-                    outside
-                  />
-                )}
-                {loading && !hasSnapshot ? (
-                  <Skeleton className="mt-14 h-20 w-full" />
-                ) : (
-                  track.occurrences.map(
-                    ({
-                      block,
+          <div
+            data-lesson-region
+            className="absolute top-0 left-11 h-full"
+            style={{ width: events.width }}
+          >
+            <ComparisonHighlights
+              result={result}
+              layers={layers}
+              saved={saved}
+              start={start}
+              scale={scale}
+            />
+            {loading && !hasSnapshot ? (
+              <Skeleton className="mt-14 ml-[9px] h-20 w-40" />
+            ) : (
+              events.occurrences.map(
+                ({ block, top, height: cardHeight, left, member }) => (
+                  <LessonCard
+                    key={block.identity}
+                    block={block}
+                    presentationOwner={member}
+                    colors={colors}
+                    subgroupCatalog={subgroupCatalog}
+                    spotlightIds={spotlightIds}
+                    hiddenKinds={hiddenKinds}
+                    style={{
                       top,
                       height: cardHeight,
-                      column,
-                      member,
-                      reference,
-                    }) => (
-                      <LessonCard
-                        key={JSON.stringify([block.identity, track.key])}
-                        block={block}
-                        trackMember={member}
-                        reference={reference}
-                        colors={colors}
-                        subgroupCatalog={subgroupCatalog}
-                        spotlightIds={spotlightIds}
-                        hiddenKinds={hiddenKinds}
-                        style={{
-                          top,
-                          height: cardHeight,
-                          left: column * track.lanePitch,
-                          width: track.cardWidth,
-                        }}
-                      />
-                    ),
-                  )
-                )}
-                {!track.occurrences.length && !(loading && !hasSnapshot) && (
-                  <p className="absolute inset-x-0 top-24 px-2 text-center text-xs leading-5 text-u-muted">
-                    {status(schedule) || 'Нет занятий'}
-                    {!comparisonIssue(schedule, day) &&
-                      (schedule.snapshot?.stale || schedule.error) &&
-                      ' · нет занятий'}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          {tracks.length === 0 &&
+                      left,
+                      width: events.cardWidth,
+                    }}
+                  />
+                ),
+              )
+            )}
+          </div>
+          {events.occurrences.length === 0 &&
             (placeholder ? (
               <div className="absolute top-12 right-4 left-14" role="status">
                 <Skeleton className="h-20 w-40" />
@@ -403,7 +357,11 @@ export default function SourceDayCalendar({
               </div>
             ) : (
               <p className="absolute top-12 right-4 left-14 text-sm text-u-muted">
-                Карточки выбранных видов скрыты.
+                {visible.length === 0
+                  ? 'Карточки выбранных видов скрыты.'
+                  : visible.some((schedule) => comparisonIssue(schedule, day))
+                    ? 'Нет подтверждённых данных.'
+                    : 'Нет занятий'}
               </p>
             ))}
         </div>

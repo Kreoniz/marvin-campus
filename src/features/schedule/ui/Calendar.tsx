@@ -6,11 +6,7 @@ import type {
   Subgroup,
   ScheduleKind,
 } from '../../../lib/types.ts';
-import {
-  selectionKind,
-  kindIcon,
-  kindLabel,
-} from '../../../lib/schedule-ref.ts';
+import { selectionKind } from '../../../lib/schedule-ref.ts';
 import { addDays, formatDay, timeLabel } from '../../../lib/dates.ts';
 import {
   compareDay,
@@ -18,12 +14,9 @@ import {
   comparisonScope,
 } from '../../../lib/domain.ts';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
-import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
+import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
-import {
-  activeSourceTracks,
-  sourceTracksWidth,
-} from '../model/source-layout.ts';
+import { sourceLayout } from '../model/source-layout.ts';
 import { calendarBounds } from '../model/calendar-bounds.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
@@ -119,7 +112,7 @@ export default function Calendar({
       hidden:
         (schedules.length > 0 && visible.length === 0) || blocks.length > 0,
       unavailable: visible.filter((group) => comparisonIssue(group, date)),
-      tracks: activeSourceTracks(
+      events: sourceLayout(
         blocks,
         visible.map((group) => group.selection),
         start,
@@ -130,7 +123,7 @@ export default function Calendar({
   const railWidth = compact ? 32 : 44;
   const minima = layout.map((column) =>
     Math.max(
-      sourceTracksWidth(column.tracks),
+      column.events.width,
       compact && !singleDay ? Math.max(0, (viewportWidth - railWidth) / 2) : 0,
     ),
   );
@@ -238,45 +231,11 @@ export default function Calendar({
               {layout.map((column) => (
                 <div
                   key={column.date}
-                  className="week-source-headings grid border-r border-b border-u-line-soft"
+                  className="week-source-status grid border-r border-u-line-soft"
                   style={{
                     gridTemplateColumns: `${minima[layout.indexOf(column)]}px`,
                   }}
                 >
-                  <div className="flex">
-                    {column.tracks.map((track, index) => (
-                      <div
-                        key={track.key}
-                        data-source-heading={track.key}
-                        className="flex shrink-0 items-start gap-1 border-b-[3px] px-1 py-1.5 text-[11px] leading-4 wrap-anywhere"
-                        title={`${label(track.selection)} · ${kindLabel(selectionKind(track.selection))}`}
-                        style={{
-                          width: track.width,
-                          marginLeft:
-                            track.left -
-                            (index
-                              ? column.tracks[index - 1].left +
-                                column.tracks[index - 1].width
-                              : 0),
-                          borderColor: lessonColor(
-                            colors[track.key] ?? 0,
-                            spotlightIds.length > 0 &&
-                              !spotlightIds.includes(track.key),
-                          ),
-                        }}
-                      >
-                        <span className="mt-0.5 shrink-0">
-                          <Icon
-                            name={kindIcon(selectionKind(track.selection))}
-                            size={12}
-                          />
-                        </span>
-                        <strong className="min-w-0">
-                          {label(track.selection)}
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
                   {column.unavailable.length > 0 &&
                     !(loading && !hasSnapshot) && (
                       <p
@@ -347,44 +306,27 @@ export default function Calendar({
                           start={start}
                           scale={scale}
                         />
-                        {column.tracks.map((track) => (
-                          <div
-                            key={track.key}
-                            data-source-key={track.key}
-                            className="source-band absolute top-0 h-full border-r border-u-line-soft"
-                            style={{ left: track.left, width: track.width }}
-                          >
-                            {track.occurrences.map(
-                              ({
-                                block,
+                        {column.events.occurrences.map(
+                          ({ block, top, height, left, member }) => (
+                            <LessonCard
+                              key={block.identity}
+                              block={block}
+                              colors={colors}
+                              subgroupCatalog={subgroupCatalog}
+                              spotlightIds={spotlightIds}
+                              hiddenKinds={hiddenKinds}
+                              presentationOwner={member}
+                              compact
+                              style={{
                                 top,
                                 height,
-                                column: lane,
-                                member,
-                                reference,
-                              }) => (
-                                <LessonCard
-                                  key={block.identity}
-                                  block={block}
-                                  colors={colors}
-                                  subgroupCatalog={subgroupCatalog}
-                                  spotlightIds={spotlightIds}
-                                  hiddenKinds={hiddenKinds}
-                                  trackMember={member}
-                                  reference={reference}
-                                  compact
-                                  style={{
-                                    top,
-                                    height,
-                                    left: lane * track.lanePitch,
-                                    width: track.cardWidth,
-                                  }}
-                                />
-                              ),
-                            )}
-                          </div>
-                        ))}
-                        {!column.tracks.length && (
+                                left,
+                                width: column.events.cardWidth,
+                              }}
+                            />
+                          ),
+                        )}
+                        {!column.events.occurrences.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
                               {!column.complete

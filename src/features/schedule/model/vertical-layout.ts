@@ -1,5 +1,6 @@
 import type { LessonBlock } from '../../../lib/lesson-layout.ts';
 import { scheduleKey } from '../../../lib/schedule-ref.ts';
+import type { Selection } from '../../../lib/types.ts';
 import { eventOwner } from './event-owner.ts';
 
 export const VERTICAL_CARD_WIDTH = 160;
@@ -21,7 +22,19 @@ export function verticalLayout(
   blocks: LessonBlock[],
   origin: number,
   scale: number,
+  selections?: Selection[],
 ): VerticalPlacement[] {
+  const priority = new Map(
+    selections?.map((s, index) => [scheduleKey(s), index]),
+  );
+  const ownerKey = (block: LessonBlock) => {
+    const owner = selections
+      ? selections.find((s) =>
+          block.members.some((m) => scheduleKey(m) === scheduleKey(s)),
+        )
+      : eventOwner(block.members);
+    return owner ? scheduleKey(owner) : '';
+  };
   const ordered = blocks.map((block) => {
     const top = (block.lesson.start - origin) * scale;
     const height = Math.max(
@@ -35,6 +48,15 @@ export function verticalLayout(
       reserveEnd: Math.max((block.lesson.end - origin) * scale, top + height),
     };
   });
+  if (selections)
+    ordered.sort(
+      (a, b) =>
+        a.top - b.top ||
+        (priority.get(ownerKey(a.block)) ?? Infinity) -
+          (priority.get(ownerKey(b.block)) ?? Infinity) ||
+        b.reserveEnd - a.reserveEnd ||
+        a.block.identity.localeCompare(b.block.identity),
+    );
   const result: VerticalPlacement[] = [];
   const lastLane = new Map<string, number>();
   let cluster: typeof ordered = [];
@@ -42,13 +64,17 @@ export function verticalLayout(
   function finish() {
     const ends: number[] = [];
     const placed = cluster.map((entry) => {
-      const owner = eventOwner(entry.block.members);
-      const key = owner ? scheduleKey(owner) : '';
+      const key = ownerKey(entry.block);
       const preferred = lastLane.get(key);
-      // Prefer an existing free lane only; never reserve a sparse extra lane.
+      const occupiedEdge = ends.reduce(
+        (edge, end, index) => (end > entry.top ? index : edge),
+        -1,
+      );
+      // Keep affinity inside the occupied span only. An old right-hand lane
+      // must not leave a hole after its left-hand neighbor has finished.
       let column =
         preferred !== undefined &&
-        preferred < ends.length &&
+        preferred <= occupiedEdge &&
         ends[preferred] <= entry.top
           ? preferred
           : ends.findIndex((end) => end <= entry.top);

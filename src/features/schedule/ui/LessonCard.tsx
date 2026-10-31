@@ -47,8 +47,7 @@ interface LessonCardProps {
   horizontal?: boolean;
   spotlightIds?: string[];
   hiddenKinds?: ScheduleKind[];
-  trackMember?: Selection;
-  reference?: boolean;
+  presentationOwner?: Selection;
   compact?: boolean;
 }
 
@@ -63,8 +62,7 @@ export default function LessonCard({
   horizontal = false,
   spotlightIds = [],
   hiddenKinds = [],
-  trackMember,
-  reference = false,
+  presentationOwner,
   compact = false,
 }: LessonCardProps) {
   const { lesson } = block;
@@ -87,7 +85,8 @@ export default function LessonCard({
   const surfaceMembers = members.filter(
     (member) => !hiddenKinds.includes(selectionKind(member)),
   );
-  const primaryMember = trackMember ?? surfaceMembers[0] ?? block.members[0];
+  const primaryMember =
+    presentationOwner ?? surfaceMembers[0] ?? block.members[0];
   const resourceKind = selectionKind(primaryMember);
   const resourceSurface =
     resourceKind === 'lecturer' || resourceKind === 'auditorium';
@@ -214,7 +213,7 @@ export default function LessonCard({
   const military =
     members.some(isGroup) && /военная\s+подготовка/iu.test(lesson.subject);
   const remote = events.every((event) => event.remote);
-  const accessibleLabel = `${reference ? `Ссылка на общее занятие в расписании ${primaryMember.label}. ` : ''}${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${sharedEvent ? (allGroups ? 'Общая пара: ' : 'Одно занятие в нескольких расписаниях: ') : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind || 'Тип занятия не указан'}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одного расписания.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
+  const accessibleLabel = `${formatDay(lesson.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${sharedEvent ? (allGroups ? 'Общая пара: ' : 'Одно занятие в нескольких расписаниях: ') : ''}${labels}, ${events.map((event) => `${event.subject}, ${event.kind || 'Тип занятия не указан'}, ${room(event)}`).join('; ')}, ${timeLabel(lesson.start)}–${timeLabel(lesson.end)}${block.parallel ? '. Одновременные занятия одного расписания.' : ''}${spotlight ? `. Подсветка: ${spotlights.map((member) => member.label).join(', ')}.` : ''}`;
   const background = dimmed
     ? block.parallel
       ? 'bg-[repeating-linear-gradient(135deg,var(--lesson-stripe-base)_0_9px,var(--lesson-stripe-accent)_9px_18px)]'
@@ -337,8 +336,9 @@ export default function LessonCard({
     <div
       className={`lesson-position absolute z-[2] [container-type:size] ${members.every((member) => member.kind === 'vuc') ? '' : 'motion-safe:animate-lesson-appear'} ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
       style={style}
-      data-source-member={trackMember ? scheduleKey(trackMember) : undefined}
-      data-shared-reference={reference ? '' : undefined}
+      data-source-member={
+        presentationOwner ? scheduleKey(presentationOwner) : undefined
+      }
       data-popup-open={open ? '' : undefined}
       data-spotlight={spotlight ? '' : undefined}
       data-dimmed={dimmed ? '' : undefined}
@@ -427,8 +427,7 @@ export default function LessonCard({
             } as CSSProperties
           }
           data-resource-kind={resourceKind}
-          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) ${compact ? 'p-1' : 'p-[5px]'} [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''} ${reference ? 'shared-reference' : ''}`}
-
+          className={`lesson-card relative flex size-full cursor-pointer flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-(--u-radius) ${compact ? 'p-1' : 'p-[5px]'} [@container(height<36px)]:px-[3px] [@container(height<36px)]:py-0 text-left text-[11px] leading-[1.2] motion-safe:transition-[background-color,border-color,color,--lesson-stripe-base,--lesson-stripe-accent] motion-safe:duration-300 motion-safe:ease-out hover:shadow-[0_0_0_1px_var(--u-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--u-ink) ${resourceSurface && !block.parallel ? `resource-card resource-${resourceKind} bg-u-surface text-u-ink` : `${background} ${dimmed || shared || allSaved ? 'text-u-ink' : 'text-[#142016]'}`} ${border} ${remote ? 'remote-lesson border-2 border-dashed' : 'border'} ${shared ? 'shared-card' : ''} ${long ? 'long-lesson' : ''} ${block.parallel ? 'parallel-card' : ''} ${allSaved ? 'saved-card' : ''}`}
           onClick={() => {
             setHovering(false);
             track('lesson_opened', { remote: lesson.remote });
@@ -448,146 +447,129 @@ export default function LessonCard({
               </span>
             )}
             <span
-              className={`card-subject min-w-0 flex-1 truncate ${trackMember && !compact ? 'text-xs' : 'text-[11px]'} font-bold ${!horizontal && !block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
+              className={`card-subject min-w-0 flex-1 truncate ${presentationOwner && !compact ? 'text-xs' : 'text-[11px]'} font-bold ${!horizontal && !block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
             >
               {block.parallel
                 ? `${events.length} занятия`
                 : lesson.subject || 'Занятие'}
             </span>
           </span>
-          {reference ? (
-            <>
-              <span className="relative z-[1] flex items-center gap-1 text-[10px] font-semibold [@container(height<38px)]:hidden">
-                <Icon name="link" size={11} /> Общее занятие
-                {savedMember(primaryMember) && <Icon name="clock" size={10} />}
-              </span>
-              <span className="relative z-[1] truncate text-[10px] [@container(height<65px)]:hidden">
-                {timeLabel(lesson.start)}–{timeLabel(lesson.end)} ·{' '}
-                {surfaceMembers[0]?.label}
-              </span>
-            </>
-          ) : (
-            <>
-              {!horizontal && (long || (trackMember && !compact)) && (
-                <span className="card-time relative z-[1] text-[10px] [@container(height<38px)]:hidden">
-                  {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
-                </span>
-              )}
-              {!shared && resourceKind === 'auditorium' && audience && (
+          {!horizontal && (long || (presentationOwner && !compact)) && (
+            <span className="card-time relative z-[1] text-[10px] [@container(height<38px)]:hidden">
+              {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
+            </span>
+          )}
+          {!shared && resourceKind === 'auditorium' && audience && (
+            <span
+              className="card-audience relative z-[1] truncate text-[10px] font-semibold [@container(height<52px)]:hidden"
+              title={events
+                .map((event) => event.audiences?.join('; ') || event.audience)
+                .filter(Boolean)
+                .join('; ')}
+            >
+              {audience}
+            </span>
+          )}
+          {shared || resourceKind !== 'auditorium' ? (
+            <span
+              className={`participant-sectors relative z-[1] min-w-0 flex-none [@container(height<42px)]:hidden ${shared ? 'shared-sectors grid' : 'flex items-center font-semibold'}`}
+              style={
+                shared
+                  ? {
+                      gridTemplateColumns:
+                        memberColumns === 1 && hiddenMembers.length > 0
+                          ? 'minmax(0, 1fr) max-content'
+                          : `repeat(${memberColumns}, minmax(0, 1fr))`,
+                    }
+                  : undefined
+              }
+            >
+              {(shared ? visibleMembers : [primaryMember]).map((member) => {
+                const label = groupLabel(member);
+                const code =
+                  shared && isGroup(member) && !horizontal
+                    ? /^([^-]+)-(\d.*)$/u.exec(label)
+                    : null;
+                return (
+                  <span
+                    key={scheduleKey(member)}
+                    data-member-id={scheduleKey(member)}
+                    data-dimmed={memberDimmed(member, true) ? '' : undefined}
+                    data-spotlight={
+                      spotlightIds.includes(scheduleKey(member))
+                        ? ''
+                        : undefined
+                    }
+                    className={`participant-sector inline-flex min-w-0 max-w-full items-center justify-center gap-0.5 px-0.5 py-px leading-3 ${shared ? `text-[11px] font-semibold ${participantBackground(member, true)}` : 'text-[10px]'}`}
+                    style={chipStyle(member, true)}
+                    title={groupLabel(member)}
+                  >
+                    <span
+                      className={
+                        shared && !horizontal
+                          ? 'line-clamp-2 text-center wrap-anywhere'
+                          : 'truncate'
+                      }
+                    >
+                      {code ? (
+                        <>
+                          {code[1]}
+                          <span className="member-code-tail">
+                            <span className="member-code-dash">-</span>
+                            {code[2]}
+                          </span>
+                        </>
+                      ) : (
+                        label
+                      )}
+                    </span>
+                    {savedMember(member) && <Icon name="clock" size={10} />}
+                  </span>
+                );
+              })}
+              {hiddenMembers.length > 0 && shared && (
                 <span
-                  className="card-audience relative z-[1] truncate text-[10px] font-semibold [@container(height<52px)]:hidden"
-                  title={events
-                    .map(
-                      (event) => event.audiences?.join('; ') || event.audience,
+                  className="more-participants inline-flex min-w-0 items-center justify-center gap-0.5 bg-u-well px-0.5 py-px text-[11px] font-semibold"
+                  title={labels}
+                  data-spotlight={
+                    hiddenMembers.some((member) =>
+                      spotlightIds.includes(scheduleKey(member)),
                     )
-                    .filter(Boolean)
-                    .join('; ')}
-                >
-                  {audience}
-                </span>
-              )}
-              {shared || (!trackMember && resourceKind !== 'auditorium') ? (
-                <span
-                  className={`participant-sectors relative z-[1] min-w-0 flex-none [@container(height<42px)]:hidden ${shared ? 'shared-sectors grid' : 'flex items-center font-semibold'}`}
-                  style={
-                    shared
-                      ? {
-                          gridTemplateColumns:
-                            memberColumns === 1 && hiddenMembers.length > 0
-                              ? 'minmax(0, 1fr) max-content'
-                              : `repeat(${memberColumns}, minmax(0, 1fr))`,
-                        }
+                      ? ''
                       : undefined
                   }
                 >
-                  {(shared ? visibleMembers : [primaryMember]).map((member) => {
-                    const label = groupLabel(member);
-                    const code =
-                      shared && isGroup(member) && !horizontal
-                        ? /^([^-]+)-(\d.*)$/u.exec(label)
-                        : null;
-                    return (
-                      <span
-                        key={scheduleKey(member)}
-                        data-member-id={scheduleKey(member)}
-                        data-dimmed={
-                          memberDimmed(member, true) ? '' : undefined
-                        }
-                        data-spotlight={
-                          spotlightIds.includes(scheduleKey(member))
-                            ? ''
-                            : undefined
-                        }
-                        className={`participant-sector inline-flex min-w-0 max-w-full items-center justify-center gap-0.5 px-0.5 py-px leading-3 ${shared ? `text-[11px] font-semibold ${participantBackground(member, true)}` : 'text-[10px]'}`}
-                        style={chipStyle(member, true)}
-                        title={groupLabel(member)}
-                      >
-                        <span
-                          className={
-                            shared && !horizontal
-                              ? 'line-clamp-2 text-center wrap-anywhere'
-                              : 'truncate'
-                          }
-                        >
-                          {code ? (
-                            <>
-                              {code[1]}
-                              <span className="member-code-tail">
-                                <span className="member-code-dash">-</span>
-                                {code[2]}
-                              </span>
-                            </>
-                          ) : (
-                            label
-                          )}
-                        </span>
-                        {savedMember(member) && <Icon name="clock" size={10} />}
-                      </span>
-                    );
-                  })}
-                  {hiddenMembers.length > 0 && shared && (
-                    <span
-                      className="more-participants inline-flex min-w-0 items-center justify-center gap-0.5 bg-u-well px-0.5 py-px text-[11px] font-semibold"
-                      title={labels}
-                      data-spotlight={
-                        hiddenMembers.some((member) =>
-                          spotlightIds.includes(scheduleKey(member)),
-                        )
-                          ? ''
-                          : undefined
-                      }
-                    >
-                      +{hiddenMembers.length}
-                      {hiddenMembers.some((member) =>
-                        spotlightIds.includes(scheduleKey(member)),
-                      ) && (
-                        <span className="sr-only">
-                          {' '}
-                          — есть выделенные расписания
-                        </span>
-                      )}
-                      {hiddenSaved && (
-                        <>
-                          <Icon name="clock" size={10} />
-                          <span className="sr-only">
-                            {' '}
-                            — есть сохранённые данные
-                          </span>
-                        </>
-                      )}
+                  +{hiddenMembers.length}
+                  {hiddenMembers.some((member) =>
+                    spotlightIds.includes(scheduleKey(member)),
+                  ) && (
+                    <span className="sr-only">
+                      {' '}
+                      — есть выделенные расписания
                     </span>
                   )}
+                  {hiddenSaved && (
+                    <>
+                      <Icon name="clock" size={10} />
+                      <span className="sr-only">
+                        {' '}
+                        — есть сохранённые данные
+                      </span>
+                    </>
+                  )}
                 </span>
-              ) : null}
-            </>
-          )}
+              )}
+            </span>
+          ) : null}
           <span
-            className={`card-meta relative z-[1] flex min-w-0 flex-none items-center gap-[3px] text-[10px] ${reference ? '[@container(height<86px)]:hidden' : '[@container(height<52px)]:hidden'}`}
+            className={`card-meta relative z-[1] flex min-w-0 flex-none items-center gap-[3px] text-[10px] [@container(height<52px)]:hidden`}
           >
             <span className="card-room min-w-0 flex-1 truncate">
               {shared && resourceKind === 'auditorium' ? audience : place}
             </span>
-            {trackMember && !shared && saved && <Icon name="clock" size={10} />}
+            {presentationOwner && !shared && saved && (
+              <Icon name="clock" size={10} />
+            )}
             <span className="kind-badges flex shrink-0 gap-0.5">
               {badges.map((kind) => (
                 <Badge
