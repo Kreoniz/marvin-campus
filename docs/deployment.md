@@ -1,13 +1,48 @@
 # Deployment
 
 Deployment remains manual by the owner's choice. GitHub CI validates the
-repository; the 0.2.0 pull request passed its validation job. No deployment
+repository; the 0.2.1 main revision passed its validation job. No deployment
 credentials or SSH key installation was required for this release.
 
-## Current release 0.2.0 — 2026-10-31
+## Current release 0.2.1 — 2026-10-31
+
+[Campus 0.2.1](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.1)
+is active at <https://campus.kreoniz.ru> from revision
+`988ea766bcc9120e417b04a6282aaf96a97a4e34`, image
+`marvin-campus:988ea766bcc9120e417b04a6282aaf96a97a4e34`, with OCI version
+`0.2.1` and image config ID
+`sha256:ee7061ba3d4353cbd8cab955fc4ad387eca1595eeecceff30de05314e3077f21`.
+The compressed image archive SHA-256 is
+`fceeae27668d83628e80183825c42093a3f627327d9c50d531275c8d0a17b77c`.
+[GitHub CI](https://github.com/Kreoniz/marvin-campus/actions/runs/41161332880)
+passed on the exact release revision. The Git tag and runtime image identify
+that same commit; the activation record is a later documentation-only commit.
+
+The receiver activated the healthy image at `2026-10-31T02:48:35Z` after
+creating a consistent SQLite backup. All 108 legacy comparisons retained their
+count and digest. Separate before/after hashes confirmed unchanged Compose,
+non-image environment settings and current VUC dataset/originals. Container
+hardening, networking, the named volume and absence of host ports were retained.
+The previous healthy `marvin-campus:440ad797b815387892aa69e12456b47bd791d713`
+image and private backups remain available for rollback.
+
+Independent HTTPS verification matched all 35 built files, public health,
+three app-shell routes, all six VUC week responses and the exact 77,053-byte
+original. Historical original access remained unavailable. The isolated local
+runtime passed the same HTTP checks before activation.
+
+Release validation passed: 132 frontend tests, TypeScript, lint, tracked-tree
+formatting, production build, privacy and Gitleaks scans. CI also passed Go race
+and vet. Eleven existing actual-app alpha.3 Chromium scenarios apply to the
+unchanged UI implementation. Importer/updater and receiver source trees are
+identical to 0.2.0, so their nine and 17 successful checks were reused. The
+existing frontend bundle-size warning remains. See [the release changes](releases/0.2.1.md)
+and [browser coverage limits](reviews/2026-10-31-unlikely-ui-alpha3.md).
+
+## Previous release 0.2.0 — 2026-10-31
 
 [Campus 0.2.0](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.0)
-is active at <https://campus.kreoniz.ru> from merge revision
+was activated at <https://campus.kreoniz.ru> from merge revision
 `440ad797b815387892aa69e12456b47bd791d713`, image
 `marvin-campus:440ad797b815387892aa69e12456b47bd791d713`, with OCI version
 `0.2.0` and image config ID
