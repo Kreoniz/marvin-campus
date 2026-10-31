@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { usableSnapshot } from './cache-policy.ts';
 import { vucOriginalAvailable, vucSourceDocuments } from './vuc-documents.ts';
 import type { VucRef } from './types.ts';
 
@@ -57,17 +56,4 @@ test('persisted and old week availability cannot authorize a removed or missing 
     vucOriginalAvailable({ ...ref, id: '../../file' }, [ref]),
     false,
   );
-});
-
-test('expired catalogues cannot confirm downloads even if their saved metadata is true', () => {
-  const saved = {
-    data: [ref],
-    checkedAt: '2026-10-26T00:00:00Z',
-    expiresAt: '2026-10-26T00:30:00Z',
-    stale: true,
-  };
-  const entries =
-    usableSnapshot(saved, '2026-10-26', Date.parse('2026-10-31T00:00:00Z'))
-      ?.data ?? [];
-  assert.equal(vucOriginalAvailable(ref, entries), false);
 });

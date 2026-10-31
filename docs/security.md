@@ -5,12 +5,25 @@ private paths, database dumps, logs, backups and personal student data outside
 tracked files. Ignoring a file does not remove it from Git history. Use neutral
 documentation and explicitly stage reviewed files.
 
-Before pushing:
+For ordinary changes, follow the [targeted testing policy](../AGENTS.md#testing):
+run affected tests, scoped lint/format and relevant type checking. Do not run the
+full application suites or build for every push. CI runs the full validation.
+
+Before pushing, review the staged diff and run the privacy checks:
 
 ```sh
 python3 scripts/check-private-files.py --history
 gitleaks git . --log-opts=--all --redact
 gitleaks dir . --redact
+```
+
+Before a release, also run the full application gates below. Broaden an ordinary
+change to these gates only for a stated integration risk or an explicit request.
+Reuse completed checks for unchanged code instead of repeating them for later
+documentation edits; verify the exact release artifact and activation separately
+using [the deployment runbook](deployment.md).
+
+```sh
 pnpm check
 pnpm lint
 pnpm format:check

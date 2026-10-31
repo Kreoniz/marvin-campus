@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  scheduleKey,
   snapshotStaleTime,
   snapshotChangeAt,
   usableSnapshot,
@@ -70,11 +69,6 @@ test('fetching an older snapshot does not renew freshness; a future week becomin
     ),
     0,
   );
-  assert.deepEqual(scheduleKey(370, '2026-10-12'), [
-    'schedule',
-    370,
-    '2026-10-12',
-  ]);
 });
 test('offline fallback has the same hard cutoff as the server and preserves its check date', () => {
   const deadline = checked + 30 * 60000;

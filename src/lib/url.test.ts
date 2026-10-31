@@ -85,4 +85,16 @@ test('numeric fallback and malformed paths cannot introduce arbitrary labels or 
     assert.deepEqual(readableGroups(new URL(base + path)), []);
   assert.equal(readableGroups(new URL(base + 'fit-232+fit-232-s2'))?.length, 1);
   assert.equal(readableGroups(new URL(base)), undefined);
+  assert.deepEqual(
+    parseView(
+      new URL(base + '?g=nope~X&week=2026-02-30&day=2025-01-01&mode=nope'),
+      '2026-10-12',
+    ),
+    {
+      groups: [],
+      week: '2026-10-12',
+      day: '2026-10-12',
+      mode: 'free',
+    },
+  );
 });

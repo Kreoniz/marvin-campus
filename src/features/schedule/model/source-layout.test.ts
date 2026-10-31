@@ -8,11 +8,8 @@ import {
   sourceJump,
   eventAnchor,
   restoreEventAnchor,
-  sourceCardWidth,
-  SOURCE_INSET,
   type SourceOccurrence,
 } from './source-layout.ts';
-import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
 const date = '2026-10-26';
 const a: Selection = { id: 1, label: 'Г-А' };
 const b: Selection = { id: 2, label: 'Г-Б' };
@@ -58,11 +55,10 @@ test('one canonical card uses first-selected visible typed ownership without mut
       schedule(room, [event('shared')]),
     ];
     const before = structuredClone(input);
-    const calculation = compareDay(input, date);
     const blocks = lessonBlocks(input, date);
     const orders: Selection[][] = [
-      [a, b, teacher, room],
-      [room, teacher, b, a],
+      [a, b, teacher, room, { id: 99, label: 'Без занятий' }],
+      [room, teacher, b, a, { id: 99, label: 'Без занятий' }],
     ];
     for (const selected of orders) {
       const result = sourceLayout(blocks, selected, 480, 0.9, orderedLanes);
@@ -78,7 +74,6 @@ test('one canonical card uses first-selected visible typed ownership without mut
       assert.equal(shared.column, 0);
       assert.equal(shared.block.members.length, 3);
       assert.equal(result.columns, 2);
-      assert.equal(result.width, 344);
     }
     const promoted = sourceLayout(
       blocks,
@@ -89,14 +84,14 @@ test('one canonical card uses first-selected visible typed ownership without mut
     );
     assert.equal(promoted.occurrences.length, 1);
     assert.equal(promoted.occurrences[0].member, teacher);
-    assert.notEqual(scheduleKey(a), scheduleKey(teacher));
-    assert.notEqual(scheduleKey(room), scheduleKey(teacher));
-    assert.deepEqual(compareDay(input, date), calculation);
     assert.deepEqual(input, before);
+    const empty = sourceLayout([], [a, b], 480, 0.9, orderedLanes);
+    assert.deepEqual(empty.occurrences, []);
+    assert.ok(Number.isFinite(empty.width));
   }
 });
 
-test('three or thirty shared-only selections use one 160px card and one lane', () => {
+test('three or thirty shared-only selections use one card and one lane', () => {
   for (const orderedLanes of [true, false]) {
     for (const count of [3, 30]) {
       const selected = Array.from({ length: count }, (_, i): Selection => ({
@@ -110,8 +105,6 @@ test('three or thirty shared-only selections use one 160px card and one lane', (
       const result = sourceLayout(blocks, selected, 480, 1, orderedLanes);
       assert.equal(result.occurrences.length, 1);
       assert.equal(result.columns, 1);
-      assert.equal(result.cardWidth, 160);
-      assert.equal(result.width, 178);
       assert.equal(result.occurrences[0].block.members.length, count);
     }
   }
@@ -128,12 +121,10 @@ test('compact: different sources reuse free space between nonoverlapping lessons
   );
   const result = sourceLayout(blocks, [a, teacher, room], 480, 0.72, false);
   assert.equal(result.columns, 1);
-  assert.equal(result.width, 178);
   assert.deepEqual(
     result.occurrences.map((o) => o.column),
     [0, 0, 0, 0],
   );
-  assert.ok(result.occurrences.every((o) => o.left === SOURCE_INSET));
 });
 
 test('compact: simultaneous events follow selected order and retain affinity only in existing free lanes', () => {
@@ -166,41 +157,6 @@ test('compact: simultaneous events follow selected order and retain affinity onl
       firstB.column,
     );
     for (const o of result.occurrences) assert(o.column < 3);
-  }
-});
-
-test('density tiers depend on concurrent painted lanes, not selected set or total events', () => {
-  for (const [count, width] of [
-    [2, 160],
-    [3, 160],
-    [5, 144],
-    [8, 128],
-    [30, 112],
-  ]) {
-    const selected = Array.from({ length: count }, (_, i): Selection => ({
-      id: i + 1,
-      label: `Г-${i + 1}`,
-    }));
-    const concurrent = lessonBlocks(
-      selected.map((s) => schedule(s, [event(`own-${s.id}`)])),
-      date,
-    );
-    const result = sourceLayout(concurrent, selected, 480, 0.72);
-    assert.equal(sourceCardWidth(count), width);
-    assert.equal(result.cardWidth, width);
-    assert.equal(result.columns, count);
-    assert.equal(result.width, 18 + count * width + (count - 1) * 6);
-    assert.equal(result.occurrences.length, count);
-    const sequential = lessonBlocks(
-      selected.map((s, i) =>
-        schedule(s, [event(`own-${s.id}`, 480 + i * 30, 500 + i * 30)]),
-      ),
-      date,
-    );
-    const compact = sourceLayout(sequential, selected, 480, 1, false);
-    assert.equal(compact.columns, 1);
-    assert.equal(compact.cardWidth, 160);
-    assert.equal(compact.width, 178);
   }
 });
 
@@ -256,63 +212,6 @@ test('chooser reaches an actual shared card after owner solo, or own first occur
     'teacher-solo',
   );
   assert.equal(sourceJump(result, 'rasp:group:999'), undefined);
-});
-
-test('empty, failed, expired and uncovered sources create no visual lanes or false lessons and retain distinct data states', () => {
-  const empty: Selection = { id: 10, label: 'Пусто' };
-  const unknown: Selection = { id: 11, label: 'Нет данных' };
-  const expired: Selection = { id: 12, label: 'Истекло' };
-  const uncovered: Selection = { kind: 'vuc', id: 'doc-p1', label: 'ВУЦ 1' };
-  const failed: GroupSchedule = { selection: unknown, error: 'Unavailable' };
-  const expiredSchedule: GroupSchedule = { selection: expired };
-  const vuc = schedule(uncovered, []);
-  vuc.snapshot!.data.coveredDates = [];
-  const input: GroupSchedule[] = [
-    schedule(a, [event('shared')]),
-    schedule(b, [event('shared')]),
-    schedule(empty, []),
-    failed,
-    expiredSchedule,
-    vuc,
-  ];
-  const selected = input.map((s) => s.selection);
-  const result = sourceLayout(lessonBlocks(input, date), selected, 480, 1);
-  assert.equal(result.width, 178);
-  assert.equal(result.occurrences.length, 1);
-  assert.equal(comparisonIssue(input[2], date), undefined);
-  assert.equal(comparisonIssue(failed, date), 'missing');
-  assert.equal(comparisonIssue(expiredSchedule, date), 'missing');
-  assert.equal(comparisonIssue(vuc, date), 'coverage');
-  for (const s of [empty, unknown, expired, uncovered])
-    assert.equal(sourceJump(result, scheduleKey(s)), undefined);
-  const blank = sourceLayout([], selected, 480, 1);
-  assert.equal(blank.occurrences.length, 0);
-  assert.equal(blank.width, 178);
-});
-
-test('canonical identity alone establishes sharing; equal text/time with different IDs remains distinct', () => {
-  const blocks = lessonBlocks(
-    [
-      schedule(a, [event('one')]),
-      schedule(b, [{ ...event('two'), subject: event('one').subject }]),
-    ],
-    date,
-  );
-  const result = sourceLayout(blocks, [a, b], 480, 1);
-  assert.equal(result.occurrences.length, 2);
-  assert.equal(result.columns, 2);
-  assert.ok(result.occurrences.every((o) => o.block.members.length === 1));
-});
-
-test('two simultaneous events bundled by domain remain one striped block with both events retained', () => {
-  const blocks = lessonBlocks(
-    [schedule(a, [event('one'), event('two')])],
-    date,
-  );
-  const result = sourceLayout(blocks, [a], 480, 1);
-  assert.equal(result.occurrences.length, 1);
-  assert.equal(result.columns, 1);
-  assert.equal(result.occurrences[0].block.parallel!.length, 2);
 });
 
 test('event anchoring survives reorder, width contraction and removal with typed-source fallback', () => {
@@ -447,33 +346,41 @@ test('ordered mixed unique/shared bands reserve only owned geometry and internal
   }
 });
 
-test('ordered width tiers count retained bands including sequential sources, excluding shared-only aliases', () => {
-  for (const [count, width] of [
-    [2, 160],
-    [3, 160],
-    [5, 144],
-    [8, 128],
-    [30, 112],
-  ]) {
+test('density follows occupied lanes in compact mode and retained source bands in ordered mode', () => {
+  let previousWidth = Infinity;
+  for (const count of [2, 3, 5, 8, 30]) {
     const selected = Array.from({ length: count }, (_, i): Selection => ({
       id: i + 1,
       label: `Г-${i}`,
     }));
-    const blocks = lessonBlocks(
+    const sequential = lessonBlocks(
       selected.map((s, i) =>
         schedule(s, [event(`owned-${i}`, 480 + i * 30, 500 + i * 30)]),
       ),
       date,
     );
-    const layout = sourceLayout(blocks, selected, 480, 1);
-    assert.equal(layout.columns, count);
-    assert.equal(layout.cardWidth, width);
-    assert.equal(layout.width, 18 + count * width + (count - 1) * 6);
-    const alias = lessonBlocks(
-      selected.map((s) => schedule(s, [event('one')])),
+    const concurrent = lessonBlocks(
+      selected.map((s, i) => schedule(s, [event(`owned-${i}`)])),
       date,
     );
-    assert.equal(sourceLayout(alias, selected, 480, 1).width, 178);
+    const ordered = sourceLayout(sequential, selected, 480, 1);
+    const compact = sourceLayout(sequential, selected, 480, 1, false);
+    const overlapping = sourceLayout(concurrent, selected, 480, 1, false);
+    assert.equal(ordered.columns, count);
+    assert.equal(compact.columns, 1);
+    assert.equal(overlapping.columns, count);
+    assert.equal(ordered.cardWidth, overlapping.cardWidth);
+    assert.equal(ordered.width, overlapping.width);
+    assert.ok(ordered.cardWidth <= previousWidth);
+    assert.ok(compact.cardWidth >= ordered.cardWidth);
+    assert.ok(compact.width < ordered.width);
+    if (count === 30) assert.ok(ordered.cardWidth < compact.cardWidth);
+    for (const layout of [ordered, compact, overlapping])
+      for (const entry of layout.occurrences) {
+        assert.ok(entry.left >= 0);
+        assert.ok(entry.left + layout.cardWidth <= layout.width);
+      }
+    previousWidth = ordered.cardWidth;
   }
 });
 

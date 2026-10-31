@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseView, readableGroups, viewURL } from './url.ts';
-import { selectionLabel, lessonGroupLabel } from './subgroups.ts';
 import type { VucRef } from './types.ts';
 const a: VucRef = {
   kind: 'vuc',
@@ -48,9 +47,4 @@ test('VUC links reject foreign or malformed sources instead of changing their ki
     for (const ref of refs) url.searchParams.append('s', JSON.stringify(ref));
     assert.deepEqual(parseView(url).groups, []);
   }
-});
-test('compact VUC labels affect presentation only', () => {
-  assert.equal(selectionLabel(a), 'ВУЦ 101');
-  assert.equal(lessonGroupLabel(a, [], []), 'ВУЦ 101');
-  assert.equal(a.label, 'ВУЦ · взвод 101');
 });

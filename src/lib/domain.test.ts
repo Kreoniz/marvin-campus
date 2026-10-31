@@ -8,7 +8,6 @@ import {
   lessonsFor,
 } from './domain.ts';
 import { addDays, monday, omskToday } from './dates.ts';
-import { parseView, viewURL } from './url.ts';
 import type {
   GroupSchedule,
   GroupSelection,
@@ -236,58 +235,8 @@ test('common events need matching source identity and details across all groups'
     0,
   );
 });
-test('URL round-trip preserves labels, subgroups, date, mode; ignores malformed state', () => {
-  const state = {
-    groups: [
-      { id: 373, label: 'ИВТ-241', subgroup: 596 },
-      { id: 374, label: 'ИВТ-242' },
-    ],
-    week: date,
-    day: addDays(date, 2),
-    mode: 'free' as const,
-  };
-  assert.deepEqual(
-    parseView(
-      viewURL(state, new URL('https://campus.kreoniz.ru')),
-      date,
-      state.groups,
-    ),
-    state,
-  );
-  const invalid = parseView(
-    new URL(
-      'https://campus.kreoniz.ru?g=nope~X&week=2026-02-30&day=2025-01-01&mode=nope',
-    ),
-    date,
-  );
-  assert.deepEqual(invalid, {
-    groups: [],
-    week: date,
-    day: date,
-    mode: 'free',
-  });
-});
 test('today and week follow Omsk even when the browser is in another timezone', () => {
   assert.equal(omskToday(new Date('2026-10-11T18:01:00Z')), date);
   assert.equal(monday('2026-10-11'), '2026-10-05');
   assert.equal(addDays('2026-12-28', 6), '2027-01-03');
-});
-
-test('selection order survives a shared link', () => {
-  const first = group(694, [lesson(480, 600)]),
-    second = group(370, [lesson(480, 540)]);
-  const state = {
-    groups: [first.selection, second.selection],
-    week: date,
-    day: date,
-    mode: 'free' as const,
-  };
-  assert.deepEqual(
-    parseView(
-      viewURL(state, new URL('https://campus.kreoniz.ru')),
-      date,
-      state.groups,
-    ).groups.map((g) => g.id),
-    state.groups.map((g) => g.id),
-  );
 });

@@ -34,5 +34,7 @@ release requirements. Reuse successful evidence for unchanged code; run exact
 artifact and activation checks at their own boundaries. Do not copy another
 repository's blocked-run restrictions or treat an unexecuted check as passed.
 
-This is an applicability assessment. It introduces no new test framework,
-dependencies or CI automation and does not modify the other projects' policies.
+The owner subsequently requested adoption: [the root testing policy](../../AGENTS.md#testing)
+now governs ordinary Campus work, with full release gates kept separately in
+`docs/security.md`. No new test framework, dependencies or CI automation were
+introduced, and the other projects' policies were not modified.
