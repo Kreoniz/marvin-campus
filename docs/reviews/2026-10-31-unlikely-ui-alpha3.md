@@ -6,9 +6,10 @@ root with the existing mise/pnpm setup. The manifest and lockfile belong to the
 same integration commit. The existing pnpm release-age exception now names only
 alpha.3; runtime pins and other dependencies are unchanged.
 
-This is a separate, unreleased upgrade. The published Campus 0.2.0 tag and
-production image retain their checked alpha.2 dependency set. No deployment,
-retagging or new application release is part of this change.
+Verification was completed as a separate upgrade after Campus 0.2.0. The
+published 0.2.0 tag and image retain their checked alpha.2 dependency set.
+The integration is included in [Campus 0.2.1](../releases/0.2.1.md); activation
+evidence is recorded separately in the deployment runbook.
 
 ## Integration decisions
 
