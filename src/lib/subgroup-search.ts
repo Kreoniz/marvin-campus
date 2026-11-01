@@ -8,14 +8,11 @@ export function subgroupSearchTerm(term: string) {
   return match ? { base: match[1], number: Number(match[2]) } : undefined;
 }
 
-// This is an offered choice, never automatic suffix stripping. Both the group
-// identity and public subgroup must be established by actual catalogues.
-export function subgroupSearch(
+export function subgroupSearchBase(
   term: string,
   completeResults: Group[],
   baseResults: Group[],
-  catalogue: Record<number, Subgroup[]>,
-): GroupSelection | undefined {
+): Group | undefined {
   const full = normalized(term);
   if (
     [...completeResults, ...baseResults].some(
@@ -33,7 +30,20 @@ export function subgroupSearch(
     ).values(),
   ];
   if (matches.length !== 1) return;
-  const group = matches[0];
+  return matches[0];
+}
+
+// This is an offered choice, never automatic suffix stripping. Both the group
+// identity and public subgroup must be established by actual catalogues.
+export function subgroupSearch(
+  term: string,
+  completeResults: Group[],
+  baseResults: Group[],
+  catalogue: Record<number, Subgroup[]>,
+): GroupSelection | undefined {
+  const group = subgroupSearchBase(term, completeResults, baseResults);
+  const request = subgroupSearchTerm(term);
+  if (!group || !request) return;
   const subgroups = (catalogue[group.id] ?? []).filter(
     (entry) => publicSubgroup(entry.label) === request.number,
   );

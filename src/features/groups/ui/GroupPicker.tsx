@@ -11,7 +11,7 @@ import { Button } from 'unlikely-ui/button';
 import { Combobox } from 'unlikely-ui/combobox';
 import { Dialog } from 'unlikely-ui/dialog';
 import { Field } from 'unlikely-ui/field';
-import { groupOptions } from '../../../lib/queries.ts';
+import { groupOptions, scheduleOptions } from '../../../lib/queries.ts';
 import { STALE_GRACE } from '../../../lib/cache-policy.ts';
 import {
   kindIcon,
@@ -20,10 +20,11 @@ import {
   selectionKind,
   validSelection,
 } from '../../../lib/schedule-ref.ts';
-import type { Selection, ScheduleKind, Subgroup } from '../../../lib/types.ts';
+import type { Selection, ScheduleKind } from '../../../lib/types.ts';
 import { selectionLabel } from '../../../lib/subgroups.ts';
 import {
   subgroupSearch,
+  subgroupSearchBase,
   subgroupSearchTerm,
 } from '../../../lib/subgroup-search.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
@@ -38,7 +39,7 @@ interface Props {
   selected: Selection[];
   vucOnly?: boolean;
   hiddenKinds?: ScheduleKind[];
-  subgroupCatalog?: Record<number, Subgroup[]>;
+  week: string;
   onAdd: (selection: Selection) => void;
   children: ReactNode;
   returnFocus: RefObject<HTMLButtonElement | null>;
@@ -65,7 +66,7 @@ export default function GroupPicker({
   selected,
   vucOnly = false,
   hiddenKinds = [],
-  subgroupCatalog = {},
+  week,
   onAdd,
   children,
   returnFocus,
@@ -106,6 +107,11 @@ export default function GroupPicker({
     ...groupOptions(debounced),
     enabled: enabled && !vucOnly,
   });
+  const fullResults = Array.isArray(groups.data?.data)
+    ? groups.data.data.filter(
+        (group) => validSelection(group) && selectionKind(group) === 'group',
+      )
+    : [];
   const subgroupRequest = subgroupSearchTerm(debounced);
   const fullSearchConfirmed =
     enabled &&
@@ -126,6 +132,26 @@ export default function GroupPicker({
   const baseGroups = useQuery({
     ...groupOptions(subgroupRequest?.base ?? ''),
     enabled: baseEnabled,
+  });
+  const baseResults = Array.isArray(baseGroups.data?.data)
+    ? baseGroups.data.data.filter(
+        (group) => validSelection(group) && selectionKind(group) === 'group',
+      )
+    : [];
+  const subgroupBase =
+    baseEnabled &&
+    baseGroups.isSuccess &&
+    Array.isArray(baseGroups.data.data) &&
+    !baseGroups.isFetching &&
+    !baseGroups.data.stale &&
+    Date.parse(baseGroups.data.expiresAt) >= Date.now()
+      ? subgroupSearchBase(debounced, fullResults, baseResults)
+      : undefined;
+  // A cold search has no remembered subgroup catalogue. Reuse the ordinary
+  // selected-week query only after the complete/base names establish one ID.
+  const subgroupWeek = useQuery({
+    ...scheduleOptions(subgroupBase?.id ?? 0, week),
+    enabled: !!subgroupBase,
   });
   const lecturers = useQuery({
     ...resourceSearchOptions('lecturer', debounced),
@@ -149,6 +175,13 @@ export default function GroupPicker({
     if (!Number.isFinite(expires) || now > expires + STALE_GRACE) return [];
     return [now <= expires ? expires + 1 : expires + STALE_GRACE + 1];
   });
+  const subgroupExpires = Date.parse(subgroupWeek.data?.expiresAt ?? '');
+  if (
+    subgroupBase &&
+    Number.isFinite(subgroupExpires) &&
+    now <= subgroupExpires
+  )
+    deadlines.push(subgroupExpires + 1);
   const changeAt = deadlines.length ? Math.min(...deadlines) : undefined;
   useEffect(() => {
     if (!open || changeAt === undefined) return;
@@ -167,25 +200,14 @@ export default function GroupPicker({
     return () => clearTimeout(timer);
   }, [term, open, vucOnly]);
   const subgroupChoice =
-    baseEnabled &&
-    baseGroups.isSuccess &&
-    Array.isArray(baseGroups.data.data) &&
-    !baseGroups.isError &&
-    !baseGroups.isFetching &&
-    !baseGroups.data.stale &&
-    Date.parse(baseGroups.data.expiresAt) >= now
-      ? subgroupSearch(
-          debounced,
-          groups.data.data.filter(
-            (group) =>
-              validSelection(group) && selectionKind(group) === 'group',
-          ),
-          baseGroups.data.data.filter(
-            (group) =>
-              validSelection(group) && selectionKind(group) === 'group',
-          ),
-          subgroupCatalog,
-        )
+    subgroupBase &&
+    subgroupWeek.isSuccess &&
+    !subgroupWeek.isFetching &&
+    !subgroupWeek.data.stale &&
+    Date.parse(subgroupWeek.data.expiresAt) >= now
+      ? subgroupSearch(debounced, fullResults, baseResults, {
+          [subgroupBase.id]: subgroupWeek.data.data.subgroups,
+        })
       : undefined;
   const visible: SearchResult[] = !enabled
     ? []
@@ -194,7 +216,9 @@ export default function GroupPicker({
           if (search === baseGroups)
             return subgroupChoice
               ? [{ selection: subgroupChoice, saved: false }]
-              : [];
+              : subgroupBase
+                ? [{ selection: subgroupBase, saved: false }]
+                : [];
           const snapshot = search.data;
           const expires = Date.parse(snapshot?.expiresAt ?? '');
           if (
@@ -236,6 +260,7 @@ export default function GroupPicker({
     open &&
     (vucOnly || term.length >= 2) &&
     (term !== debounced ||
+      (!!subgroupBase && subgroupWeek.isFetching) ||
       sources.some(
         ({ query: search }) =>
           search.isPending && search.fetchStatus !== 'paused',

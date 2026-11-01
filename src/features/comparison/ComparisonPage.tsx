@@ -366,7 +366,7 @@ export default function ComparisonPage({
                   <GroupPicker
                     vucOnly={vucOnly}
                     hiddenKinds={hiddenKinds}
-                    subgroupCatalog={subgroupCatalog}
+                    week={week}
                     selected={groups}
                     onAdd={(selection) =>
                       fromSearch(() => addSchedule(selection))
