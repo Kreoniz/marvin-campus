@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { readShare } from '../../../lib/api.ts';
 import { track } from '../../../lib/analytics.ts';
-import { snapshotChangeAt, usableSnapshot } from '../../../lib/cache-policy.ts';
+import {
+  nextSnapshotChangeAt,
+  usableSnapshot,
+} from '../../../lib/cache-policy.ts';
 import { assignColors, type GroupColors } from '../../../lib/colors.ts';
 import { addDays, monday, omskToday, validDate } from '../../../lib/dates.ts';
 import { compareDay, comparisonIssue } from '../../../lib/domain.ts';
@@ -217,14 +220,14 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
       fetching: query?.isFetching ?? false,
     };
   });
-  const deadlines = ids.flatMap((key, index) => {
-    const data =
-      queries[index]?.data ??
-      (saved.week === week ? saved.entries[key]?.snapshot : undefined);
-    const change = snapshotChangeAt(data, week, now);
-    return change === undefined ? [] : [change];
-  });
-  const changeAt = deadlines.length ? Math.min(...deadlines) : undefined;
+  const changeAt = nextSnapshotChangeAt(
+    ids.flatMap((key, index) => [
+      queries[index]?.data,
+      saved.week === week ? saved.entries[key]?.snapshot : undefined,
+    ]),
+    week,
+    now,
+  );
   useEffect(() => {
     if (changeAt === undefined) return;
     const timer = window.setTimeout(

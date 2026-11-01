@@ -54,7 +54,8 @@ export default function CurrentLesson({
         <span className="mt-0.5 block">
           По локальному документу · актуальность сайта не проверена
         </span>
-      ) : result.saved ? (
+      ) : null}
+      {result.saved ? (
         <span className="mt-0.5 block">По сохранённым данным</span>
       ) : null}
     </p>

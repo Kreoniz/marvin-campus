@@ -12,7 +12,7 @@ import { Combobox } from 'unlikely-ui/combobox';
 import { Dialog } from 'unlikely-ui/dialog';
 import { Field } from 'unlikely-ui/field';
 import { groupOptions, scheduleOptions } from '../../../lib/queries.ts';
-import { STALE_GRACE } from '../../../lib/cache-policy.ts';
+import { STALE_GRACE, snapshotChangeAt } from '../../../lib/cache-policy.ts';
 import {
   kindIcon,
   kindLabel,
@@ -175,13 +175,9 @@ export default function GroupPicker({
     if (!Number.isFinite(expires) || now > expires + STALE_GRACE) return [];
     return [now <= expires ? expires + 1 : expires + STALE_GRACE + 1];
   });
-  const subgroupExpires = Date.parse(subgroupWeek.data?.expiresAt ?? '');
-  if (
-    subgroupBase &&
-    Number.isFinite(subgroupExpires) &&
-    now <= subgroupExpires
-  )
-    deadlines.push(subgroupExpires + 1);
+  const subgroupChange = snapshotChangeAt(subgroupWeek.data, week, now);
+  if (subgroupBase && subgroupChange !== undefined)
+    deadlines.push(subgroupChange);
   const changeAt = deadlines.length ? Math.min(...deadlines) : undefined;
   useEffect(() => {
     if (!open || changeAt === undefined) return;
@@ -200,14 +196,15 @@ export default function GroupPicker({
     return () => clearTimeout(timer);
   }, [term, open, vucOnly]);
   const subgroupChoice =
-    subgroupBase &&
-    subgroupWeek.isSuccess &&
-    !subgroupWeek.isFetching &&
-    !subgroupWeek.data.stale &&
-    Date.parse(subgroupWeek.data.expiresAt) >= now
-      ? subgroupSearch(debounced, fullResults, baseResults, {
-          [subgroupBase.id]: subgroupWeek.data.data.subgroups,
-        })
+    subgroupBase && subgroupWeek.isSuccess && !subgroupWeek.isFetching
+      ? subgroupSearch(
+          debounced,
+          fullResults,
+          baseResults,
+          subgroupWeek.data,
+          week,
+          now,
+        )
       : undefined;
   const visible: SearchResult[] = !enabled
     ? []

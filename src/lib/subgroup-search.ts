@@ -1,5 +1,6 @@
-import type { Group, GroupSelection, Subgroup } from './types.ts';
+import type { Group, GroupSelection, Snapshot, Week } from './types.ts';
 import { publicSubgroup } from './subgroups.ts';
+import { usableSnapshot } from './cache-policy.ts';
 
 const normalized = (value: string) => value.trim().toUpperCase();
 
@@ -39,12 +40,16 @@ export function subgroupSearch(
   term: string,
   completeResults: Group[],
   baseResults: Group[],
-  catalogue: Record<number, Subgroup[]>,
+  snapshot: Snapshot<Week> | undefined,
+  week: string,
+  now: number,
 ): GroupSelection | undefined {
   const group = subgroupSearchBase(term, completeResults, baseResults);
   const request = subgroupSearchTerm(term);
   if (!group || !request) return;
-  const subgroups = (catalogue[group.id] ?? []).filter(
+  const verified = usableSnapshot(snapshot, week, now);
+  if (!verified || verified.stale || verified.data.groupId !== group.id) return;
+  const subgroups = verified.data.subgroups.filter(
     (entry) => publicSubgroup(entry.label) === request.number,
   );
   if (subgroups.length !== 1) return;
