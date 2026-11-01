@@ -34,7 +34,7 @@ import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
 } from './ui/ScheduleViewPicker.tsx';
-
+import CurrentLesson from './ui/CurrentLesson.tsx';
 import {
   rememberScheduleView,
   savedScheduleView,
@@ -429,6 +429,7 @@ export default function ComparisonPage({
                             links={links}
                           />
                         )}
+                        <CurrentLesson schedules={source.schedules} day={day} />
                         {scheduleView === 'list' ? (
                           <DayAgenda
                             schedules={source.schedules}
