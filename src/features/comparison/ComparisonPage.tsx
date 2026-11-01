@@ -34,6 +34,11 @@ import { ResourceProvider } from '../resources/ResourceInspector.tsx';
 import ScheduleViewPicker, {
   type ScheduleView,
 } from './ui/ScheduleViewPicker.tsx';
+import CurrentLesson from './ui/CurrentLesson.tsx';
+import {
+  rememberScheduleView,
+  savedScheduleView,
+} from '../../lib/view-preference.ts';
 
 const compactQuery =
   '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
@@ -61,8 +66,10 @@ export default function ComparisonPage({
     document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
-  const [scheduleView, setScheduleView] = useState<ScheduleView>(() =>
-    vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week',
+  const [scheduleView, setScheduleView] = useState<ScheduleView>(
+    () =>
+      savedScheduleView(vucOnly) ??
+      (vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week'),
   );
   const [dayReveal, setDayReveal] = useState(0);
   const [spotlightGroupIds, setSpotlightGroupIds] = useState(() =>
@@ -124,12 +131,13 @@ export default function ComparisonPage({
       .join(', ') || undefined;
   useEffect(() => {
     if (links.opening || links.error) return;
-    // The workspace can restore its selections in an earlier mount effect.
-    const selected = view.groups;
+    // Temporary links must not prune the saved workspace's highlights.
+    const selected = view.savedGroups;
+    const viewed = view.groups;
     const next =
-      selected.length > 1
+      Math.max(selected.length, viewed.length) > 1
         ? spotlightGroupIds.filter((id) =>
-            selected.some((group) => scheduleKey(group) === id),
+            [...selected, ...viewed].some((group) => scheduleKey(group) === id),
           )
         : [];
     if (next.length !== spotlightGroupIds.length) setSpotlightGroupIds(next);
@@ -166,6 +174,7 @@ export default function ComparisonPage({
   }
   function selectFormat(value: ScheduleView) {
     view.cancelInitialDate();
+    rememberScheduleView(vucOnly, value);
     if (value === scheduleView) return;
     setScheduleView(value);
     track('mobile_view_changed', { view: value });
@@ -357,6 +366,7 @@ export default function ComparisonPage({
                   <GroupPicker
                     vucOnly={vucOnly}
                     hiddenKinds={hiddenKinds}
+                    week={week}
                     selected={groups}
                     onAdd={(selection) =>
                       fromSearch(() => addSchedule(selection))
@@ -419,6 +429,7 @@ export default function ComparisonPage({
                             links={links}
                           />
                         )}
+                        <CurrentLesson schedules={source.schedules} day={day} />
                         {scheduleView === 'list' ? (
                           <DayAgenda
                             schedules={source.schedules}

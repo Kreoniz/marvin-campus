@@ -1,4 +1,9 @@
 import { useSyncExternalStore } from 'react';
+import {
+  publicBodyText,
+  publicDataTarget,
+  validPublicBody,
+} from './public-cache.js';
 
 interface InstallPrompt extends Event {
   prompt(): Promise<void>;
@@ -85,21 +90,67 @@ export function initPwa() {
 }
 
 // First-load data can arrive before the service worker takes control.
-export function cachePwaResponse(path: string, body: unknown) {
+export function cachePwaResponse(
+  path: string,
+  body: unknown,
+): Promise<boolean> {
   if (
     !import.meta.env?.PROD ||
     typeof navigator === 'undefined' ||
-    !('serviceWorker' in navigator) ||
-    !/^\/api\/(schedule\/\d+\?week=\d{4}-\d{2}-\d{2}(?:&refresh=1)?|share\/[A-Za-z0-9_-]{12})$/.test(
-      path,
-    )
+    !('serviceWorker' in navigator)
   )
-    return;
-  void navigator.serviceWorker.ready
-    .then((registration) => {
-      registration.active?.postMessage({ type: 'CACHE_DATA', path, body });
-    })
-    .catch(() => {});
+    return Promise.resolve(false);
+  const target = publicDataTarget(new URL(path, location.origin));
+  if (
+    !target ||
+    !validPublicBody(target, body) ||
+    publicBodyText(body) === undefined
+  )
+    return Promise.resolve(false);
+  return handoffPwaResponse(navigator.serviceWorker.ready, path, body).then(
+    (saved) => {
+      // Re-read the actual cache: an acknowledgement alone is not availability.
+      window.dispatchEvent(new Event('campus-public-cache-change'));
+      return saved;
+    },
+  );
+}
+// Keep the first response until registration is ready, as on the original
+// uncontrolled-page path. Bound acknowledgement once an active worker exists;
+// an older worker may not support it. Timeout is never a persistence promise.
+export function handoffPwaResponse(
+  ready: Promise<Pick<ServiceWorkerRegistration, 'active'>>,
+  path: string,
+  body: unknown,
+  timeout = 5000,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let finished = false;
+    const finish = (saved: boolean) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      channel.port1.close();
+      channel.port2.close();
+      resolve(saved);
+    };
+    channel.port1.onmessage = (event) => finish(event.data?.saved === true);
+    void ready
+      .then((registration) => {
+        if (finished) return;
+        if (!registration.active) {
+          finish(false);
+          return;
+        }
+        timer = setTimeout(() => finish(false), timeout);
+        registration.active.postMessage({ type: 'CACHE_DATA', path, body }, [
+          channel.port2,
+        ]);
+      })
+      .catch(() => finish(false));
+  });
 }
 
 export async function installPwa() {

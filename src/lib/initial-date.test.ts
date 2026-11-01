@@ -177,6 +177,14 @@ test('subgroup filters retain whole-group lessons and cannot hide unresolved dat
   assert.equal(nextInitialDay([row], at(), at()), '2026-10-31');
   row.selection = { id: 1, label: 'ТЕСТ-101', subgroup: 999 };
   assert.equal(nextInitialDay([row], at(), at()), undefined);
+
+  row.selection = { id: 1, label: 'ТЕСТ-101', subgroup: 99, subgroupNumber: 2 };
+  row.snapshot!.data.subgroups = [{ id: 2, label: 'ТЕСТ-101/2' }];
+  assert.equal(nextInitialDay([row], at(), at()), undefined);
+  row.snapshot!.data.lessons[1].end = 900;
+  assert.equal(nextInitialDay([row], at(), at()), '2026-10-31');
+  row.snapshot!.data.subgroups.push({ id: 99, label: 'ТЕСТ-101/2' });
+  assert.equal(nextInitialDay([row], at(), at()), undefined);
 });
 
 test('next calendar day preserves Saturday to Sunday, month, year and leap boundaries', () => {

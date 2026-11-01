@@ -11,13 +11,42 @@ export function selectedSubgroup(
   subgroups: Subgroup[],
 ): number | undefined {
   if (!isGroup(selection)) return undefined;
-  if (selection.subgroup !== undefined) return selection.subgroup;
-  if (selection.subgroupNumber === undefined) return undefined;
+  if (selection.subgroupNumber === undefined) return selection.subgroup;
   // Unknown public numbers include only whole-group lessons, never all subgroups.
   const matches = subgroups.filter(
     (s) => publicSubgroup(s.label) === selection.subgroupNumber,
   );
-  return matches.length === 1 ? matches[0].id : -1;
+  if (matches.length > 1) return -1;
+  if (matches.length === 1) return matches[0].id;
+  const saved = subgroups.find((s) => s.id === selection.subgroup);
+  const number = saved && publicSubgroup(saved.label);
+  if (number !== undefined && number !== selection.subgroupNumber) return -1;
+  // Absence from a weekly catalogue is not an identity conflict: this week
+  // may have no lessons for the selected subgroup. Keep its known ID.
+  return selection.subgroup ?? -1;
+}
+
+// Automatic URL/workspace resolution must use one response's catalogue, not a
+// merge of historic weeks that cannot establish which duplicate ID is current.
+export function resolveSubgroupSelection(
+  selection: Selection,
+  subgroups: Subgroup[],
+): Selection {
+  if (!isGroup(selection)) return selection;
+  const id = selectedSubgroup(selection, subgroups);
+  const match = subgroups.find((s) => s.id === id);
+  if (!match) return selection;
+  const number = publicSubgroup(match.label) ?? selection.subgroupNumber;
+  // Raw-ID links explicitly disambiguate IDs sharing a public number. Do not
+  // turn one into an ambiguous public-number link during canonicalization.
+  if (
+    number !== undefined &&
+    selectedSubgroup({ ...selection, subgroupNumber: number }, subgroups) !== id
+  )
+    return selection;
+  return selection.subgroup === id && selection.subgroupNumber === number
+    ? selection
+    : { ...selection, subgroup: id, subgroupNumber: number };
 }
 
 export function selectionLabel(selection: Selection): string {

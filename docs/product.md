@@ -30,10 +30,19 @@ Lesson labels describe source membership, independently of that filter. A
 whole-group lesson keeps the base group name when a subgroup is selected; shared
 events retain each participant's own subgroup membership.
 
+Saved subgroup identities are checked against the current response's catalogue.
+A unique current public number can resolve an obsolete internal ID; conflicting
+or ambiguous identities cannot establish free time. A subgroup missing from one
+weekly catalogue is not by itself invalid. Raw-ID-only selections remain visible,
+but cannot establish a complete comparison when subgroup lessons exist and the
+response does not verify that ID.
+
 Desktop starts with a compact week grid and a secondary selected-day detail;
 mobile starts with source-oriented Day. Three labelled 44×44 px header controls
 switch the primary surface between Day, Week and Day list at every viewport.
-The chosen view survives resizing and selection changes. The secondary detail
+The chosen view survives resizing, selection changes and restart as a validated
+local preference, separately for the general calendar and VUC. Missing or blocked
+storage retains the original viewport defaults. The secondary detail
 below desktop Week is always a timeline. Theme, help and display settings are one-click actions in that
 same row; below 420 px the brand keeps its avatar and accessible name.
 The list replaces the grid, preserves exact intervals and full subjects, shows
@@ -71,6 +80,12 @@ the first addition from the welcome screen. Added rows are marked “Уже до
 and cannot be added twice. Focus returns to the search input; Escape, outside
 click or Close dismisses the dialog. The 30-schedule cap disables further additions
 and explains how to make space without closing the dialog.
+Shorthand such as `АБ-101-2` first searches the complete real name. Only after
+fresh results establish a unique exact `АБ-101` does it check that group's
+selected week and offer a confirmed `/2` as an explicit result. Unknown or
+ambiguous subgroups are not guessed; the confirmed base group can still be
+chosen as a whole. This reuses the ordinary bounded week query, including on a
+first search without a remembered catalogue.
 The mobile calendar spans the available screen width, while controls and card
 content keep their internal spacing. The compact header keeps group names and
 subgroup scope visible. Display settings hold layer and kind visibility and
@@ -85,6 +100,16 @@ expand to their full time range/row count and use page scrolling vertically; wee
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
+When Day has no rendered lesson and no enabled meaningful comparison overlay,
+it uses a compact notice rather than a full empty time scale. Day, Week and List
+distinguish known-empty selected dates/subgroups, saved-empty data, hidden
+lessons, loading and missing/unresolved coverage. Known lessons remain visible
+in partial comparisons; hiding cards alone does not prove an empty day.
+On Omsk today, exactly one selected group/subgroup or VUC can show a compact
+current/next summary. It includes simultaneous lessons, saved/document
+qualifications and room/building or remote details. Other dates, comparisons,
+lecturers/rooms and unusable or unresolved inputs do not infer a personal
+schedule or a finished day. The clock follows minute boundaries and focus return.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
 The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. Soft edge fades appear only where more selections can be scrolled into view. Exclusion outlines stay inside the 44-pixel chip bounds. The visible thumb is four pixels thick and never covers the schedule-menu control. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
 Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
@@ -173,8 +198,8 @@ teacher details and visible kind distinctions. Proven shared events combine
 missing metadata deterministically and retain conflicts explicitly.
 Large teacher rosters may expand after three names; one teacher stays visible.
 Mixed comparisons can be copied and restored; old group links retain their
-meaning. Persistent offline resource storage is deferred, so cold offline
-resource requests fail explicitly. Search results retain the 24-hour grace
+meaning. Recently opened lecturer, auditorium and VUC weeks use the same bounded
+offline store as groups. Unopened or expired weeks fail explicitly. Search results retain the 24-hour grace
 period and explicit retry rather than becoming indefinite fresh data.
 
 VUC is a local document import, not a live website feed. A selectable platoon
@@ -189,6 +214,10 @@ operator command prepares a new complete dataset and exact originals from explic
 inputs, leaving the old set intact; switching both paths requires an API restart.
 Archived data is never shifted into the current year. A date action opens a nearby covered date explicitly when other schedules
 are already selected. Source documents/imported data remain outside Git.
+Compact status names the local document's import time and unchecked website
+freshness; live-source checks are reported separately in mixed comparisons.
+When import time is unknown, details label checkedAt as server response time.
+Displayed, machine-readable and tooltip timestamps describe the same event.
 
 Mounted live-source lesson entries fade in over 180 ms without moving their geometry.
 Available VUC document cards remain static; an unknown lesson kind has no question-mark badge.
@@ -216,8 +245,9 @@ saved locally, separately for the general calendar and VUC. Initial link/workspa
 restoration must settle before missing selections are pruned. Removing a group drops only
 that group from the spotlight set. Fewer than two remaining groups clears the
 set. Display settings and day detail can clear all spotlights together.
-Spotlight is a saved local preference and day format is transient presentation
-state; neither enters comparison URLs or changes the presence/free calculation.
+Viewing a temporary link does not prune highlights belonging to the saved workspace.
+Spotlight and Day/Week/List are saved local preferences; neither enters comparison
+URLs or changes the presence/free calculation.
 
 Each Week date has its own minimum width derived from its retained rendered
 lanes in the chosen presentation mode. Empty dates retain a column; unknown, failed, expired
@@ -249,6 +279,14 @@ show common windows across the week and compact per-group occupancy rows, with
 shared lessons listed once. Before implementation, clarify busy versus off-campus
 time, exact interval boundaries, participant visibility and unavailable data.
 
+Home restores the last intentionally edited selection, separately for the general
+calendar and VUC. Opening or copying a link, changing dates or comparison mode,
+and Back/Forward do not adopt that temporary selection. Adding, removing,
+reordering or changing a subgroup does. Learning public group names for offline
+links is independent of saving the workspace. Repeating an active day, week,
+mode, subgroup or order creates no history entry; real changes retain their
+Back/Forward steps.
+
 Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for thirty minutes, future weeks for an hour, past weeks for a day; group
 searches for a day. A successful stale snapshot is available for at most another
@@ -260,10 +298,20 @@ data too. A missing or expired snapshot never becomes an empty schedule.
 The details show a common check minute only for matching fresh states/times;
 individual timestamps remain available, and differing or failed states are explicit.
 
-The installable PWA keeps a complete application build and recently opened
-schedules for offline restart. It does not invent schedules for unopened groups
-or extend snapshot freshness. HTTP errors and cancelled requests remain errors.
-App updates are offered separately from schedule updates.
+The installable PWA keeps a complete application build and recently opened group,
+lecturer, auditorium and VUC weeks for offline restart, plus the public VUC
+catalogue. The shared store holds at most 100 responses of at most 2 MiB each.
+Per-source details report the actual saved week and original timestamps after a
+successful storage read, or a missing, expired or unavailable entry. Browser
+eviction and storage denial can remove availability; installation alone does not
+guarantee it. Reading a snapshot never extends its freshness or hard cutoff,
+including the shorter TTL when an Omsk future week becomes current.
+Unopened weeks, missing coverage and unavailable data never become empty
+schedules. Originals and private attendance are not automatically cached.
+HTTP errors and cancelled requests remain errors. App updates are offered
+separately from schedule updates. One previous complete shell is retained and
+its hashed JS/CSS can serve a tab still running that build; a further update
+retires it. This is bounded compatibility, not support for arbitrarily old tabs.
 The installation icons use a dark background and a bold character outline;
 the manifest launch background is also dark. The saved or system page theme
 still controls the opened application.
@@ -294,7 +342,7 @@ Military-preparation cards from 240px also show the personally chosen VUC for th
 
 Where selected VUC sources share the same compact platoon name, navigation, management, membership details and calculation exclusions add document years and, if needed, an existing source description. Identical metadata falls back to the document-scoped ID. Non-colliding names stay compact; chips retain their 44px height and show the disambiguator on a secondary line. Labels never change source identity or date coverage.
 
-The VUC page puts its calendar before results and the compact document download. Day and Week use page scrolling vertically and keep horizontal scrolling for tracks. The display starts at 09:00 by default and ends after the latest known event; actual earlier or later times remain visible. An unknown day keeps a 09:00–18:00 display range, without implying empty coverage.
+The VUC page puts its calendar before results and the compact document download. Day and Week use page scrolling vertically and keep horizontal scrolling for tracks. Rendered time scales start at 09:00 by default and end after the latest known event; actual earlier or later times remain visible. Week's unknown date retains a 09:00–18:00 scale without implying empty coverage. Day without a rendered lesson or meaningful enabled overlay uses the compact unknown-data notice instead.
 
 A selected lecturer or room uses a full categorical fill in every view, preserving the diagonal kind pattern and readable text. Other resource cards remain neutral. Hover colors transition over 150ms unless reduced motion is requested. Amber presence brackets reserve a gutter clear of card borders and their hover/focus outlines. Date controls center their label; header action targets stay at least 44px while their gaps remain compact. The footer source link has no extra separator.
 

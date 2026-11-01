@@ -35,11 +35,20 @@ export function comparisonIssue(
     return 'coverage';
   if (
     isGroup(group.selection) &&
-    selectedSubgroup(group.selection, group.snapshot.data.subgroups ?? []) ===
-      -1 &&
-    group.snapshot.data.lessons.some((lesson) => lesson.subgroups.length > 0)
-  )
-    return 'subgroup';
+    data.lessons.some((lesson) => lesson.subgroups.length > 0)
+  ) {
+    const subgroups = data.subgroups ?? [];
+    const subgroup = selectedSubgroup(group.selection, subgroups);
+    // A raw-ID-only link has no stable public number to verify or remap when
+    // its ID is absent. Keep the selection, but do not publish confident gaps.
+    if (
+      subgroup === -1 ||
+      (subgroup !== undefined &&
+        group.selection.subgroupNumber === undefined &&
+        !subgroups.some((entry) => entry.id === subgroup))
+    )
+      return 'subgroup';
+  }
   // A successful week without subgroup-specific lessons is still usable.
   // Retain the requested subgroup for later weeks rather than inventing an error.
   return undefined;

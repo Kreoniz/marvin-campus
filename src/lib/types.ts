@@ -109,7 +109,14 @@ export interface Snapshot<T> {
   stale: boolean;
   warning?: string;
 }
+export interface OfflineAvailability {
+  status: 'available' | 'missing' | 'expired' | 'unavailable';
+  week: string;
+  checkedAt?: string;
+  usableUntil?: string;
+}
 export interface GroupSchedule {
+  offline?: OfflineAvailability;
   selection: Selection;
   snapshot?: Snapshot<ScheduleData>;
   error?: string;

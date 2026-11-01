@@ -1,6 +1,14 @@
 import { queryOptions } from '@tanstack/react-query';
 import { CACHE_RETENTION, snapshotStaleTime } from '../../lib/cache-policy.ts';
-import { addDays, validDate } from '../../lib/dates.ts';
+import { cachePwaResponse } from '../../lib/pwa.ts';
+import {
+  publicDataTarget,
+  readPublicResponse,
+  validPublicBody,
+  publicBodyUsable,
+  PUBLIC_DATA_CACHE,
+} from '../../lib/public-cache.js';
+import { savedSchedulePath } from '../../lib/saved-schedules.ts';
 import { validSelection } from '../../lib/schedule-ref.ts';
 import type {
   ResourceKind,
@@ -16,10 +24,25 @@ async function load<T>(path: string, signal?: AbortSignal): Promise<T> {
   try {
     response = await fetch(path, { signal });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError')
+    if (
+      signal?.aborted ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    )
       throw error;
+    if (path === '/api/vuc?term=') {
+      try {
+        const target = publicDataTarget(
+          new URL(path, 'https://campus.example'),
+        )!;
+        const saved = await readPublicResponse(
+          await (await globalThis.caches?.open(PUBLIC_DATA_CACHE))?.match(path),
+        );
+        if (publicBodyUsable(target, saved))
+          return { ...(saved as object), stale: true } as T;
+      } catch {}
+    }
     throw new Error(
-      navigator.onLine === false
+      globalThis.navigator?.onLine === false
         ? 'Нет сети. Подключись к интернету и повтори загрузку.'
         : 'Не удалось подключиться к серверу. Попробуй позже.',
     );
@@ -49,6 +72,16 @@ function searchOptions<T>(
         body.data.some((item) => !validItem(item))
       )
         throw new Error('Сервер вернул некорректные результаты поиска.');
+      if (path === '/api/vuc?term=') {
+        if (
+          !validPublicBody(
+            publicDataTarget(new URL(path, 'https://campus.example')),
+            body,
+          )
+        )
+          throw new Error('Сервер вернул некорректный каталог ВУЦ.');
+        void cachePwaResponse(path, body);
+      }
       return body;
     },
     staleTime: (query) =>
@@ -92,32 +125,6 @@ function validTimes(body: Snapshot<unknown>) {
     Number.isFinite(Date.parse(body.expiresAt))
   );
 }
-function validWeek(body: Snapshot<ResourceWeek | VucWeek>, week: string) {
-  return (
-    Array.isArray(body?.data?.lessons) &&
-    body.data.lessons.every(
-      (lesson) =>
-        typeof lesson.id === 'string' &&
-        typeof lesson.subject === 'string' &&
-        typeof lesson.teacher === 'string' &&
-        typeof lesson.room === 'string' &&
-        typeof lesson.kind === 'string' &&
-        typeof lesson.building === 'string' &&
-        typeof lesson.remote === 'boolean' &&
-        typeof lesson.date === 'string' &&
-        validDate(lesson.date) &&
-        lesson.date >= week &&
-        lesson.date <= addDays(week, 6) &&
-        Number.isInteger(lesson.start) &&
-        Number.isInteger(lesson.end) &&
-        lesson.start >= 0 &&
-        lesson.end <= 1440 &&
-        lesson.start < lesson.end &&
-        Array.isArray(lesson.subgroups),
-    ) &&
-    validTimes(body)
-  );
-}
 export async function loadResourceWeek(
   resource: ResourceRef,
   week: string,
@@ -127,12 +134,15 @@ export async function loadResourceWeek(
     `/api/resources/${resource.kind}/${resource.id}?week=${week}`,
     signal,
   );
+  const path = savedSchedulePath(resource, week);
   if (
-    body?.data?.kind !== resource.kind ||
-    body.data.id !== resource.id ||
-    !validWeek(body, week)
+    !validPublicBody(
+      publicDataTarget(new URL(path, 'https://campus.example')),
+      body,
+    )
   )
     throw new Error('Сервер вернул расписание другого объекта.');
+  void cachePwaResponse(path, body);
   return body;
 }
 export async function loadVucWeek(
@@ -144,21 +154,15 @@ export async function loadVucWeek(
     `/api/vuc/${encodeURIComponent(resource.id)}?week=${week}`,
     signal,
   );
+  const path = savedSchedulePath(resource, week);
   if (
-    body?.data?.kind !== 'vuc' ||
-    body.data.id !== resource.id ||
-    (body.data.originalAvailable !== undefined &&
-      typeof body.data.originalAvailable !== 'boolean') ||
-    !validWeek(body, week) ||
-    !Array.isArray(body.data.coveredDates) ||
-    body.data.coveredDates.some(
-      (date) => !validDate(date) || date < week || date > addDays(week, 6),
-    ) ||
-    body.data.unresolvedDates?.some(
-      (date) => !validDate(date) || date < week || date > addDays(week, 6),
+    !validPublicBody(
+      publicDataTarget(new URL(path, 'https://campus.example')),
+      body,
     )
   )
     throw new Error('Сервер вернул некорректное расписание ВУЦ.');
+  void cachePwaResponse(path, body);
   return body;
 }
 export function resourceWeekOptions(resource: ResourceRef, week: string) {

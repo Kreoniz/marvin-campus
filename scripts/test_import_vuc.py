@@ -4,7 +4,9 @@ import importlib.util
 import hashlib
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -31,17 +33,84 @@ def make_document(path, sections):
         header = [(value, span) for value, span in zip(["Дата", "Взв.", "9.00-10.30", "10.45-12.15", "12.30-14.00", "15.00-15.45", "15.50-16.35", "16.40-17.25"], header_spans)]
         for row in [header] + rows:
             tr = ET.SubElement(table, vuc.W + "tr")
-            for value, span in row:
+            for item in row:
+                value, span = item[:2]
                 cell = ET.SubElement(tr, vuc.W + "tc")
                 props = ET.SubElement(cell, vuc.W + "tcPr")
                 ET.SubElement(props, vuc.W + "gridSpan", {vuc.W + "val": str(span)})
+                if len(item) > 2:
+                    ET.SubElement(props, vuc.W + "vMerge", {vuc.W + "val": item[2]})
                 for text in value.split("\n"):
                     paragraph(cell, text)
     with ZipFile(path, "w") as archive:
         archive.writestr("word/document.xml", ET.tostring(document))
 
 
+def pdf_fixture(pages):
+    """Substitute PDF extraction only; exercise the real row parser/importer."""
+    extracted = []
+    for values in pages:
+        rows = [SimpleNamespace(cells=[(i * 100, 0, (i + 1) * 100, 10) if value is not None else None for i, value in enumerate(row)]) for row in values]
+        table = SimpleNamespace(rows=rows, extract=lambda values=values: values)
+        extracted.append(SimpleNamespace(
+            extract_text=lambda: "с 03 сентября по 10 сентября 2026 г.",
+            find_tables=lambda table=table: [table],
+        ))
+    class Document:
+        def __enter__(self):
+            return SimpleNamespace(pages=extracted)
+
+        def __exit__(self, *_):
+            pass
+
+    return SimpleNamespace(open=lambda _: Document())
+
+
 class ImportTests(unittest.TestCase):
+    def test_dotted_docx_date_does_not_inherit_the_previous_row(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "fixture.docx"
+            rows = [[(day, 1), ("101", 1), ("Предмет " + str(i), 1)] + [("", 1)] * 5 for i, day in enumerate(["03 09", "10.09", "", ""])]
+            rows[1][0] = ("10.09", 1, "restart")
+            rows[2][0] = ("", 1, "continue")
+            make_document(path, [("с 03 сентября по 10 сентября 2026 г.", [100] * 8, [1] * 8, rows)])
+            result = vuc.import_document(path)[0]
+            self.assertEqual([lesson["date"] for lesson in result["lessons"]], ["2026-09-03", "2026-09-10", "2026-09-10", "2026-09-10"])
+            self.assertEqual(result["lessons"][1]["sourceOrigin"], "table-1:row-2:cell-2")
+            self.assertEqual(result["coveredDates"], ["2026-09-03", "2026-09-10"])
+
+    def test_dotted_pdf_date_and_blank_continuation_across_pages(self):
+        header = ["Дата", "Взв.", "9.00-10.30", "10.45-12.15", "12.30-14.00", "15.00-15.45", "15.50-16.35", "16.40-17.25"]
+        row = lambda day: [day, "101", "Предмет"] + [""] * 5
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "fixture.pdf"
+            path.write_bytes(b"synthetic PDF extraction boundary")
+            with patch.dict("sys.modules", {"pdfplumber": pdf_fixture([[header, row("03 09"), row("10.09")], [row(None)]])}):
+                result = vuc.import_document(path)[0]
+            self.assertEqual([lesson["date"] for lesson in result["lessons"]], ["2026-09-03", "2026-09-10", "2026-09-10"])
+            self.assertEqual(result["lessons"][2]["sourceOrigin"], "page-2:row-0:cell-2")
+            self.assertEqual(result["coveredDates"], ["2026-09-03", "2026-09-10"])
+
+    def test_nonempty_unknown_dates_fail_closed_with_source_row_evidence(self):
+        for value in ["10/09", "неясная\nдата", "10/09 Четверг", "31.09", "11.09"]:
+            for kind in ["docx", "pdf"]:
+                with self.subTest(value=value, kind=kind), tempfile.TemporaryDirectory() as temp:
+                    path = Path(temp) / ("fixture." + kind)
+                    if kind == "docx":
+                        rows = [[(day, 1), ("101", 1), ("Предмет", 1)] + [("", 1)] * 5 for day in ["03 09", value]]
+                        make_document(path, [("с 03 сентября по 10 сентября 2026 г.", [100] * 8, [1] * 8, rows)])
+                    else:
+                        path.write_bytes(b"synthetic PDF extraction boundary")
+                    header = ["Дата", "Взв.", "9.00-10.30", "10.45-12.15", "12.30-14.00", "15.00-15.45", "15.50-16.35", "16.40-17.25"]
+                    rows = [[day, "101", "Предмет"] + [""] * 5 for day in ["03 09", value]]
+                    with patch.dict("sys.modules", {"pdfplumber": pdf_fixture([[header] + rows])}):
+                        with self.assertRaises(ValueError) as caught:
+                            vuc.import_document(path)
+                    message = str(caught.exception)
+                    self.assertIn(path.name, message)
+                    self.assertIn("table-1:row-2:cell-0" if kind == "docx" else "page-1:row-2:cell-0", message)
+                    self.assertIn(repr(value), message)
+
     def test_empty_printed_row_and_absent_platoon_date_are_distinct(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "fixture.docx"

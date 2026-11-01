@@ -314,7 +314,7 @@ test('legacy numeric group member order stays numeric after typed-key migration'
   );
 });
 
-test('persisted mixed selection never contaminates the academic group directory', async () => {
+test('learning mixed selections never contaminates the academic group directory or adopts a workspace', async () => {
   const { rememberGroups, knownGroups } = await import('./group-directory.ts');
   const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   const values = new Map<string, string>();
@@ -331,16 +331,7 @@ test('persisted mixed selection never contaminates the academic group directory'
       knownGroups().map((group) => ({ id: group.id, label: group.label })),
       [{ id: 901, label: 'ТСТ-901' }],
     );
-    const persisted = JSON.parse(values.get('campus-groups')!);
-    assert.deepEqual(
-      normalizeView({
-        groups: persisted,
-        week: date,
-        day: date,
-        mode: 'free',
-      }).groups.map(scheduleKey),
-      refs.map(scheduleKey),
-    );
+    assert.equal(values.has('campus-groups'), false);
     assert.equal(
       values.get('campus-group-directory')!.includes('Учебный преподаватель'),
       false,

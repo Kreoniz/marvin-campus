@@ -79,3 +79,17 @@ export function snapshotChangeAt(
   const nextMonday = Date.parse(`${addDays(currentWeek, 7)}T00:00:00+06:00`);
   return Math.min(change, nextMonday);
 }
+
+// In-memory and persisted observations may differ after a failed cache write.
+// Each keeps its own clock; a fresh query must not hide a saved entry's cutoff.
+export function nextSnapshotChangeAt(
+  snapshots: (Snapshot<unknown> | undefined)[],
+  week: string,
+  now: number,
+) {
+  const deadlines = snapshots.flatMap((snapshot) => {
+    const change = snapshotChangeAt(snapshot, week, now);
+    return change === undefined ? [] : [change];
+  });
+  return deadlines.length ? Math.min(...deadlines) : undefined;
+}

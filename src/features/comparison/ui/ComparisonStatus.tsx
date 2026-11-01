@@ -30,9 +30,28 @@ export default function ComparisonStatus({
   links: ComparisonLinks;
 }) {
   const label = scheduleLabels(schedules);
-  const checked = schedules
-    .flatMap((g) => (g.snapshot ? [g.snapshot.checkedAt] : []))
+  const live = schedules.filter(
+    (schedule) => schedule.selection.kind !== 'vuc',
+  );
+  const documents = schedules.filter(
+    (schedule) => schedule.selection.kind === 'vuc' && schedule.snapshot,
+  );
+  const checked = live
+    .flatMap((g) =>
+      g.snapshot && Number.isFinite(Date.parse(g.snapshot.checkedAt))
+        ? [g.snapshot.checkedAt]
+        : [],
+    )
     .sort()[0];
+  const imports = documents
+    .flatMap((g) => {
+      const value = g.snapshot?.data.importedAt;
+      return value && Number.isFinite(Date.parse(value)) ? [value] : [];
+    })
+    .sort((a, b) => Date.parse(a) - Date.parse(b));
+  const documentMessage = documents.length
+    ? `ВУЦ · локальный документ · ${imports.length === documents.length ? `импорт${imports.length > 1 ? ' от' : ''} ${checkedLabel(imports[0])}` : 'время импорта неизвестно'} · актуальность сайта не проверена`
+    : '';
   const saved = schedules.some(
     (g) => g.snapshot && (g.snapshot.stale || g.error),
   );
@@ -52,21 +71,29 @@ export default function ComparisonStatus({
         !group.snapshot.stale &&
         checkedLabel(group.snapshot.checkedAt) === checkedLabel(checked),
     );
-  const message = fetching
-    ? saved
+  const liveSaved = live.some(
+    (g) => g.snapshot && (g.snapshot.stale || g.error),
+  );
+  const liveMessage = fetching
+    ? liveSaved
       ? 'Проверяем… · сохранённые данные'
-      : checked
-        ? 'Проверяем обновления…'
-        : 'Загружаем расписания…'
+      : !live.length && documents.length
+        ? ''
+        : checked
+          ? 'Проверяем обновления…'
+          : 'Загружаем расписания…'
     : unresolved
       ? 'Подгруппа не определена · расчёт ограничен'
       : missing
         ? 'Часть расписаний недоступна'
-        : saved
+        : liveSaved
           ? `Сохранённые данные${checked ? ` · ${checkedLabel(checked)}` : ''}`
           : checked
             ? `Проверено ${checkedLabel(checked)}`
-            : 'Расписание недоступно';
+            : documentMessage
+              ? ''
+              : 'Расписание недоступно';
+  const message = [liveMessage, documentMessage].filter(Boolean).join(' · ');
   return (
     <>
       <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 compact:pl-[9px]">
@@ -77,12 +104,10 @@ export default function ComparisonStatus({
         >
           {saved && <Icon name="clock" size={13} />}
           <span
-            className="truncate"
-            title={
-              checked
-                ? `${message}. Проверено ${checkedLabel(checked)}. Омск, UTC+6.`
-                : message
+            className={
+              documents.length ? 'py-1 leading-4 wrap-anywhere' : 'truncate'
             }
+            title={`${message}. Омск, UTC+6.`}
           >
             {message}
             <span className="timezone compact:hidden"> · Омск, UTC+6</span>
@@ -122,6 +147,9 @@ export default function ComparisonStatus({
                 UTC+6.
                 {saved &&
                   ' Сохранённые данные могут отличаться от текущего расписания.'}
+                {
+                  ' Офлайн доступна только сохранённая неделя до срока хранения. Браузер может удалить кеш; без сети он не обновляется.'
+                }
               </p>
               <ul className="m-0 list-none divide-y divide-[var(--u-line-soft)] p-0">
                 {schedules.map((group) => {
@@ -129,6 +157,16 @@ export default function ComparisonStatus({
                   const warning = group.error ?? snapshot?.warning;
                   const unresolved = comparisonIssue(group, day) === 'subgroup';
                   const imported = group.selection.kind === 'vuc';
+                  const importedAt =
+                    snapshot?.data.importedAt &&
+                    Number.isFinite(Date.parse(snapshot.data.importedAt))
+                      ? snapshot.data.importedAt
+                      : undefined;
+                  const timestamp = snapshot
+                    ? imported
+                      ? (importedAt ?? snapshot.checkedAt)
+                      : snapshot.checkedAt
+                    : undefined;
                   const coverage = comparisonIssue(group, day) === 'coverage';
                   const state = group.loading
                     ? 'Загружаем…'
@@ -154,6 +192,17 @@ export default function ComparisonStatus({
                         </strong>
                         <span className="text-xs text-u-muted">{state}</span>
                       </div>
+                      <p className="mt-1 text-xs leading-[18px] text-u-muted">
+                        {group.offline?.status === 'available'
+                          ? `Офлайн: неделя ${group.offline.week} сохранена, ${imported ? 'получено от сервера' : 'проверено'} ${checkedLabel(group.offline.checkedAt!)}. Доступна сейчас, не позднее ${checkedLabel(group.offline.usableUntil!)}.`
+                          : group.offline?.status === 'expired'
+                            ? 'Офлайн: срок сохранённой недели истёк. Подключись для загрузки.'
+                            : group.offline?.status === 'unavailable'
+                              ? 'Офлайн: не удалось прочитать хранилище устройства.'
+                              : group.offline?.status === 'missing'
+                                ? 'Офлайн: эта неделя не сохранена или удалена из кеша.'
+                                : 'Офлайн: проверяем сохранение недели…'}
+                      </p>
                       {unresolved && (
                         <p className="mt-1 text-xs leading-[18px] text-u-ink">
                           Не удалось определить подгруппу{' '}
@@ -167,34 +216,43 @@ export default function ComparisonStatus({
                         </p>
                       )}
                       {imported && (
-                        <VucScheduleNotes schedule={group} date={day} />
+                        <>
+                          <p className="mt-1 text-xs leading-[18px] text-u-muted">
+                            Локальный документ; актуальность сайта не
+                            проверялась.
+                          </p>
+                          <VucScheduleNotes schedule={group} date={day} />
+                        </>
                       )}
                       {!snapshot && !group.loading && !warning && (
                         <p className="mt-1 text-xs text-u-muted">
                           Нет сохранённых данных.
                         </p>
                       )}
-                      {snapshot && (
-                        <time
-                          dateTime={snapshot.checkedAt}
-                          title={new Intl.DateTimeFormat('ru-RU', {
-                            timeZone: 'Asia/Omsk',
-                            dateStyle: 'short',
-                            timeStyle: 'medium',
-                          }).format(new Date(snapshot.checkedAt))}
-                          className={
-                            commonCheck
-                              ? 'sr-only'
-                              : 'mt-1 block text-xs text-u-muted'
-                          }
-                        >
-                          {imported ? 'Импортирован' : 'Проверено'}{' '}
-                          {checkedLabel(
-                            snapshot.data.importedAt || snapshot.checkedAt,
-                          )}
-                          .
-                        </time>
-                      )}
+                      {snapshot &&
+                        timestamp &&
+                        Number.isFinite(Date.parse(timestamp)) && (
+                          <time
+                            dateTime={timestamp}
+                            title={new Intl.DateTimeFormat('ru-RU', {
+                              timeZone: 'Asia/Omsk',
+                              dateStyle: 'short',
+                              timeStyle: 'medium',
+                            }).format(new Date(timestamp))}
+                            className={
+                              commonCheck
+                                ? 'sr-only'
+                                : 'mt-1 block text-xs text-u-muted'
+                            }
+                          >
+                            {imported
+                              ? importedAt
+                                ? 'Импортирован'
+                                : 'Время импорта неизвестно · ответ сервера'
+                              : 'Проверено'}{' '}
+                            {checkedLabel(timestamp)}.
+                          </time>
+                        )}
                     </li>
                   );
                 })}

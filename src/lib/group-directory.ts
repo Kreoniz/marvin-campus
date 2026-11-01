@@ -33,6 +33,7 @@ export function knownGroups(): Group[] {
   }
 }
 
+// Learning public names must not adopt a temporary link as the saved workspace.
 export function rememberGroups(selection: Selection[]) {
   const groups = selection.filter(isGroup);
   try {
@@ -47,7 +48,6 @@ export function rememberGroups(selection: Selection[]) {
       'campus-group-directory',
       JSON.stringify([...directory.values()].slice(-200)),
     );
-    localStorage.setItem('campus-groups', JSON.stringify(selection));
   } catch {}
 }
 

@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import { agendaIntervals, dayAgenda } from '../../../lib/agenda.ts';
-import { comparisonIssue, comparisonScope } from '../../../lib/domain.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
 import { lessonGroupLabel } from '../../../lib/subgroups.ts';
 import { lessonColor, type GroupColors } from '../../../lib/colors.ts';
@@ -27,6 +26,7 @@ import {
 import LessonDocument from '../../resources/LessonDocument.tsx';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import MilitaryPreview from '../../resources/MilitaryPreview.tsx';
+import DayEmpty from './DayEmpty.tsx';
 
 interface Props {
   schedules: GroupSchedule[];
@@ -69,18 +69,6 @@ export default function DayAgenda({
         (member) => !hiddenKinds.includes(selectionKind(member)),
       ),
     );
-  const { excluded } = comparisonScope(schedules, day);
-  const missing = schedules.filter((schedule) =>
-    comparisonIssue(schedule, day),
-  );
-  const allHidden =
-    schedules.length > 0 &&
-    schedules.every((schedule) =>
-      hiddenKinds.includes(selectionKind(schedule.selection)),
-    );
-  const saved = schedules.some(
-    (group) => group.snapshot && (group.snapshot.stale || group.error),
-  );
   return (
     <section
       className="day-agenda px-3 py-3 compact:px-4"
@@ -273,24 +261,7 @@ export default function DayAgenda({
         </ol>
       ) : (
         <p className="my-5 text-sm text-u-muted" role="status">
-          {allHidden
-            ? 'Карточки выбранных видов скрыты. Включи их в настройках отображения.'
-            : missing.some(
-                  (group) => comparisonIssue(group, day) === 'coverage',
-                )
-              ? 'Нет подтверждённых данных документа на этот день.'
-              : excluded.length || missing.length
-                ? schedules.some(
-                    (group) => comparisonIssue(group, day) === 'subgroup',
-                  )
-                  ? 'Подгруппа не определена; данные дня неполные.'
-                  : schedules.some((group) => group.error && !group.snapshot)
-                    ? 'Данные расписания недоступны.'
-                    : 'Ждём данные расписания.'
-                : 'В этот день занятий нет.'}
-          {saved && (
-            <span className="mt-1 block text-xs">По сохранённым данным</span>
-          )}
+          <DayEmpty schedules={schedules} day={day} hiddenKinds={hiddenKinds} />
         </p>
       )}
     </section>

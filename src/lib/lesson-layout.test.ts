@@ -94,6 +94,8 @@ test('a selected subgroup does not relabel shared whole-group membership', () =>
     1: [{ id: 101, label: 'Г-1/1' }],
     2: [{ id: 201, label: 'Г-2/2' }],
   };
+  a.snapshot.data.subgroups = catalogs[1];
+  b.snapshot.data.subgroups = catalogs[2];
   const blocks = lessonBlocks([a, b], date);
   assert.equal(blocks.length, 1);
   assert.equal(blocks[0].common, true);

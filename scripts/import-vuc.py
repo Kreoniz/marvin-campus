@@ -44,13 +44,20 @@ def period(value):
     return start, end
 
 
-def row_date(value, limits):
-    match = re.fullmatch(r"\s*(\d{2})\s+(\d{2})\s*", value)
+def row_date(value, limits, origin="source row"):
+    raw = value
+    value = compact(value)
+    # Blank/merged cells and standalone weekday annotations continue the known
+    # date. Any other nonempty text must establish its own date or fail closed.
+    annotation = re.sub(r"\s+", "", value).lower()
+    if not value or annotation in WEEKDAYS or annotation[::-1] in WEEKDAYS:
+        return None
+    match = re.fullmatch(r"(\d{2})(?:\s+|\s*\.\s*)(\d{2})", value)
     if not match:
         # Separate Word runs occasionally have no actual whitespace.
         match = re.fullmatch(r"(\d{2})(\d{2})", value)
     if not match:
-        return None
+        raise ValueError(f"{origin}: unrecognized source row date {raw!r}")
     day, month = map(int, match.groups())
     candidates = []
     for year in range(limits[0].year, limits[1].year + 1):
@@ -61,7 +68,7 @@ def row_date(value, limits):
         if limits[0] <= candidate <= limits[1]:
             candidates.append(candidate)
     if len(candidates) != 1:
-        raise ValueError("Source row date does not resolve within its section")
+        raise ValueError(f"{origin}: source row date {raw!r} does not resolve within its section")
     return candidates[0]
 
 
@@ -150,7 +157,7 @@ def docx_rows(path):
             current = None
             for row_index, row in enumerate(rows[1:], 1):
                 cells = word_cells(row, grid)
-                current = row_date(compact(cells[0][2]), limits) or current
+                current = row_date(cells[0][2], limits, f"{path.name}:table-{table_index}:row-{row_index}:cell-0") or current
                 platoon = compact(cells[1][2]).lower()
                 if current is None or not PLATOON.fullmatch(platoon):
                     raise ValueError("Unresolved Word date or platoon row")
@@ -198,7 +205,7 @@ def pdf_rows(path):
                     continue
                 if len(row_values) != 8:
                     raise ValueError("Unexpected PDF column count")
-                current = row_date(row_values[0] or "", limits) or current
+                current = row_date(row_values[0] or "", limits, f"{path.name}:page-{page_index}:row-{row_index}:cell-0") or current
                 platoon = compact(row_values[1] or "").lower()
                 if current is None or not PLATOON.fullmatch(platoon):
                     raise ValueError("Unresolved PDF date or platoon row")

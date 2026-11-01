@@ -1,14 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readSavedSchedule } from './saved-schedules.ts';
-import { STALE_GRACE } from './cache-policy.ts';
+import {
+  readSavedSchedule,
+  readSavedScheduleState,
+} from './saved-schedules.ts';
+import { STALE_GRACE, nextSnapshotChangeAt } from './cache-policy.ts';
 
 const week = '2026-10-12';
 const checked = Date.parse('2026-10-12T02:00:00Z');
 const body = {
   data: {
     groupId: 370,
-    lessons: [{ id: 'lesson', date: week }],
+    lessons: [
+      {
+        id: 'lesson',
+        date: week,
+        subject: 'Subject',
+        teacher: '',
+        room: '',
+        kind: '',
+        building: '',
+        remote: false,
+        subgroups: [],
+        start: 540,
+        end: 630,
+      },
+    ],
     subgroups: [],
   },
   checkedAt: new Date(checked).toISOString(),
@@ -52,6 +69,31 @@ test('restored data keeps its timestamps, becomes stale, and expires at the orig
       checked + 600000 + STALE_GRACE + 1,
     ),
     undefined,
+  );
+});
+
+test('a newer in-memory observation cannot hide the persisted week hard cutoff', async () => {
+  const week = '2026-11-02';
+  const before = Date.parse('2026-11-02T18:29:59Z');
+  const old = {
+    ...body,
+    data: { groupId: 370, subgroups: [], lessons: [] },
+    checkedAt: '2026-11-01T18:00:00Z',
+    expiresAt: '2026-11-01T18:30:00Z',
+  };
+  const fresh = {
+    ...old,
+    checkedAt: new Date(before).toISOString(),
+    expiresAt: new Date(before + 1800000).toISOString(),
+  };
+  const cache = storage(Response.json(old), `/api/schedule/370?week=${week}`);
+  const saved = await readSavedScheduleState(370, week, cache, before);
+  assert.equal(saved.offline.status, 'available');
+  const wake = nextSnapshotChangeAt([fresh, saved.snapshot], week, before);
+  assert.equal(wake, Date.parse('2026-11-02T18:30:00Z') + 1);
+  assert.equal(
+    (await readSavedScheduleState(370, week, cache, wake)).offline.status,
+    'expired',
   );
 });
 

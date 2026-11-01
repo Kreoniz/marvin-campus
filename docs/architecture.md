@@ -22,6 +22,10 @@
   `use-schedule-hotkeys` registers physical Vim keys with TanStack Hotkeys;
   editable fields, composition and visible overlays retain keyboard ownership.
   The optional shortcut preference is separate from comparison state and URLs.
+  View preference is validated in `view-preference.ts`, with separate general/VUC
+  storage keys. `current-lesson.ts` selects current/next personal lessons using an
+  explicit Omsk clock and the existing subgroup, coverage and expiry policies.
+  Day, Week and List share `day-content.ts`/`DayEmpty` for empty-state truth.
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   Compact chips open a schedule menu with subgroup, spotlight and management
   actions; pressed spotlight state uses fill without decorative checks. Multiple
@@ -38,7 +42,7 @@
   endpoints allow only `lecturer` and `auditorium`; normalization whitelists public
   lesson fields and canonical refs, retaining legacy teacher/room strings. Cache
   and Query keys include resource kind and ID. Resource weeks reuse snapshot
-  deadlines while persistent worker caching remains limited to group schedules.
+  deadlines and the same typed persistent worker cache as group and VUC weeks.
 - `internal/vuc` and `scripts/import-vuc.py`: bounded configured document datasets
   and a local importer. The API exposes a typed platoon catalogue and requested
   weeks with per-platoon covered/unresolved dates and source evidence; it accepts
@@ -110,8 +114,16 @@
   and categorical colors use computed styles; there are no app component
   stylesheets or parallel control resets. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
-  exact group/week saved responses with `saved-schedules.ts`, orchestrated by
+  exact kind/owner/week saved responses with `saved-schedules.ts`, orchestrated by
   `use-comparison.ts`, while normal requests run. This transient fallback never overwrites Query data or errors.
+  `public-cache.js` supplies shared validation, payload bounds and effective
+  deadlines to foreground readers and the standalone worker; `pwa-build.ts`
+  inlines it into the worker and includes it in the build hash. First-page
+  handoff waits for an acknowledgement, while availability is read from storage.
+  The existing shared store bounds responses to 100 entries and 2 MiB each,
+  including the public VUC catalogue. Worker activation retains one preceding
+  shell and explicitly routes its hashed JS/CSS for old clients; subsequent
+  activation retires that compatibility window.
   Deadline timers update stale/expired state in an idle tab and on Omsk Monday.
   Unknown groups in readable links resolve through a pool of three catalog
   lookups; URL order and ambiguity rejection are preserved.
@@ -136,6 +148,11 @@ a fresh link rather than an arbitrary choice of the first matching group.
 subgroup without a public number uses `sidID`. Old `/s/id` comparisons already
 contain source IDs and remain readable. Duplicate catalog names with distinct
 source IDs must be resolved through explicit selection, never first-match lookup.
+
+Subgroup resolution uses each response's own catalogue. The merged historical
+catalogue retains menu labels, but cannot prove which conflicting ID is current.
+Ambiguous public numbers and unverifiable raw-ID-only comparisons remain explicit;
+absence from a week without subgroup-specific lessons does not invalidate it.
 
 `/vuc` reuses `ComparisonPage` with a VUC-only catalogue and selection boundary.
 Typed URLs retain that page context, while mixed comparisons keep `/compare`.
