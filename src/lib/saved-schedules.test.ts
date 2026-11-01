@@ -8,7 +8,21 @@ const checked = Date.parse('2026-10-12T02:00:00Z');
 const body = {
   data: {
     groupId: 370,
-    lessons: [{ id: 'lesson', date: week }],
+    lessons: [
+      {
+        id: 'lesson',
+        date: week,
+        subject: 'Subject',
+        teacher: '',
+        room: '',
+        kind: '',
+        building: '',
+        remote: false,
+        subgroups: [],
+        start: 540,
+        end: 630,
+      },
+    ],
     subgroups: [],
   },
   checkedAt: new Date(checked).toISOString(),

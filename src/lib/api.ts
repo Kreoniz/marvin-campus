@@ -1,6 +1,7 @@
 import type { Group, Snapshot, Week } from './types.ts';
 import type { ViewState } from './url.ts';
 import { cachePwaResponse } from './pwa.ts';
+import { publicDataTarget, validPublicBody } from './public-cache.js';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, options);
@@ -12,7 +13,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (!response.ok)
     throw new Error(body.error || 'Не удалось загрузить данные.');
-  if (!options.method || options.method === 'GET') cachePwaResponse(path, body);
+  const target = publicDataTarget(new URL(path, 'https://campus.example'));
+  if (target?.week && !validPublicBody(target, body))
+    throw new Error('Сервер вернул некорректное расписание группы.');
+  if (!options.method || options.method === 'GET')
+    void cachePwaResponse(path, body);
   return body as T;
 }
 

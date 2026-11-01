@@ -20,7 +20,7 @@ import {
   scheduleKey,
   validSelection,
 } from '../../../lib/schedule-ref.ts';
-import { readSavedSchedule } from '../../../lib/saved-schedules.ts';
+import { readSavedScheduleState } from '../../../lib/saved-schedules.ts';
 import usePresentationCohort from './use-presentation-cohort.ts';
 import { selectionData } from '../../../lib/selection-analytics.ts';
 import {
@@ -34,9 +34,7 @@ import type {
   GroupSchedule,
   Mode,
   Selection,
-  Snapshot,
   Subgroup,
-  Week,
 } from '../../../lib/types.ts';
 import {
   normalizeView,
@@ -149,7 +147,6 @@ function savedColors(): GroupColors {
 }
 
 function useSchedules(selection: Selection[], week: string, enabled: boolean) {
-  const client = useQueryClient();
   const [now, setNow] = useState(Date.now);
   const latestSelection = useRef(selection);
   latestSelection.current = selection;
@@ -168,48 +165,37 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
   });
   const [saved, setSaved] = useState<{
     week: string;
-    snapshots: Record<string, Snapshot<Week>>;
-  }>({ week: '', snapshots: {} });
+    entries: Record<string, Awaited<ReturnType<typeof readSavedScheduleState>>>;
+  }>({ week: '', entries: {} });
+  const cacheRevision = JSON.stringify(
+    queries.map((query) => [
+      query.dataUpdatedAt,
+      query.errorUpdatedAt,
+      query.fetchStatus,
+    ]),
+  );
   useEffect(() => {
     let cancelled = false;
-    setSaved((previous) => ({
-      week,
-      snapshots: Object.fromEntries(
-        ids.flatMap((key) =>
-          previous.week === week && previous.snapshots[key]
-            ? [[key, previous.snapshots[key]]]
-            : [],
-        ),
-      ),
-    }));
-    for (const key of ids) {
-      const ref = latestSelection.current.find(
-        (ref) => scheduleKey(ref) === key,
-      );
-      if (
-        !ref ||
-        !isGroup(ref) ||
-        client.getQueryData(selectionWeekOptions(ref, week).queryKey)
-      )
-        continue;
-      void readSavedSchedule(ref.id, week).then((snapshot) => {
-        if (cancelled || !snapshot) return;
-        setSaved((previous) =>
-          previous.week !== week
-            ? previous
-            : { week, snapshots: { ...previous.snapshots, [key]: snapshot } },
-        );
-      });
-    }
+    void Promise.all(
+      ids.map(async (key) => {
+        const ref = latestSelection.current.find(
+          (ref) => scheduleKey(ref) === key,
+        )!;
+        return [key, await readSavedScheduleState(ref, week)] as const;
+      }),
+    ).then((entries) => {
+      if (!cancelled) setSaved({ week, entries: Object.fromEntries(entries) });
+    });
     return () => {
       cancelled = true;
     };
-  }, [client, ids, week]);
+  }, [ids, week, now, cacheRevision]);
   const availableSchedules: GroupSchedule[] = selection.map((ref) => {
     const key = scheduleKey(ref),
       query = queries[ids.indexOf(key)];
     const data =
-      query?.data ?? (saved.week === week ? saved.snapshots[key] : undefined);
+      query?.data ??
+      (saved.week === week ? saved.entries[key]?.snapshot : undefined);
     const snapshot = usableSnapshot(
       data,
       week,
@@ -219,6 +205,7 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
     return {
       selection: ref,
       snapshot,
+      offline: saved.week === week ? saved.entries[key]?.offline : undefined,
       error:
         query?.error?.message ||
         (paused && !snapshot
@@ -233,7 +220,7 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
   const deadlines = ids.flatMap((key, index) => {
     const data =
       queries[index]?.data ??
-      (saved.week === week ? saved.snapshots[key] : undefined);
+      (saved.week === week ? saved.entries[key]?.snapshot : undefined);
     const change = snapshotChangeAt(data, week, now);
     return change === undefined ? [] : [change];
   });
@@ -250,12 +237,24 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
     const updateClock = () => setNow(Date.now());
     window.addEventListener('focus', updateClock);
     window.addEventListener('online', updateClock);
+    window.addEventListener('campus-public-cache-change', updateClock);
     return () => {
       window.removeEventListener('focus', updateClock);
       window.removeEventListener('online', updateClock);
+      window.removeEventListener('campus-public-cache-change', updateClock);
     };
   }, []);
-  const schedules = usePresentationCohort(availableSchedules, week, enabled);
+  const schedules = usePresentationCohort(
+    availableSchedules,
+    week,
+    enabled,
+  ).map((entry) => ({
+    ...entry,
+    // Storage truth is current state, independent of calendar publication delay.
+    offline: availableSchedules.find(
+      (row) => scheduleKey(row.selection) === scheduleKey(entry.selection),
+    )?.offline,
+  }));
   return {
     schedules,
     pending: schedules.some((row) => row.loading),

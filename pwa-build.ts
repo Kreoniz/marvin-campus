@@ -1,6 +1,22 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { Plugin } from 'vite';
+// Keep worker and foreground validation identical without a second worker bundle.
+function workerTemplate() {
+  const protocol = readFileSync(
+    new URL('./src/lib/public-cache.js', import.meta.url),
+    'utf8',
+  ).replace(/^export /gm, '');
+  return readFileSync(
+    new URL('./src/service-worker.js', import.meta.url),
+    'utf8',
+  ).replace('/* __CAMPUS_PUBLIC_CACHE__ */', protocol);
+}
+export function renderServiceWorker(build: string, assets: string[]) {
+  return workerTemplate()
+    .replaceAll('__CAMPUS_BUILD__', JSON.stringify(build))
+    .replaceAll('__CAMPUS_ASSETS__', JSON.stringify(assets));
+}
 export function campusPwa(): Plugin {
   return {
     name: 'campus-pwa',
@@ -36,17 +52,11 @@ export function campusPwa(): Plugin {
           hash.update(
             readFileSync(new URL('./public' + path, import.meta.url)),
           );
-        const worker = readFileSync(
-          new URL('./src/service-worker.js', import.meta.url),
-          'utf8',
+        hash.update(workerTemplate());
+        const source = renderServiceWorker(
+          hash.digest('hex').slice(0, 12),
+          assets,
         );
-        hash.update(worker);
-        const source = worker
-          .replaceAll(
-            '__CAMPUS_BUILD__',
-            JSON.stringify(hash.digest('hex').slice(0, 12)),
-          )
-          .replaceAll('__CAMPUS_ASSETS__', JSON.stringify(assets));
         this.emitFile({ type: 'asset', fileName: 'sw.js', source });
       },
     },

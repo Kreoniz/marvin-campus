@@ -122,6 +122,9 @@ export default function ComparisonStatus({
                 UTC+6.
                 {saved &&
                   ' Сохранённые данные могут отличаться от текущего расписания.'}
+                {
+                  ' Офлайн доступна только сохранённая неделя до срока хранения. Браузер может удалить кеш; без сети он не обновляется.'
+                }
               </p>
               <ul className="m-0 list-none divide-y divide-[var(--u-line-soft)] p-0">
                 {schedules.map((group) => {
@@ -154,6 +157,17 @@ export default function ComparisonStatus({
                         </strong>
                         <span className="text-xs text-u-muted">{state}</span>
                       </div>
+                      <p className="mt-1 text-xs leading-[18px] text-u-muted">
+                        {group.offline?.status === 'available'
+                          ? `Офлайн: неделя ${group.offline.week} сохранена, ${imported ? 'получено от сервера' : 'проверено'} ${checkedLabel(group.offline.checkedAt!)}. Доступна сейчас, не позднее ${checkedLabel(group.offline.usableUntil!)}.`
+                          : group.offline?.status === 'expired'
+                            ? 'Офлайн: срок сохранённой недели истёк. Подключись для загрузки.'
+                            : group.offline?.status === 'unavailable'
+                              ? 'Офлайн: не удалось прочитать хранилище устройства.'
+                              : group.offline?.status === 'missing'
+                                ? 'Офлайн: эта неделя не сохранена или удалена из кеша.'
+                                : 'Офлайн: проверяем сохранение недели…'}
+                      </p>
                       {unresolved && (
                         <p className="mt-1 text-xs leading-[18px] text-u-ink">
                           Не удалось определить подгруппу{' '}
