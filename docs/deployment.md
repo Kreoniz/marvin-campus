@@ -1,13 +1,55 @@
 # Deployment
 
 Deployment remains manual by the owner's choice. GitHub CI validates the
-repository; the 0.2.3 main revision passed its validation job. No deployment
+repository; the 0.3.0 main revision passed its validation job. No deployment
 credentials or SSH key installation was required for this release.
 
-## Current release 0.2.3 — 2026-10-31
+## Current release 0.3.0 — 2026-11-02
+
+[Campus 0.3.0](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.3.0)
+is active at <https://campus.kreoniz.ru> from merge revision
+`e4f314ed0d8ff240690e725761ef11f64db0374a`, image
+`marvin-campus:e4f314ed0d8ff240690e725761ef11f64db0374a`, with OCI version
+`0.3.0` and image config ID
+`sha256:3caa6291149d69f51f5a08d0e5512bb67351ebca7461d1dc607d2e2a8d0ce5a5`.
+The compressed image archive SHA-256 is
+`4fdd84869c58cdc03621b8803d867114570c2522daee2fc9fe5f9a95d9b889c6`.
+The release includes the Linux amd64 image archive and its checksum.
+[PR 6](https://github.com/Kreoniz/marvin-campus/pull/6) was merged after its
+validation passed; [main CI](https://github.com/Kreoniz/marvin-campus/actions/runs/41340095171)
+also passed on the exact tagged source revision.
+
+The unchanged app-only receiver activated the healthy image at
+`2026-11-01T19:26:55Z` after a consistent SQLite backup. All 108 legacy
+comparisons retained their count and digest. Before/after hashes confirmed
+unchanged Compose, receiver, non-image environment and VUC dataset/originals.
+Container hardening, networking and the data volume were preserved. The previous
+healthy `marvin-campus:b0ef82e3bffe642df64dce742887449babfc4d9d` image and
+private backups remain available for rollback.
+
+Independent HTTPS verification matched all 35 built files, health, three
+app-shell routes, six VUC week responses and the exact 77,053-byte original.
+The isolated local release container passed health, all 35 file hashes and
+three app-shell routes before activation. The deployed application source
+matched main; the activation record is a later documentation-only commit.
+
+Release checks passed: 171 frontend tests, TypeScript, lint, tracked formatting,
+production build, Go race/vet, 12 importer/updater tests, 17 receiver tests and
+privacy/history/Gitleaks scans. The existing bundle-size warning remains.
+One council code-review round used two Terra and two Sol reviewers; all
+actionable findings were fixed. See [release behavior](releases/0.3.0.md) and
+[the review and validation record](reviews/2026-11-02-issue-5-code-council.md).
+
+Native browser Back/Forward and focus, offline relaunch, actual two-tab PWA
+activation and physical-device readability remain unverified. Static component
+renders and worker VM checks do not establish those behaviors. Lane-width
+alternatives, resource actions and performance investigations remain open in
+[issue 5](https://github.com/Kreoniz/marvin-campus/issues/5).
+
+## Previous release 0.2.3 — 2026-10-31
 
 [Campus 0.2.3](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.2.3)
-is active at <https://campus.kreoniz.ru> from revision
+was activated at <https://campus.kreoniz.ru> from revision
 `b0ef82e3bffe642df64dce742887449babfc4d9d`, image
 `marvin-campus:b0ef82e3bffe642df64dce742887449babfc4d9d`, with OCI version
 `0.2.3` and image config ID
