@@ -22,6 +22,10 @@
   `use-schedule-hotkeys` registers physical Vim keys with TanStack Hotkeys;
   editable fields, composition and visible overlays retain keyboard ownership.
   The optional shortcut preference is separate from comparison state and URLs.
+  View preference is validated in `view-preference.ts`, with separate general/VUC
+  storage keys. `current-lesson.ts` selects current/next personal lessons using an
+  explicit Omsk clock and the existing subgroup, coverage and expiry policies.
+  Day, Week and List share `day-content.ts`/`DayEmpty` for empty-state truth.
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   Compact chips open a schedule menu with subgroup, spotlight and management
   actions; pressed spotlight state uses fill without decorative checks. Multiple

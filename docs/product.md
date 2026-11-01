@@ -40,7 +40,9 @@ response does not verify that ID.
 Desktop starts with a compact week grid and a secondary selected-day detail;
 mobile starts with source-oriented Day. Three labelled 44×44 px header controls
 switch the primary surface between Day, Week and Day list at every viewport.
-The chosen view survives resizing and selection changes. The secondary detail
+The chosen view survives resizing, selection changes and restart as a validated
+local preference, separately for the general calendar and VUC. Missing or blocked
+storage retains the original viewport defaults. The secondary detail
 below desktop Week is always a timeline. Theme, help and display settings are one-click actions in that
 same row; below 420 px the brand keeps its avatar and accessible name.
 The list replaces the grid, preserves exact intervals and full subjects, shows
@@ -78,6 +80,12 @@ the first addition from the welcome screen. Added rows are marked “Уже до
 and cannot be added twice. Focus returns to the search input; Escape, outside
 click or Close dismisses the dialog. The 30-schedule cap disables further additions
 and explains how to make space without closing the dialog.
+Shorthand such as `АБ-101-2` first searches the complete real name. Only after
+fresh results establish a unique exact `АБ-101` does it check that group's
+selected week and offer a confirmed `/2` as an explicit result. Unknown or
+ambiguous subgroups are not guessed; the confirmed base group can still be
+chosen as a whole. This reuses the ordinary bounded week query, including on a
+first search without a remembered catalogue.
 The mobile calendar spans the available screen width, while controls and card
 content keep their internal spacing. The compact header keeps group names and
 subgroup scope visible. Display settings hold layer and kind visibility and
@@ -92,6 +100,16 @@ expand to their full time range/row count and use page scrolling vertically; wee
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
+When Day has no rendered lesson and no enabled meaningful comparison overlay,
+it uses a compact notice rather than a full empty time scale. Day, Week and List
+distinguish known-empty selected dates/subgroups, saved-empty data, hidden
+lessons, loading and missing/unresolved coverage. Known lessons remain visible
+in partial comparisons; hiding cards alone does not prove an empty day.
+On Omsk today, exactly one selected group/subgroup or VUC can show a compact
+current/next summary. It includes simultaneous lessons, saved/document
+qualifications and room/building or remote details. Other dates, comparisons,
+lecturers/rooms and unusable or unresolved inputs do not infer a personal
+schedule or a finished day. The clock follows minute boundaries and focus return.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
 The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. Soft edge fades appear only where more selections can be scrolled into view. Exclusion outlines stay inside the 44-pixel chip bounds. The visible thumb is four pixels thick and never covers the schedule-menu control. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
 Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
@@ -196,6 +214,10 @@ operator command prepares a new complete dataset and exact originals from explic
 inputs, leaving the old set intact; switching both paths requires an API restart.
 Archived data is never shifted into the current year. A date action opens a nearby covered date explicitly when other schedules
 are already selected. Source documents/imported data remain outside Git.
+Compact status names the local document's import time and unchecked website
+freshness; live-source checks are reported separately in mixed comparisons.
+When import time is unknown, details label checkedAt as server response time.
+Displayed, machine-readable and tooltip timestamps describe the same event.
 
 Mounted live-source lesson entries fade in over 180 ms without moving their geometry.
 Available VUC document cards remain static; an unknown lesson kind has no question-mark badge.
@@ -224,8 +246,8 @@ restoration must settle before missing selections are pruned. Removing a group d
 that group from the spotlight set. Fewer than two remaining groups clears the
 set. Display settings and day detail can clear all spotlights together.
 Viewing a temporary link does not prune highlights belonging to the saved workspace.
-Spotlight is a saved local preference and day format is transient presentation
-state; neither enters comparison URLs or changes the presence/free calculation.
+Spotlight and Day/Week/List are saved local preferences; neither enters comparison
+URLs or changes the presence/free calculation.
 
 Each Week date has its own minimum width derived from its retained rendered
 lanes in the chosen presentation mode. Empty dates retain a column; unknown, failed, expired
