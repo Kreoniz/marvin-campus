@@ -13,6 +13,7 @@ import {
   comparisonIssue,
   comparisonScope,
 } from '../../../lib/domain.ts';
+import { dayContent } from '../../../lib/day-content.ts';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
@@ -20,6 +21,7 @@ import { sourceLayout } from '../model/source-layout.ts';
 import { calendarBounds } from '../model/calendar-bounds.ts';
 import useCalendarNavigation from '../model/use-calendar-navigation.ts';
 import LessonCard from './LessonCard.tsx';
+import DayEmpty from './DayEmpty.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
 import Icon from '../../../shared/ui/Icon.tsx';
 import ComparisonHighlights, {
@@ -107,7 +109,7 @@ export default function Calendar({
     { length: (end - start) / 60 + 1 },
     (_, i) => start + i * 60,
   );
-  const { included, excluded } = comparisonScope(schedules, day);
+  const { included } = comparisonScope(schedules, day);
   const saved = included.some(
     (group) => group.snapshot && (group.snapshot.stale || group.error),
   );
@@ -120,14 +122,12 @@ export default function Calendar({
     const scope = comparisonScope(schedules, date);
     return {
       date,
+      empty: dayContent(schedules, date, hiddenKinds).knownEmpty,
       result: compareDay(schedules, date),
       scope,
       saved: scope.included.some(
         (group) => group.snapshot && (group.snapshot.stale || group.error),
       ),
-      complete: visible.every((group) => !comparisonIssue(group, date)),
-      hidden:
-        (schedules.length > 0 && visible.length === 0) || blocks.length > 0,
       unavailable: visible.filter((group) => comparisonIssue(group, date)),
       events: sourceLayout(
         blocks,
@@ -349,30 +349,13 @@ export default function Calendar({
                         {!column.events.occurrences.length && (
                           <div className="empty-column absolute inset-0 flex flex-col items-center justify-center gap-3 p-2.5 text-center text-xs text-u-muted">
                             <span>
-                              {!column.complete
-                                ? excluded.some(
-                                    (group) =>
-                                      comparisonIssue(group) === 'subgroup',
-                                  )
-                                  ? 'Подгруппа не определена'
-                                  : visible.some(
-                                        (group) =>
-                                          group.error && !group.snapshot,
-                                      )
-                                    ? 'Данные недоступны'
-                                    : visible.some((group) => group.loading)
-                                      ? 'Ждём данные'
-                                      : 'Нет данных на этот день'
-                                : column.hidden
-                                  ? 'Занятия скрыты'
-                                  : 'Нет занятий'}
+                              <DayEmpty
+                                schedules={schedules}
+                                day={column.date}
+                                hiddenKinds={hiddenKinds}
+                              />
                             </span>
-                            {column.complete && column.saved && (
-                              <span className="empty-saved text-[11px]">
-                                По сохранённым данным
-                              </span>
-                            )}
-                            {column.complete && !column.hidden && (
+                            {column.empty && (
                               <img
                                 src="/assets/planet.webp"
                                 alt=""

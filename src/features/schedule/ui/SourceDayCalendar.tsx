@@ -29,6 +29,7 @@ import {
 } from '../model/source-layout.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import LessonCard from './LessonCard.tsx';
+import DayEmpty from './DayEmpty.tsx';
 import { calendarBounds } from '../model/calendar-bounds.ts';
 import ComparisonHighlights, {
   type CalendarLayers,
@@ -105,6 +106,11 @@ export default function SourceDayCalendar({
   );
   const scope = comparisonScope(schedules, day);
   const result = compareDay(schedules, day);
+  const hasOverlay =
+    (layers.presence && result.presence.length > 0) ||
+    (layers.free && result.free.length > 0);
+  const compactEmpty =
+    !placeholder && !loading && !events.occurrences.length && !hasOverlay;
   const saved = scope.included.some(
     (schedule) =>
       schedule.snapshot && (schedule.snapshot.stale || schedule.error),
@@ -298,7 +304,7 @@ export default function SourceDayCalendar({
             if (document.activeElement === target) reveal(target);
           });
         }}
-        className="source-scroll relative overflow-x-auto overflow-y-hidden overscroll-x-contain [overflow-anchor:none]"
+        className={`source-scroll relative overflow-x-auto overflow-y-hidden overscroll-x-contain [overflow-anchor:none] ${compactEmpty ? 'hidden' : ''}`}
         role="region"
         tabIndex={0}
         aria-label="Занятия выбранных расписаний"
@@ -365,15 +371,23 @@ export default function SourceDayCalendar({
               </div>
             ) : (
               <p className="absolute top-12 right-4 left-14 text-sm text-u-muted">
-                {visible.length === 0
-                  ? 'Карточки выбранных видов скрыты.'
-                  : visible.some((schedule) => comparisonIssue(schedule, day))
-                    ? 'Нет подтверждённых данных.'
-                    : 'Нет занятий'}
+                <DayEmpty
+                  schedules={schedules}
+                  day={day}
+                  hiddenKinds={hiddenKinds}
+                />
               </p>
             ))}
         </div>
       </div>
+      {compactEmpty && (
+        <p
+          className="m-0 border-t border-u-line-soft px-3 py-3 text-sm text-u-muted"
+          role="status"
+        >
+          <DayEmpty schedules={schedules} day={day} hiddenKinds={hiddenKinds} />
+        </p>
+      )}
       {scope.included.length >= 2 && (layers.presence || layers.free) && (
         <p className="calendar-hint m-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-u-line-soft px-3 py-2 text-[11px] leading-4 text-u-muted">
           {layers.presence && (
