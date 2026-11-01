@@ -223,6 +223,7 @@ saved locally, separately for the general calendar and VUC. Initial link/workspa
 restoration must settle before missing selections are pruned. Removing a group drops only
 that group from the spotlight set. Fewer than two remaining groups clears the
 set. Display settings and day detail can clear all spotlights together.
+Viewing a temporary link does not prune highlights belonging to the saved workspace.
 Spotlight is a saved local preference and day format is transient presentation
 state; neither enters comparison URLs or changes the presence/free calculation.
 
@@ -255,6 +256,14 @@ Time board is retained as a future UX idea, not part of the current release:
 show common windows across the week and compact per-group occupancy rows, with
 shared lessons listed once. Before implementation, clarify busy versus off-campus
 time, exact interval boundaries, participant visibility and unavailable data.
+
+Home restores the last intentionally edited selection, separately for the general
+calendar and VUC. Opening or copying a link, changing dates or comparison mode,
+and Back/Forward do not adopt that temporary selection. Adding, removing,
+reordering or changing a subgroup does. Learning public group names for offline
+links is independent of saving the workspace. Repeating an active day, week,
+mode, subgroup or order creates no history entry; real changes retain their
+Back/Forward steps.
 
 Comparisons live in readable URLs, not on the server. Current-week source data
 is cached for thirty minutes, future weeks for an hour, past weeks for a day; group
