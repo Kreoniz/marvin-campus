@@ -38,7 +38,7 @@
   endpoints allow only `lecturer` and `auditorium`; normalization whitelists public
   lesson fields and canonical refs, retaining legacy teacher/room strings. Cache
   and Query keys include resource kind and ID. Resource weeks reuse snapshot
-  deadlines while persistent worker caching remains limited to group schedules.
+  deadlines and the same typed persistent worker cache as group and VUC weeks.
 - `internal/vuc` and `scripts/import-vuc.py`: bounded configured document datasets
   and a local importer. The API exposes a typed platoon catalogue and requested
   weeks with per-platoon covered/unresolved dates and source evidence; it accepts
@@ -110,8 +110,16 @@
   and categorical colors use computed styles; there are no app component
   stylesheets or parallel control resets. TanStack React Query owns browser request state;
   the service worker owns persistent offline responses. The active view reads
-  exact group/week saved responses with `saved-schedules.ts`, orchestrated by
+  exact kind/owner/week saved responses with `saved-schedules.ts`, orchestrated by
   `use-comparison.ts`, while normal requests run. This transient fallback never overwrites Query data or errors.
+  `public-cache.js` supplies shared validation, payload bounds and effective
+  deadlines to foreground readers and the standalone worker; `pwa-build.ts`
+  inlines it into the worker and includes it in the build hash. First-page
+  handoff waits for an acknowledgement, while availability is read from storage.
+  The existing shared store bounds responses to 100 entries and 2 MiB each,
+  including the public VUC catalogue. Worker activation retains one preceding
+  shell and explicitly routes its hashed JS/CSS for old clients; subsequent
+  activation retires that compatibility window.
   Deadline timers update stale/expired state in an idle tab and on Omsk Monday.
   Unknown groups in readable links resolve through a pool of three catalog
   lookups; URL order and ambiguity rejection are preserved.

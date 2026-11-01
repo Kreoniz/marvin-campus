@@ -180,8 +180,8 @@ teacher details and visible kind distinctions. Proven shared events combine
 missing metadata deterministically and retain conflicts explicitly.
 Large teacher rosters may expand after three names; one teacher stays visible.
 Mixed comparisons can be copied and restored; old group links retain their
-meaning. Persistent offline resource storage is deferred, so cold offline
-resource requests fail explicitly. Search results retain the 24-hour grace
+meaning. Recently opened lecturer, auditorium and VUC weeks use the same bounded
+offline store as groups. Unopened or expired weeks fail explicitly. Search results retain the 24-hour grace
 period and explicit retry rather than becoming indefinite fresh data.
 
 VUC is a local document import, not a live website feed. A selectable platoon
@@ -276,10 +276,20 @@ data too. A missing or expired snapshot never becomes an empty schedule.
 The details show a common check minute only for matching fresh states/times;
 individual timestamps remain available, and differing or failed states are explicit.
 
-The installable PWA keeps a complete application build and recently opened
-schedules for offline restart. It does not invent schedules for unopened groups
-or extend snapshot freshness. HTTP errors and cancelled requests remain errors.
-App updates are offered separately from schedule updates.
+The installable PWA keeps a complete application build and recently opened group,
+lecturer, auditorium and VUC weeks for offline restart, plus the public VUC
+catalogue. The shared store holds at most 100 responses of at most 2 MiB each.
+Per-source details report the actual saved week and original timestamps after a
+successful storage read, or a missing, expired or unavailable entry. Browser
+eviction and storage denial can remove availability; installation alone does not
+guarantee it. Reading a snapshot never extends its freshness or hard cutoff,
+including the shorter TTL when an Omsk future week becomes current.
+Unopened weeks, missing coverage and unavailable data never become empty
+schedules. Originals and private attendance are not automatically cached.
+HTTP errors and cancelled requests remain errors. App updates are offered
+separately from schedule updates. One previous complete shell is retained and
+its hashed JS/CSS can serve a tab still running that build; a further update
+retires it. This is bounded compatibility, not support for arbitrarily old tabs.
 The installation icons use a dark background and a bold character outline;
 the manifest launch background is also dark. The saved or system page theme
 still controls the opened application.
