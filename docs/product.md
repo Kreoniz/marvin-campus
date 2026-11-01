@@ -30,6 +30,13 @@ Lesson labels describe source membership, independently of that filter. A
 whole-group lesson keeps the base group name when a subgroup is selected; shared
 events retain each participant's own subgroup membership.
 
+Saved subgroup identities are checked against the current response's catalogue.
+A unique current public number can resolve an obsolete internal ID; conflicting
+or ambiguous identities cannot establish free time. A subgroup missing from one
+weekly catalogue is not by itself invalid. Raw-ID-only selections remain visible,
+but cannot establish a complete comparison when subgroup lessons exist and the
+response does not verify that ID.
+
 Desktop starts with a compact week grid and a secondary selected-day detail;
 mobile starts with source-oriented Day. Three labelled 44×44 px header controls
 switch the primary surface between Day, Week and Day list at every viewport.

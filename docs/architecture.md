@@ -137,6 +137,11 @@ subgroup without a public number uses `sidID`. Old `/s/id` comparisons already
 contain source IDs and remain readable. Duplicate catalog names with distinct
 source IDs must be resolved through explicit selection, never first-match lookup.
 
+Subgroup resolution uses each response's own catalogue. The merged historical
+catalogue retains menu labels, but cannot prove which conflicting ID is current.
+Ambiguous public numbers and unverifiable raw-ID-only comparisons remain explicit;
+absence from a week without subgroup-specific lessons does not invalidate it.
+
 `/vuc` reuses `ComparisonPage` with a VUC-only catalogue and selection boundary.
 Typed URLs retain that page context, while mixed comparisons keep `/compare`.
 Its saved selection uses a separate local key; canonical source IDs and the
