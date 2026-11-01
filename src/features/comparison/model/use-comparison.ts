@@ -53,6 +53,7 @@ export type Notify = (
 ) => void;
 
 export interface ComparisonView extends ViewState {
+  readonly savedGroups: Selection[];
   cancelInitialDate(): void;
   current(): ViewState;
   apply(value: ViewState): void;
@@ -100,14 +101,30 @@ function retryableOpeningError(error: unknown): boolean {
   );
 }
 
-function initialView() {
-  return parseView(
-    new URL(
-      typeof location === 'undefined'
-        ? 'https://campus.example/'
-        : location.href,
-    ),
-  );
+function restoreSelection(value: ViewState, vucOnly: boolean): ViewState {
+  let groups: Selection[] = [];
+  try {
+    groups = JSON.parse(
+      localStorage.getItem(
+        vucOnly ? 'campus-vuc-selection' : 'campus-groups',
+      ) ?? '[]',
+    );
+    if (vucOnly) groups = groups.filter((ref) => ref?.kind === 'vuc');
+  } catch {}
+  return normalizeView({ ...value, groups });
+}
+
+function initialView(
+  url = new URL(
+    typeof location === 'undefined' ? 'https://campus.example/' : location.href,
+  ),
+) {
+  const value = parseView(url);
+  return url.pathname === '/' &&
+    !url.searchParams.has('g') &&
+    !url.searchParams.has('s')
+    ? restoreSelection(value, false)
+    : value;
 }
 
 function savedColors(): GroupColors {
@@ -251,12 +268,12 @@ function useSchedules(selection: Selection[], week: string, enabled: boolean) {
 }
 
 function rememberSelection(selection: Selection[], vucOnly: boolean) {
-  if (!vucOnly) {
-    rememberGroups(selection);
-    return;
-  }
+  if (!vucOnly) rememberGroups(selection);
   try {
-    localStorage.setItem('campus-vuc-selection', JSON.stringify(selection));
+    localStorage.setItem(
+      vucOnly ? 'campus-vuc-selection' : 'campus-groups',
+      JSON.stringify(selection),
+    );
   } catch {}
 }
 
@@ -299,14 +316,34 @@ export function useComparison(notify: Notify, vucOnly = false) {
     }
     function change(value: Partial<ViewState>) {
       cancelInitialDate();
-      apply({ ...stateRef.current, ...value });
+      const current = stateRef.current;
+      const next = { ...current, ...value };
+      const sameGroups =
+        next.groups.length === current.groups.length &&
+        next.groups.every((group, index) => {
+          const previous = current.groups[index];
+          return (
+            scheduleKey(group) === scheduleKey(previous) &&
+            group.subgroup === previous.subgroup &&
+            group.subgroupNumber === previous.subgroupNumber
+          );
+        });
+      if (
+        sameGroups &&
+        next.week === current.week &&
+        next.day === current.day &&
+        next.mode === current.mode
+      )
+        return false;
+      apply(next);
       // Explicit links are temporary views. Only an intentional selection edit
-      // adopts their VUC set as the saved workspace; dates and copying do not.
-      if (vucOnly && value.groups) rememberSelection(value.groups, true);
+      // adopts their set as the saved workspace; dates and copying do not.
+      if (value.groups && !sameGroups) rememberSelection(next.groups, vucOnly);
       changedRef.current();
+      return true;
     }
     function reorder(groups: Selection[]) {
-      change({ groups });
+      if (!change({ groups })) return;
       if (groups.some(isGroup))
         track('groups_reordered', {
           group_count: groups.filter(isGroup).length,
@@ -341,6 +378,9 @@ export function useComparison(notify: Notify, vucOnly = false) {
       get groups() {
         return stateRef.current.groups;
       },
+      get savedGroups() {
+        return restoreSelection(stateRef.current, vucOnly).groups;
+      },
       get week() {
         return stateRef.current.week;
       },
@@ -360,7 +400,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
       reorder,
       selectDate(value) {
         if (!validDate(value)) return;
-        change({ week: monday(value), day: value });
+        if (!change({ week: monday(value), day: value })) return;
         track('date_selected');
       },
       add: addSchedule,
@@ -384,18 +424,25 @@ export function useComparison(notify: Notify, vucOnly = false) {
           (group) => scheduleKey(group) === key,
         );
         if (!selected || !isGroup(selected)) return;
-        const number = publicSubgroup(
-          catalogRef.current[selected.id]?.find(
-            (subgroup) => subgroup.id === value,
-          )?.label ?? '',
-        );
-        change({
-          groups: stateRef.current.groups.map((group) =>
-            scheduleKey(group) === key && isGroup(group)
-              ? { ...group, subgroup: value, subgroupNumber: number }
-              : group,
-          ),
-        });
+        const number =
+          publicSubgroup(
+            catalogRef.current[selected.id]?.find(
+              (subgroup) => subgroup.id === value,
+            )?.label ?? '',
+          ) ??
+          (value !== undefined && selected.subgroup === value
+            ? selected.subgroupNumber
+            : undefined);
+        if (
+          !change({
+            groups: stateRef.current.groups.map((group) =>
+              scheduleKey(group) === key && isGroup(group)
+                ? { ...group, subgroup: value, subgroupNumber: number }
+                : group,
+            ),
+          })
+        )
+          return;
         const group = stateRef.current.groups.find(
           (group) => scheduleKey(group) === key,
         );
@@ -422,7 +469,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
           (Date.parse(current.day) - Date.parse(current.week)) / 86400000,
         );
         const week = monday(value);
-        change({ week, day: addDays(week, offset) });
+        if (!change({ week, day: addDays(week, offset) })) return;
         const currentWeek = monday(omskToday());
         track('week_changed', {
           week_relation:
@@ -436,11 +483,11 @@ export function useComparison(notify: Notify, vucOnly = false) {
       selectDay(value) {
         if (!validDate(value) || monday(value) !== stateRef.current.week)
           return;
-        change({ day: value });
+        if (!change({ day: value })) return;
         track('day_changed');
       },
       selectMode(mode) {
-        change({ mode });
+        if (!change({ mode })) return;
         track('mode_changed', { mode });
       },
       move(key, offset) {
@@ -485,7 +532,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
       )
         return;
       const value = view.current();
-      if (!vucOnly) rememberSelection(value.groups, false);
+      if (!vucOnly) rememberGroups(value.groups);
       history.replaceState(
         { campusView: value },
         '',
@@ -515,7 +562,7 @@ export function useComparison(notify: Notify, vucOnly = false) {
       sync() {
         update({ manual: '' });
         const value = view.current();
-        if (!vucOnly) rememberSelection(value.groups, false);
+        if (!vucOnly) rememberGroups(value.groups);
         history.pushState(
           { campusView: value },
           '',
@@ -589,17 +636,10 @@ export function useComparison(notify: Notify, vucOnly = false) {
           ? normalizeView(await readShare(id, signal))
           : readable !== undefined
             ? await resolveReadable(url, client, signal)
-            : parseView(url);
+            : initialView(url);
         if (signal.aborted) return;
         if (vucOnly && !url.searchParams.has('s')) {
-          try {
-            value = normalizeView({
-              ...value,
-              groups: JSON.parse(
-                localStorage.getItem('campus-vuc-selection') ?? '[]',
-              ).filter((ref: Selection) => ref?.kind === 'vuc'),
-            });
-          } catch {}
+          value = restoreSelection(value, true);
         }
         if (
           (url.pathname === '/compare' ||
@@ -638,14 +678,6 @@ export function useComparison(notify: Notify, vucOnly = false) {
     const url = new URL(location.href);
     if (url.pathname !== '/') void openLocation(url);
     else {
-      if (!url.searchParams.has('g') && !url.searchParams.has('s')) {
-        try {
-          const groups = JSON.parse(
-            localStorage.getItem('campus-groups') ?? '[]',
-          );
-          view.apply(normalizeView({ ...view.current(), groups }));
-        } catch {}
-      }
       if (view.groups.length) links.canonicalize();
       else
         history.replaceState({ campusView: view.current() }, '', location.href);

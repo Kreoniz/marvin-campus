@@ -124,12 +124,13 @@ export default function ComparisonPage({
       .join(', ') || undefined;
   useEffect(() => {
     if (links.opening || links.error) return;
-    // The workspace can restore its selections in an earlier mount effect.
-    const selected = view.groups;
+    // Temporary links must not prune the saved workspace's highlights.
+    const selected = view.savedGroups;
+    const viewed = view.groups;
     const next =
-      selected.length > 1
+      Math.max(selected.length, viewed.length) > 1
         ? spotlightGroupIds.filter((id) =>
-            selected.some((group) => scheduleKey(group) === id),
+            [...selected, ...viewed].some((group) => scheduleKey(group) === id),
           )
         : [];
     if (next.length !== spotlightGroupIds.length) setSpotlightGroupIds(next);

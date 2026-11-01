@@ -1,12 +1,23 @@
-import { test } from 'node:test';
+import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveGroupRequests } from './group-resolution.ts';
 import { readableGroups } from './url.ts';
 import type { Group } from './types.ts';
+import { QueryClient } from '@tanstack/react-query';
+import { knownGroups, resolveReadable } from './group-directory.ts';
 
 const requests = (path: string) =>
   readableGroups(new URL(path, 'https://campus.example'))!;
 const signal = () => new AbortController().signal;
+
+function globalValue(t: TestContext, key: string, value: unknown) {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+  Object.defineProperty(globalThis, key, { configurable: true, value });
+  t.after(() => {
+    if (previous) Object.defineProperty(globalThis, key, previous);
+    else Reflect.deleteProperty(globalThis, key);
+  });
+}
 
 test('link lookups overlap with a three-request limit and preserve URL order', async () => {
   const pending = new Map<string, (value: Group[]) => void>();
@@ -58,6 +69,44 @@ test('known and numeric groups resolve offline without catalog requests', async 
     { id: 1, label: 'ФИТ-231' },
     { id: 7, label: 'Группа 7', subgroup: 71 },
   ]);
+});
+
+test('opening a readable link learns names without replacing the saved workspace', async (t) => {
+  const saved = [
+    { id: 1, label: 'АБ-123' },
+    { id: 2, label: 'ВГ-234' },
+  ];
+  const values = new Map([['campus-groups', JSON.stringify(saved)]]);
+  globalValue(t, 'localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+  });
+  globalValue(t, 'navigator', { onLine: false } as Navigator);
+  const client = new QueryClient();
+  t.after(() => client.clear());
+  const opened = await resolveReadable(
+    new URL('https://campus.example/ab-123?d=2026-11-02'),
+    client,
+    signal(),
+  );
+  assert.deepEqual(opened.groups, [saved[0]]);
+  assert.deepEqual(JSON.parse(values.get('campus-groups')!), saved);
+  assert.ok(knownGroups().some((group) => group.id === 1));
+  const aborted = new AbortController();
+  aborted.abort();
+  await assert.rejects(
+    resolveReadable(
+      new URL('https://campus.example/ab-123'),
+      client,
+      aborted.signal,
+    ),
+    { name: 'AbortError' },
+  );
+  await assert.rejects(
+    resolveReadable(new URL('https://campus.example/de-345'), client, signal()),
+    /Нет сети/,
+  );
+  assert.deepEqual(JSON.parse(values.get('campus-groups')!), saved);
 });
 
 test('ambiguous or unavailable directory matches cannot choose an arbitrary group', async () => {
