@@ -3,15 +3,23 @@ const SHELL_PREFIX = 'campus-shell-';
 const SHELL = SHELL_PREFIX + __CAMPUS_BUILD__;
 const ASSETS = __CAMPUS_ASSETS__;
 /* __CAMPUS_PUBLIC_CACHE__ */
+// One previous build supports tabs still running old code. Further updates retire it.
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(ASSETS)));
 });
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      for (const name of await caches.keys())
-        if (name.startsWith(SHELL_PREFIX) && name !== SHELL)
-          await caches.delete(name);
+      const previous = (await caches.keys()).filter(
+        (name) => name.startsWith(SHELL_PREFIX) && name !== SHELL,
+      );
+      let retained = false;
+      for (const name of previous.reverse()) {
+        // An interrupted install may leave an empty cache; it is not a build.
+        if (!retained && (await (await caches.open(name)).match('/')))
+          retained = true;
+        else await caches.delete(name);
+      }
       await self.clients.claim();
     })(),
   );
@@ -109,6 +117,22 @@ async function networkData(request, key) {
     );
   }
 }
+async function shellAsset(request, path) {
+  const current = await (await caches.open(SHELL)).match(path);
+  if (current) return current;
+  // Only content-addressed JS/CSS from the immediately preceding build can be
+  // routed here. Old HTML/public assets never override this build's shell.
+  if (/^\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(path)) {
+    const previous = (await caches.keys())
+      .filter((name) => name.startsWith(SHELL_PREFIX) && name !== SHELL)
+      .reverse();
+    for (const name of previous) {
+      const response = await (await caches.open(name)).match(path);
+      if (response) return response;
+    }
+  }
+  return fetch(request);
+}
 self.addEventListener('fetch', (event) => {
   const request = event.request,
     url = new URL(request.url);
@@ -134,13 +158,10 @@ self.addEventListener('fetch', (event) => {
         .open(SHELL)
         .then(async (cache) => (await cache.match('/')) || fetch(request)),
     );
-  } else if (ASSETS.includes(url.pathname)) {
-    event.respondWith(
-      caches
-        .open(SHELL)
-        .then(
-          async (cache) => (await cache.match(url.pathname)) || fetch(request),
-        ),
-    );
+  } else if (
+    ASSETS.includes(url.pathname) ||
+    /^\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(url.pathname)
+  ) {
+    event.respondWith(shellAsset(request, url.pathname));
   }
 });

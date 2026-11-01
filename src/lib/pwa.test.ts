@@ -296,6 +296,35 @@ test('public lecturer, auditorium and VUC weeks reach the persistent worker rout
     );
   }
 });
+test('a second old client can load its unrequested lazy chunk after a new worker activates', async () => {
+  const stores = new Map<string, Map<string, Response>>();
+  const old = worker('old', ['/', '/assets/lazy-old.js'], stores);
+  await (
+    await old.context.caches.open('campus-shell-old')
+  ).put('/', new Response('old HTML'));
+  await (
+    await old.context.caches.open('campus-shell-old')
+  ).put('/assets/lazy-old.js', new Response('old lazy code'));
+  const next = worker('next', ['/', '/assets/lazy-next.js'], stores);
+  await next.context.caches.open('campus-shell-next');
+  let activation: Promise<void> | undefined;
+  next.handlers.activate({
+    waitUntil: (value: Promise<void>) => {
+      activation = value;
+    },
+  });
+  await activation;
+  next.network(
+    async () =>
+      new Response('asset removed from new deployment', { status: 404 }),
+  );
+  const oldChunk = intercepted(next, '/assets/lazy-old.js');
+  assert.ok(
+    oldChunk,
+    'new worker must route assets belonging to the previous build',
+  );
+  assert.equal(await (await oldChunk).text(), 'old lazy code');
+});
 
 const refs: Selection[] = [
   { id: 370, label: 'Group' },
@@ -560,6 +589,51 @@ test('oversized payloads, quota denial, missing entries and eviction do not prom
     false,
   );
 });
+test('compatibility is bounded to two shells, routes old hashed JS/CSS offline and never serves old HTML', async () => {
+  const stores = new Map<string, Map<string, Response>>();
+  const oldest = worker('oldest', undefined, stores);
+  await (
+    await oldest.context.caches.open('campus-shell-oldest')
+  ).put('/assets/lazy-oldest.js', new Response('retired'));
+  const old = worker('old', undefined, stores);
+  const cache = await old.context.caches.open('campus-shell-old');
+  await cache.put('/assets/lazy-old.css', new Response('old CSS'));
+  await cache.put('/', new Response('old HTML'));
+  await old.context.caches.open('campus-shell-interrupted');
+  const next = worker('next', undefined, stores);
+  await (
+    await next.context.caches.open('campus-shell-next')
+  ).put('/', new Response('new HTML'));
+  let activation: Promise<void> | undefined;
+  next.handlers.activate({
+    waitUntil: (value: Promise<void>) => {
+      activation = value;
+    },
+  });
+  await activation;
+  assert.deepEqual(
+    [...stores.keys()],
+    ['campus-shell-old', 'campus-shell-next'],
+  );
+  assert.equal(
+    await (await intercepted(next, '/assets/lazy-old.css'))!.text(),
+    'old CSS',
+  );
+  await assert.rejects(intercepted(next, '/assets/lazy-oldest.js')!, /offline/);
+  let html!: Promise<Response>;
+  next.handlers.fetch({
+    request: {
+      method: 'GET',
+      mode: 'navigate',
+      url: 'https://campus.example/',
+    },
+    respondWith: (value: Promise<Response>) => {
+      html = value;
+    },
+  });
+  assert.equal(await (await html).text(), 'new HTML');
+});
+
 test('a cold VUC catalogue uses the same persistent store and original timestamps, with HTTP/abort failures preserved', async () => {
   const w = worker();
   const body = { ...snapshot(), data: [refs[3]] };
