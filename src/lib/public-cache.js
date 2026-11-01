@@ -77,6 +77,30 @@ function inWeek(value, week) {
     Date.parse(value) < Date.parse(week) + 7 * DAY
   );
 }
+const optional = (value, valid) => value === undefined || valid(value);
+const stringList = (value) =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+function interval(value) {
+  return (
+    value &&
+    Number.isInteger(value.start) &&
+    Number.isInteger(value.end) &&
+    value.start >= 0 &&
+    value.end <= 1440 &&
+    value.start < value.end
+  );
+}
+function resourceRef(value, kind) {
+  return (
+    value &&
+    value.kind === kind &&
+    Number.isSafeInteger(value.id) &&
+    value.id > 0 &&
+    value.id <= 10000000 &&
+    typeof value.label === 'string' &&
+    optional(value.source, (source) => source === 'rasp')
+  );
+}
 function validLesson(lesson, week) {
   return (
     lesson &&
@@ -91,7 +115,32 @@ function validLesson(lesson, week) {
     lesson.end <= 1440 &&
     lesson.start < lesson.end &&
     Array.isArray(lesson.subgroups) &&
-    lesson.subgroups.every((id) => Number.isInteger(id) && id > 0)
+    lesson.subgroups.every((id) => Number.isInteger(id) && id > 0) &&
+    ['source', 'audience', 'rawText', 'sourceOrigin'].every((key) =>
+      optional(lesson[key], (value) => typeof value === 'string'),
+    ) &&
+    optional(lesson.audiences, stringList) &&
+    optional(lesson.metadataWarnings, stringList) &&
+    optional(
+      lesson.teachers,
+      (value) =>
+        Array.isArray(value) &&
+        value.every((ref) => resourceRef(ref, 'lecturer')),
+    ) &&
+    optional(lesson.roomRef, (value) => resourceRef(value, 'auditorium')) &&
+    optional(
+      lesson.sourceIntervals,
+      (value) => Array.isArray(value) && value.every(interval),
+    ) &&
+    optional(
+      lesson.sourceBounds,
+      (value) =>
+        value &&
+        Number.isFinite(value.left) &&
+        Number.isFinite(value.right) &&
+        value.left <= value.right &&
+        ['pt', 'twip'].includes(value.unit),
+    )
   );
 }
 export function validPublicBody(target, body) {
@@ -120,6 +169,10 @@ export function validPublicBody(target, body) {
           typeof ref.label === 'string' &&
           ref.label.trim().length > 0 &&
           ref.label.length <= 160 &&
+          optional(ref.warnings, stringList) &&
+          ['description', 'sourceLabel', 'sourcePeriod'].every((key) =>
+            optional(ref[key], (value) => typeof value === 'string'),
+          ) &&
           (ref.coveredDates === undefined ||
             (Array.isArray(ref.coveredDates) &&
               ref.coveredDates.length <= 200 &&
@@ -134,7 +187,24 @@ export function validPublicBody(target, body) {
   if (
     !data ||
     !Array.isArray(data.lessons) ||
-    !data.lessons.every((lesson) => validLesson(lesson, target.week))
+    !data.lessons.every((lesson) => validLesson(lesson, target.week)) ||
+    !optional(data.warnings, stringList) ||
+    !['sourceLabel', 'sourcePeriod', 'importedAt'].every((key) =>
+      optional(data[key], (value) => typeof value === 'string'),
+    ) ||
+    !optional(
+      data.unparsedCells,
+      (value) =>
+        Array.isArray(value) &&
+        value.every(
+          (cell) =>
+            cell &&
+            inWeek(cell.date, target.week) &&
+            ['rawText', 'sourceOrigin', 'reason'].every(
+              (key) => typeof cell[key] === 'string',
+            ),
+        ),
+    )
   )
     return false;
   if (target.kind === 'group')

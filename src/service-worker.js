@@ -2,6 +2,7 @@
 const SHELL_PREFIX = 'campus-shell-';
 const SHELL = SHELL_PREFIX + __CAMPUS_BUILD__;
 const ASSETS = __CAMPUS_ASSETS__;
+const ACTIVATION = '/__campus_shell_activation__';
 /* __CAMPUS_PUBLIC_CACHE__ */
 // One previous build supports tabs still running old code. Further updates retire it.
 self.addEventListener('install', (event) => {
@@ -10,16 +11,38 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const previous = (await caches.keys()).filter(
-        (name) => name.startsWith(SHELL_PREFIX) && name !== SHELL,
+      const history = await Promise.all(
+        (await caches.keys())
+          .filter((name) => name.startsWith(SHELL_PREFIX))
+          .map(async (name, index) => {
+            const cache = await caches.open(name);
+            let order = 0;
+            try {
+              const value = await (await cache.match(ACTIVATION))?.json();
+              if (Number.isSafeInteger(value?.order) && value.order > 0)
+                order = value.order;
+            } catch {}
+            return { name, index, order, complete: !!(await cache.match('/')) };
+          }),
       );
       let retained = false;
-      for (const name of previous.reverse()) {
+      for (const entry of history
+        .filter((entry) => entry.name !== SHELL)
+        .sort((a, b) => b.order - a.order || b.index - a.index)) {
         // An interrupted install may leave an empty cache; it is not a build.
-        if (!retained && (await (await caches.open(name)).match('/')))
-          retained = true;
-        else await caches.delete(name);
+        if (!retained && entry.complete) retained = true;
+        else await caches.delete(entry.name);
       }
+      // Creation order is unchanged by rollback. Record activation order in the
+      // shell itself, without another persistent store or unbounded history.
+      await (
+        await caches.open(SHELL)
+      ).put(
+        ACTIVATION,
+        Response.json({
+          order: Math.max(0, ...history.map((entry) => entry.order)) + 1,
+        }),
+      );
       await self.clients.claim();
     })(),
   );
@@ -36,6 +59,20 @@ function saveData(key, body) {
     const text = publicBodyText(body);
     if (text === undefined) return false;
     const cache = await caches.open(PUBLIC_DATA_CACHE);
+    if (target.kind !== 'share') {
+      let previous;
+      try {
+        previous = await readPublicResponse(await cache.match(key));
+      } catch {}
+      if (validPublicBody(target, previous)) {
+        const delta =
+          Date.parse(previous.checkedAt) - Date.parse(body.checkedAt);
+        // A late tab/handoff must not regress observation time. At equal time,
+        // retain the original successful body over a synthesized offline copy.
+        if (delta > 0 || (delta === 0 && (!previous.stale || body.stale)))
+          return true;
+      }
+    }
     await cache.put(
       key,
       new Response(text, {

@@ -117,6 +117,44 @@ test('offline snapshots are labelled and retain the server timestamp/deadline', 
   assert.equal(cached.expiresAt, body.expiresAt);
   assert.match(cached.warning, /Нет сети/);
 });
+test('delayed handoffs retain a newer observation and equal-time original freshness', async () => {
+  const w = worker();
+  const newer = snapshot();
+  const older = {
+    ...newer,
+    checkedAt: new Date(Date.parse(newer.checkedAt) - 10000).toISOString(),
+    data: { ...newer.data, lessons: [] },
+  };
+  await w.context.saveData(key, newer);
+  await w.context.saveData(key, older);
+  assert.deepEqual(
+    await (
+      await (await w.context.caches.open(PUBLIC_DATA_CACHE)).match(key)
+    ).json(),
+    newer,
+  );
+  await w.context.saveData(key, {
+    ...newer,
+    stale: true,
+    warning: 'Нет сети.',
+  });
+  assert.deepEqual(
+    await (
+      await (await w.context.caches.open(PUBLIC_DATA_CACHE)).match(key)
+    ).json(),
+    newer,
+  );
+  await (
+    await w.context.caches.open(PUBLIC_DATA_CACHE)
+  ).put(key, Response.json({ broken: true }));
+  assert.equal(await w.context.saveData(key, older), true);
+  assert.deepEqual(
+    await (
+      await (await w.context.caches.open(PUBLIC_DATA_CACHE)).match(key)
+    ).json(),
+    older,
+  );
+});
 test('HTTP failures and cancellation are not silently replaced by cached success', async () => {
   const w = worker();
   await w.context.saveData(key, snapshot());
@@ -488,6 +526,45 @@ test('both persistent paths reject mismatched kinds, owners, week dates and malf
     }
   }
 });
+test('malformed optional consumer arrays cannot poison persistent weeks', async () => {
+  const w = worker();
+  const malformed = [
+    { warnings: 'invalid' },
+    { warnings: [{}] },
+    { unparsedCells: {} },
+    { unparsedCells: [{ date: '2026-10-12', reason: null }] },
+    ...[
+      { teachers: {} },
+      { teachers: [{ kind: 'auditorium', id: 1, label: 'Room' }] },
+      { audiences: {} },
+      { audiences: [null] },
+      { sourceIntervals: 'invalid' },
+      { sourceIntervals: [{ start: 700, end: 600 }] },
+      { roomRef: {} },
+    ].map((fields) => ({
+      lessons: [{ ...snapshot().data.lessons[0], ...fields }],
+    })),
+  ];
+  for (const ref of refs) {
+    for (const fields of malformed) {
+      const body = typedSnapshot(ref);
+      const bad = { ...body, data: { ...body.data, ...fields } };
+      assert.equal(
+        await w.context.saveData(pathKey(ref), bad),
+        false,
+        JSON.stringify(fields),
+      );
+      await (
+        await w.context.caches.open(PUBLIC_DATA_CACHE)
+      ).put(pathKey(ref), Response.json(bad));
+      assert.equal(
+        (await readSavedScheduleState(ref, '2026-10-12', w.context.caches))
+          .snapshot,
+        undefined,
+      );
+    }
+  }
+});
 test('worker and foreground share the effective expiry cutoff across Omsk Monday', async () => {
   const monday = '2026-11-02';
   const checked = Date.parse('2026-11-01T17:00:00Z');
@@ -632,6 +709,34 @@ test('compatibility is bounded to two shells, routes old hashed JS/CSS offline a
     },
   });
   assert.equal(await (await html).text(), 'new HTML');
+});
+
+test('rollback retains the last activated build rather than the last created cache', async () => {
+  const stores = new Map<string, Map<string, Response>>();
+  async function activate(build: string) {
+    const w = worker(build, ['/', `/assets/lazy-${build}.js`], stores);
+    const cache = await w.context.caches.open(`campus-shell-${build}`);
+    await cache.put('/', new Response(`${build} HTML`));
+    await cache.put(`/assets/lazy-${build}.js`, new Response(build));
+    let done!: Promise<void>;
+    w.handlers.activate({
+      waitUntil: (value: Promise<void>) => {
+        done = value;
+      },
+    });
+    await done;
+    return w;
+  }
+  await activate('A');
+  await activate('B');
+  await activate('A');
+  const next = await activate('C');
+  assert.deepEqual([...stores.keys()], ['campus-shell-A', 'campus-shell-C']);
+  assert.equal(
+    await (await intercepted(next, '/assets/lazy-A.js'))!.text(),
+    'A',
+  );
+  await assert.rejects(intercepted(next, '/assets/lazy-B.js')!, /offline/);
 });
 
 test('a cold VUC catalogue uses the same persistent store and original timestamps, with HTTP/abort failures preserved', async () => {
