@@ -1,6 +1,7 @@
 import { useId } from 'react';
 
-export type ScheduleView = 'day' | 'week' | 'list';
+import type { ScheduleView } from '../../../lib/view-preference.ts';
+export type { ScheduleView } from '../../../lib/view-preference.ts';
 const items = [
   { value: 'day', label: 'День' },
   { value: 'week', label: 'Неделя' },

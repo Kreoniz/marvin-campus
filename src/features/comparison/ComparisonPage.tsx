@@ -35,6 +35,11 @@ import ScheduleViewPicker, {
   type ScheduleView,
 } from './ui/ScheduleViewPicker.tsx';
 
+import {
+  rememberScheduleView,
+  savedScheduleView,
+} from '../../lib/view-preference.ts';
+
 const compactQuery =
   '(max-width: 700px), (max-width: 1000px) and (max-height: 500px)';
 
@@ -61,8 +66,10 @@ export default function ComparisonPage({
     document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
   const [mobile, setMobile] = useState(() => matchMedia(compactQuery).matches);
-  const [scheduleView, setScheduleView] = useState<ScheduleView>(() =>
-    vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week',
+  const [scheduleView, setScheduleView] = useState<ScheduleView>(
+    () =>
+      savedScheduleView(vucOnly) ??
+      (vucOnly || matchMedia(compactQuery).matches ? 'day' : 'week'),
   );
   const [dayReveal, setDayReveal] = useState(0);
   const [spotlightGroupIds, setSpotlightGroupIds] = useState(() =>
@@ -167,6 +174,7 @@ export default function ComparisonPage({
   }
   function selectFormat(value: ScheduleView) {
     view.cancelInitialDate();
+    rememberScheduleView(vucOnly, value);
     if (value === scheduleView) return;
     setScheduleView(value);
     track('mobile_view_changed', { view: value });
