@@ -26,8 +26,8 @@ import { selectionData } from '../../../lib/selection-analytics.ts';
 import {
   mergeSubgroups,
   publicSubgroup,
+  resolveSubgroupSelection,
   savedSubgroups,
-  selectedSubgroup,
 } from '../../../lib/subgroups.ts';
 import type {
   Group,
@@ -405,17 +405,12 @@ export function useComparison(notify: Notify, vucOnly = false) {
       resolveSubgroups(known) {
         let updated = false;
         const groups = stateRef.current.groups.map((group) => {
-          if (!isGroup(group)) return group;
-          const options = known[group.id] ?? [];
-          const match = options.find(
-            (option) => option.id === selectedSubgroup(group, options),
+          const resolved = resolveSubgroupSelection(
+            group,
+            isGroup(group) ? (known[group.id] ?? []) : [],
           );
-          if (!match) return group;
-          const number = publicSubgroup(match.label) ?? group.subgroupNumber;
-          if (group.subgroup === match.id && group.subgroupNumber === number)
-            return group;
-          updated = true;
-          return { ...group, subgroup: match.id, subgroupNumber: number };
+          if (resolved !== group) updated = true;
+          return resolved;
         });
         if (updated) apply({ ...stateRef.current, groups });
         return updated;
@@ -691,16 +686,13 @@ export function useComparison(notify: Notify, vucOnly = false) {
   const fetching = linkState.opening || source.fetching;
 
   useEffect(() => {
-    const known = { ...subgroupCatalog };
+    const current: Record<number, Subgroup[]> = {};
     for (const row of source.schedules) {
       if (isGroup(row.selection) && row.snapshot)
-        known[row.selection.id] = mergeSubgroups(
-          known[row.selection.id] ?? [],
-          row.snapshot.data.subgroups ?? [],
-        );
+        current[row.selection.id] = row.snapshot.data.subgroups ?? [];
     }
-    if (view.resolveSubgroups(known)) links.canonicalize();
-  }, [state.groups, subgroupCatalog, source.schedules, view, links]);
+    if (view.resolveSubgroups(current)) links.canonicalize();
+  }, [state.groups, source.schedules, view, links]);
 
   useEffect(() => {
     if (

@@ -167,6 +167,29 @@ test('unresolved subgroup is excluded, never interpreted as free time', () => {
   assert.deepEqual(resolved.free, []);
 });
 
+test('a stale saved subgroup cannot publish a false complete 09:00–12:00 window', () => {
+  const edges = [lesson(480, 540), lesson(720, 780)];
+  const selected = group(
+    1,
+    [...edges, lesson(540, 720, { subgroups: [12] })],
+    99,
+  );
+  selected.selection.subgroupNumber = 2;
+  selected.snapshot.data.subgroups = [{ id: 12, label: 'Г-1/2' }];
+  const result = compareDay([selected, group(2, edges)], date);
+  assert.deepEqual(result.free, []);
+  assert.equal(result.complete, true);
+  assert.equal(comparisonIssue(selected), undefined);
+  assert.deepEqual(lessonsFor(selected), selected.snapshot.data.lessons);
+  // With only a raw ID there is no public identity to remap. Preserve that
+  // link, but do not claim a free window from an unverified filter.
+  selected.selection.subgroupNumber = undefined;
+  assert.equal(comparisonIssue(selected), 'subgroup');
+  assert.equal(compareDay([selected, group(2, edges)], date).complete, false);
+  assert.deepEqual(lessonsFor(selected), edges);
+  assert.equal(selected.selection.subgroup, 99);
+});
+
 test('partial comparisons retain valid empty, remote-only and saved schedules', () => {
   const missing: GroupSchedule = {
     selection: { id: 1, label: 'Г-1' },
@@ -199,11 +222,30 @@ test('partial comparisons retain valid empty, remote-only and saved schedules', 
   empty.selection.subgroup = 12;
   assert.equal(comparisonIssue(empty), undefined);
   assert.equal(empty.selection.subgroupNumber, 2);
+  empty.selection.subgroupNumber = undefined;
+  assert.equal(comparisonIssue(empty), undefined);
+  assert.equal(compareDay([empty, second], date).complete, true);
+  // RUZ catalogues contain only this week's subgroups. A missing /2 is
+  // compatible with a successful week containing only /1 and whole-group work.
+  const otherWeek = group(
+    6,
+    [lesson(480, 540), lesson(540, 720, { subgroups: [11] })],
+    12,
+  );
+  otherWeek.selection.subgroupNumber = 2;
+  otherWeek.snapshot.data.subgroups = [{ id: 11, label: 'Г-6/1' }];
+  assert.equal(comparisonIssue(otherWeek), undefined);
+  assert.deepEqual(lessonsFor(otherWeek), [otherWeek.snapshot.data.lessons[0]]);
+  assert.equal(compareDay([otherWeek, second], date).complete, true);
+  otherWeek.selection.subgroupNumber = undefined;
+  assert.equal(comparisonIssue(otherWeek), 'subgroup');
+  assert.deepEqual(lessonsFor(otherWeek), [otherWeek.snapshot.data.lessons[0]]);
   assert.deepEqual(compareDay([missing], date).free, []);
 });
 
 test('ambiguous public subgroup identities cannot become a complete comparison', () => {
-  const ambiguous = group(1, [lesson(480, 540, { subgroups: [12] })]);
+  const whole = lesson(720, 780);
+  const ambiguous = group(1, [lesson(480, 540, { subgroups: [12] }), whole]);
   ambiguous.selection.subgroupNumber = 2;
   ambiguous.snapshot!.data.subgroups = [
     { id: 12, label: 'Г-1/2' },
@@ -211,6 +253,14 @@ test('ambiguous public subgroup identities cannot become a complete comparison',
   ];
   assert.equal(comparisonIssue(ambiguous), 'subgroup');
   assert.equal(compareDay([ambiguous, group(2, [])], date).complete, false);
+  // A saved positive ID must not bypass an actual identity conflict either.
+  ambiguous.selection.subgroup = 12;
+  assert.equal(comparisonIssue(ambiguous), 'subgroup');
+  assert.deepEqual(lessonsFor(ambiguous), [whole]);
+  assert.equal(compareDay([ambiguous, group(2, [])], date).complete, false);
+  ambiguous.selection.subgroupNumber = undefined;
+  assert.equal(comparisonIssue(ambiguous), undefined);
+  assert.deepEqual(lessonsFor(ambiguous), ambiguous.snapshot!.data.lessons);
 });
 test('common events need matching source identity and details across all groups', () => {
   const shared = lesson(480, 540);
