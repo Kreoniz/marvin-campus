@@ -20,7 +20,12 @@ import {
   selectionKind,
   validSelection,
 } from '../../../lib/schedule-ref.ts';
-import type { Selection, ScheduleKind } from '../../../lib/types.ts';
+import type { Selection, ScheduleKind, Subgroup } from '../../../lib/types.ts';
+import { selectionLabel } from '../../../lib/subgroups.ts';
+import {
+  subgroupSearch,
+  subgroupSearchTerm,
+} from '../../../lib/subgroup-search.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import Icon from '../../../shared/ui/Icon.tsx';
 import GroupOrder from './GroupOrder.tsx';
@@ -33,6 +38,7 @@ interface Props {
   selected: Selection[];
   vucOnly?: boolean;
   hiddenKinds?: ScheduleKind[];
+  subgroupCatalog?: Record<number, Subgroup[]>;
   onAdd: (selection: Selection) => void;
   children: ReactNode;
   returnFocus: RefObject<HTMLButtonElement | null>;
@@ -59,6 +65,7 @@ export default function GroupPicker({
   selected,
   vucOnly = false,
   hiddenKinds = [],
+  subgroupCatalog = {},
   onAdd,
   children,
   returnFocus,
@@ -99,6 +106,27 @@ export default function GroupPicker({
     ...groupOptions(debounced),
     enabled: enabled && !vucOnly,
   });
+  const subgroupRequest = subgroupSearchTerm(debounced);
+  const fullSearchConfirmed =
+    enabled &&
+    !vucOnly &&
+    groups.isSuccess &&
+    Array.isArray(groups.data.data) &&
+    !groups.isFetching &&
+    !groups.isError &&
+    !groups.data.stale &&
+    Date.parse(groups.data.expiresAt) >= Date.now();
+  const baseEnabled =
+    fullSearchConfirmed &&
+    !!subgroupRequest &&
+    !groups.data.data.some(
+      (group) =>
+        validSelection(group) && group.label.trim().toUpperCase() === debounced,
+    );
+  const baseGroups = useQuery({
+    ...groupOptions(subgroupRequest?.base ?? ''),
+    enabled: baseEnabled,
+  });
   const lecturers = useQuery({
     ...resourceSearchOptions('lecturer', debounced),
     enabled: enabled && !vucOnly,
@@ -113,6 +141,7 @@ export default function GroupPicker({
     { kind: 'lecturer' as const, query: lecturers },
     { kind: 'auditorium' as const, query: rooms },
     { kind: 'vuc' as const, query: vuc },
+    ...(baseEnabled ? [{ kind: 'group' as const, query: baseGroups }] : []),
   ].filter((source) => !vucOnly || source.kind === 'vuc');
   const now = Math.max(clock, Date.now());
   const deadlines = sources.flatMap(({ query: search }) => {
@@ -137,10 +166,35 @@ export default function GroupPicker({
     const timer = setTimeout(() => setDebounced(term), 300);
     return () => clearTimeout(timer);
   }, [term, open, vucOnly]);
+  const subgroupChoice =
+    baseEnabled &&
+    baseGroups.isSuccess &&
+    Array.isArray(baseGroups.data.data) &&
+    !baseGroups.isError &&
+    !baseGroups.isFetching &&
+    !baseGroups.data.stale &&
+    Date.parse(baseGroups.data.expiresAt) >= now
+      ? subgroupSearch(
+          debounced,
+          groups.data.data.filter(
+            (group) =>
+              validSelection(group) && selectionKind(group) === 'group',
+          ),
+          baseGroups.data.data.filter(
+            (group) =>
+              validSelection(group) && selectionKind(group) === 'group',
+          ),
+          subgroupCatalog,
+        )
+      : undefined;
   const visible: SearchResult[] = !enabled
     ? []
     : sources
         .flatMap(({ kind, query: search }) => {
+          if (search === baseGroups)
+            return subgroupChoice
+              ? [{ selection: subgroupChoice, saved: false }]
+              : [];
           const snapshot = search.data;
           const expires = Date.parse(snapshot?.expiresAt ?? '');
           if (
@@ -159,10 +213,24 @@ export default function GroupPicker({
               saved: snapshot.stale || search.isError || now > expires,
             }));
         })
+        .filter(
+          (result) =>
+            !subgroupChoice ||
+            scheduleKey(result.selection) !== scheduleKey(subgroupChoice) ||
+            result.selection === subgroupChoice,
+        )
         .sort(
           (a, b) =>
             Number(selectedKeys.has(scheduleKey(a.selection))) -
-            Number(selectedKeys.has(scheduleKey(b.selection))),
+              Number(selectedKeys.has(scheduleKey(b.selection))) ||
+            Number(
+              selectionKind(b.selection) === 'group' &&
+                b.selection.label.trim().toUpperCase() === term,
+            ) -
+              Number(
+                selectionKind(a.selection) === 'group' &&
+                  a.selection.label.trim().toUpperCase() === term,
+              ),
         );
   const loading =
     open &&
@@ -277,7 +345,7 @@ export default function GroupPicker({
                 setManaging(false);
               }
             }}
-            itemToStringLabel={(result) => result.selection.label}
+            itemToStringLabel={(result) => selectionLabel(result.selection)}
             isItemEqualToValue={(a, b) =>
               scheduleKey(a.selection) === scheduleKey(b.selection)
             }
@@ -289,7 +357,7 @@ export default function GroupPicker({
               ) {
                 onAdd(result.selection);
                 setAnnouncement(
-                  `${result.selection.label}: расписание добавлено.`,
+                  `${selectionLabel(result.selection)}: расписание добавлено.`,
                 );
                 input.current?.focus({ preventScroll: true });
               }
@@ -403,7 +471,7 @@ export default function GroupPicker({
                         </span>
                         <span className="min-w-0 flex-1">
                           <strong className="block text-[15px] leading-5 wrap-anywhere">
-                            {selection.label}
+                            {selectionLabel(selection)}
                           </strong>
                           <small className="mt-0.5 block text-[13px] leading-4.5 text-u-muted">
                             {kindLabel(selectionKind(selection))}
