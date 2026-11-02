@@ -4,10 +4,27 @@ Deployment remains manual by the owner's choice. GitHub CI validates the
 repository; the 0.3.0 main revision passed its validation job. No deployment
 credentials or SSH key installation was required for this release.
 
-## Current release 0.3.0 — 2026-11-02
+## Current release 0.3.1 — 2026-11-02
+
+[Campus 0.3.1](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.3.1)
+was activated at `2026-11-02T08:51:39Z` from revision
+`1f4897ebf19be18c7d23be0a6d2678a05842ce3b`, image config ID
+`sha256:adb96af5c8413e458910c77425a890825dfa961b8055213dc1507f9a45e6ea0b`.
+The release archive SHA-256 is
+`538d959f56872c144c73d0d2b433a70ac592caf688068e82dc0d25b5f343c7af`.
+
+The receiver verified provenance, created a SQLite backup, preserved all 108
+legacy comparisons and verified canonical HTTPS assets. Before/after snapshots
+matched for Compose, non-image environment, VUC data and originals, hardening,
+networking and volume. The previous 0.3.0 image remains available for rollback.
+The isolated image and private HTTPS checks verified health and all 35 built files.
+Canonical HTTPS was verified locally on the server with normal TLS verification;
+public DNS was unavailable during activation.
+
+## Previous release 0.3.0 — 2026-11-02
 
 [Campus 0.3.0](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.3.0)
-is active at <https://campus.kreoniz.ru> from merge revision
+was active at <https://campus.kreoniz.ru> from merge revision
 `e4f314ed0d8ff240690e725761ef11f64db0374a`, image
 `marvin-campus:e4f314ed0d8ff240690e725761ef11f64db0374a`, with OCI version
 `0.3.0` and image config ID
