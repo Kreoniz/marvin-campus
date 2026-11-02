@@ -28,8 +28,12 @@
   Day, Week and List share `day-content.ts`/`DayEmpty` for empty-state truth.
 - `src/features/groups`: group search, direct subgroup selection and ordering.
   Compact chips open a schedule menu with subgroup, spotlight and management
-  actions; pressed spotlight state uses fill without decorative checks. Multiple
-  spotlight IDs persist locally per general/VUC workspace. `ComparisonPage`
+  actions; pressed spotlight state uses fill without decorative checks.
+  In Day, the same menu's «Показать на шкале» action closes the popover before
+  asking the primary calendar's ref handle to reveal the typed source and transfer
+  focus to its lesson or status notice. This presentation action does not change
+  selection, URL or history.
+  Multiple spotlight IDs persist locally per general/VUC workspace. `ComparisonPage`
   waits for link/workspace restoration before pruning removed selections;
   spotlights do not change URLs or schedule data. The single schedule-search dialog combines the existing
   combobox search with the reusable ordering/removal list. Removing its last
@@ -80,10 +84,10 @@
   leaves the secondary horizontal timeline and List unchanged.
   Sources without owned cards reserve no geometry; known cards remain visible
   even when coverage is incomplete. Week reports unavailable
-  sources by date; Day keeps all selected sources in its chooser and exposes
+  sources by date; Day keeps navigation in each selected source's menu and exposes
   honest empty/unknown/coverage notices. `sourceJump` resolves an owned first
   occurrence or an existing shared card containing the requested member; hidden
-  choices explain their state without redirecting or changing visibility.
+  source actions explain their state without redirecting or changing visibility.
   Day anchoring retains logical event identity with typed-source fallback,
   clamping offsets on contraction. Week navigation measures date columns and
   preserves date/offset anchors, including a previously focused keyed card when
@@ -92,7 +96,8 @@
   usable cohort geometry, unless deliberate scrolling cancels them. Repeated
   Today reveals without writing duplicate date history. All calendars use page
   vertical scrolling, horizontal navigation and focus reveal clearing the rail.
-  Desktop Week's secondary detail is always a timeline; Day/Week/List remains
+  Week uses its aligned date headings as the only day row; Day/List keep
+  the seven-day strip. Desktop Week's secondary detail is always a timeline; Day/Week/List remains
   the primary header choice. The horizontal timeline keeps
   semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
   retaining individual bundle occurrences and participant records. Exact interval

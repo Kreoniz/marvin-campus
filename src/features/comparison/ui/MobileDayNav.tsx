@@ -16,6 +16,7 @@ interface Props {
   view: ComparisonView;
   opening: boolean;
   showWeekControls?: boolean;
+  showDays?: boolean;
   onToday: () => void;
 }
 export default function MobileDayNav({
@@ -23,6 +24,7 @@ export default function MobileDayNav({
   view,
   opening,
   showWeekControls = true,
+  showDays = true,
   onToday,
 }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
@@ -104,42 +106,44 @@ export default function MobileDayNav({
           </div>
         </div>
       )}
-      <nav
-        className="agenda-days grid grid-cols-7 gap-0 pb-1 min-[701px]:pb-0"
-        data-schedule-days
-        aria-label="Дни недели"
-        inert={opening}
-      >
-        {dates.map((date) => (
-          <Button
-            key={date}
-            variant="ghost"
-            className={`flex h-11 min-h-11 min-w-0 flex-col items-center justify-center gap-px border px-0 py-[3px] text-[11px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:flex-col [&>.u-button-label]:gap-px [&>.u-button-label>span]:leading-[14px] ${view.day === date && !opening ? 'selected border-u-selection-border bg-u-selection text-u-selection-ink forced-colors:border-[Highlight] forced-colors:text-[Highlight]' : 'border-transparent forced-colors:border-transparent'}`}
-            data-schedule-day={date}
-            aria-pressed={view.day === date && !opening}
-            aria-label={formatDay(date, {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}
-            onClick={() => view.selectDay(date)}
-          >
-            {opening ? (
-              <span
-                className="inline-block h-6 w-[26px] animate-pulse rounded-u-control bg-u-well align-middle motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-            ) : (
-              <>
-                <span>{formatDay(date, { weekday: 'short' })}</span>
-                <strong className="text-[15px] leading-[18px]">
-                  {Number(date.slice(8))}
-                </strong>
-              </>
-            )}
-          </Button>
-        ))}
-      </nav>
+      {showDays && (
+        <nav
+          className="agenda-days grid grid-cols-7 gap-0 pb-1 min-[701px]:pb-0"
+          data-schedule-days
+          aria-label="Дни недели"
+          inert={opening}
+        >
+          {dates.map((date) => (
+            <Button
+              key={date}
+              variant="ghost"
+              className={`flex h-11 min-h-11 min-w-0 flex-col items-center justify-center gap-px border px-0 py-[3px] text-[11px] [&>.u-button-label]:w-full [&>.u-button-label]:min-w-0 [&>.u-button-label]:flex-col [&>.u-button-label]:gap-px [&>.u-button-label>span]:leading-[14px] ${view.day === date && !opening ? 'selected border-u-selection-border bg-u-selection text-u-selection-ink forced-colors:border-[Highlight] forced-colors:text-[Highlight]' : 'border-transparent forced-colors:border-transparent'}`}
+              data-schedule-day={date}
+              aria-pressed={view.day === date && !opening}
+              aria-label={formatDay(date, {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}
+              onClick={() => view.selectDay(date)}
+            >
+              {opening ? (
+                <span
+                  className="inline-block h-6 w-[26px] animate-pulse rounded-u-control bg-u-well align-middle motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : (
+                <>
+                  <span>{formatDay(date, { weekday: 'short' })}</span>
+                  <strong className="text-[15px] leading-[18px]">
+                    {Number(date.slice(8))}
+                  </strong>
+                </>
+              )}
+            </Button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

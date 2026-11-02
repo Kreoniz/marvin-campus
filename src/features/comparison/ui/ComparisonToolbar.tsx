@@ -23,6 +23,7 @@ interface Props {
   colors: GroupColors;
   opening: boolean;
   onOrder: (id: string) => void;
+  onReveal?: (key: string) => HTMLElement | void;
   spotlightIds: string[];
   onSpotlight: (id: string) => void;
   onRemove: (key: string) => void;
@@ -40,6 +41,7 @@ export default function ComparisonToolbar({
   colors,
   opening,
   onOrder,
+  onReveal,
   spotlightIds,
   onSpotlight,
   onRemove,
@@ -80,6 +82,7 @@ export default function ComparisonToolbar({
             onSubgroup={view.subgroup}
             onReorder={view.reorder}
             onOrder={onOrder}
+            onReveal={onReveal}
             spotlightIds={spotlightIds}
             onSpotlight={onSpotlight}
             onRemove={onRemove}
