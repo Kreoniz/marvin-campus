@@ -39,6 +39,7 @@ interface Props {
   onSubgroup: (id: string, value?: number) => void;
   onReorder: (groups: Selection[]) => void;
   onOrder: (id: string) => void;
+  onReveal?: (key: string) => HTMLElement | void;
   spotlightIds: string[];
   onSpotlight: (id: string) => void;
   onRemove: (key: string) => void;
@@ -83,6 +84,7 @@ export default function GroupStrip(props: Props) {
     onSubgroup,
     onReorder,
     onOrder,
+    onReveal,
     spotlightIds,
     onSpotlight,
     onRemove,
@@ -366,6 +368,7 @@ export default function GroupStrip(props: Props) {
                 : undefined
             }
             onManage={() => onOrder(scheduleKey(group))}
+            onReveal={onReveal ? () => onReveal(scheduleKey(group)) : undefined}
             onRemove={() => remove(group)}
             onClearSpotlights={onClearSpotlights}
             hasSpotlights={hasSpotlights}
@@ -391,6 +394,7 @@ export default function GroupStrip(props: Props) {
                 : undefined
             }
             onManage={() => onOrder(scheduleKey(group))}
+            onReveal={onReveal ? () => onReveal(scheduleKey(group)) : undefined}
             onRemove={() => remove(group)}
             onClearSpotlights={onClearSpotlights}
             hasSpotlights={hasSpotlights}

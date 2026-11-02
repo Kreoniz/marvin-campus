@@ -18,6 +18,7 @@ interface Props {
   spotlight?: boolean;
   onSpotlight?: () => void;
   onManage?: () => void;
+  onReveal?: () => HTMLElement | void;
   onRemove?: () => void;
   onClearSpotlights?: () => void;
   hasSpotlights?: boolean;
@@ -38,6 +39,7 @@ export default function SubgroupPicker({
   spotlight,
   onSpotlight,
   onManage,
+  onReveal,
   onRemove,
   onClearSpotlights,
   hasSpotlights,
@@ -72,6 +74,7 @@ export default function SubgroupPicker({
       spotlight={spotlight}
       onSpotlight={onSpotlight}
       onManage={onManage}
+      onReveal={onReveal}
       onRemove={onRemove}
       onClearSpotlights={onClearSpotlights}
       hasSpotlights={hasSpotlights}

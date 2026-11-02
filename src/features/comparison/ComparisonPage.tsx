@@ -17,7 +17,9 @@ import ComparisonToolbar from './ui/ComparisonToolbar.tsx';
 import ComparisonStatus from './ui/ComparisonStatus.tsx';
 import MobileDayNav from './ui/MobileDayNav.tsx';
 import Calendar from '../schedule/ui/Calendar.tsx';
-import SourceDayCalendar from '../schedule/ui/SourceDayCalendar.tsx';
+import SourceDayCalendar, {
+  type SourceDayCalendarHandle,
+} from '../schedule/ui/SourceDayCalendar.tsx';
 import ComparisonSummary from './ui/ComparisonSummary.tsx';
 import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
@@ -76,6 +78,7 @@ export default function ComparisonPage({
     savedSpotlights(vucOnly),
   );
   const addGroupRef = useRef<HTMLButtonElement>(null);
+  const dayCalendarRef = useRef<SourceDayCalendarHandle>(null);
   const [orderOpen, setOrderOpen] = useState(false);
   const [layers, setLayers] = useState<CalendarLayers>({
     presence: true,
@@ -395,6 +398,11 @@ export default function ComparisonPage({
                         setOrderFocus(id);
                         setOrderOpen(true);
                       }}
+                      onReveal={
+                        scheduleView === 'day'
+                          ? (key) => dayCalendarRef.current?.revealSchedule(key)
+                          : undefined
+                      }
                       spotlightIds={spotlightIds}
                       onRemove={view.remove}
                       onClearSpotlights={() => setSpotlightGroupIds([])}
@@ -418,6 +426,7 @@ export default function ComparisonPage({
                             view={view}
                             opening={links.opening}
                             showWeekControls={mobile}
+                            showDays={scheduleView !== 'week'}
                             onToday={selectToday}
                           />
                         )}
@@ -443,6 +452,7 @@ export default function ComparisonPage({
                           />
                         ) : scheduleView === 'day' ? (
                           <SourceDayCalendar
+                            ref={dayCalendarRef}
                             orderedLanes={orderedLanes}
                             vucOnly={vucOnly}
                             schedules={source.schedules}

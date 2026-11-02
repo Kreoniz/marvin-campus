@@ -1,6 +1,12 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type Ref,
+} from 'react';
 import { Skeleton } from 'unlikely-ui/skeleton';
-import { Select } from 'unlikely-ui/select';
 import type {
   GroupSchedule,
   ScheduleKind,
@@ -12,11 +18,7 @@ import {
   compareDay,
 } from '../../../lib/domain.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
-import {
-  scheduleKey,
-  selectionKind,
-  kindLabel,
-} from '../../../lib/schedule-ref.ts';
+import { scheduleKey, selectionKind } from '../../../lib/schedule-ref.ts';
 import { scheduleLabels } from '../../../lib/selection-labels.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
@@ -35,7 +37,11 @@ import ComparisonHighlights, {
   type CalendarLayers,
 } from './ComparisonHighlights.tsx';
 
+export interface SourceDayCalendarHandle {
+  revealSchedule: (key: string) => HTMLElement | void;
+}
 interface Props {
+  ref?: Ref<SourceDayCalendarHandle>;
   schedules: GroupSchedule[];
   colors: GroupColors;
   subgroupCatalog: Record<number, Subgroup[]>;
@@ -51,6 +57,7 @@ interface Props {
 const scale = 1;
 const rail = 44;
 export default function SourceDayCalendar({
+  ref,
   schedules,
   colors,
   subgroupCatalog,
@@ -69,7 +76,6 @@ export default function SourceDayCalendar({
   const noticeElement = useRef<HTMLParagraphElement>(null);
   const anchor = useRef<ReturnType<typeof eventAnchor>>(undefined);
   const focusedCard = useRef<HTMLElement | null>(null);
-  const pendingJump = useRef<string | null>(null);
   const [jumped, setJumped] = useState('');
   const requested = schedules.find(
     (schedule) => scheduleKey(schedule.selection) === jumped,
@@ -164,14 +170,7 @@ export default function SourceDayCalendar({
             ? 'Сохранено'
             : '';
   }
-  const choices = schedules.map((schedule) => {
-    const key = scheduleKey(schedule.selection);
-    const target = sourceJump(events, key);
-    return {
-      value: key,
-      label: `${label(schedule.selection)} · ${kindLabel(selectionKind(schedule.selection))}${hiddenKinds.includes(selectionKind(schedule.selection)) ? ' · скрыто' : `${status(schedule) ? ` · ${status(schedule)}` : !target ? ' · нет занятий' : ''}${target && scheduleKey(target.member) !== key ? ' · общие занятия' : ''}`}`,
-    };
-  });
+  useImperativeHandle(ref, () => ({ revealSchedule: jump }));
   function jump(key: string) {
     const schedule = schedules.find(
       (schedule) => scheduleKey(schedule.selection) === key,
@@ -233,42 +232,8 @@ export default function SourceDayCalendar({
     >
       <div
         ref={header}
-        className="source-header sticky top-0 z-[7] overflow-hidden border-y border-u-line-soft bg-u-surface compact:top-11"
+        className="source-header sticky top-0 z-[7] overflow-hidden bg-u-surface compact:top-11"
       >
-        <div className="border-b border-u-line-soft px-2 py-1">
-          <Select.Root
-            value={null}
-            disabled={placeholder}
-            items={choices}
-            onValueChange={(value) => {
-              pendingJump.current = value;
-            }}
-          >
-            <Select.Trigger
-              className="source-jump min-h-11 w-full max-w-[360px] text-sm"
-              aria-label={`Перейти к расписанию (${schedules.length})`}
-            >
-              <Select.Value placeholder="К расписанию" />
-              <span className="ml-auto text-xs text-u-muted" aria-hidden="true">
-                {schedules.length}
-              </span>
-            </Select.Trigger>
-            <Select.Content
-              className="source-jump-options max-h-[min(320px,var(--available-height))] w-[min(360px,calc(100vw-32px))] [&_.u-select-item]:min-h-11 [&_.u-select-item]:whitespace-normal [&_.u-select-item]:wrap-anywhere"
-              finalFocus={() => {
-                const key = pendingJump.current;
-                pendingJump.current = null;
-                return key ? (jump(key) ?? true) : true;
-              }}
-            >
-              {choices.map((choice) => (
-                <Select.Item key={choice.value} value={choice.value}>
-                  {choice.label}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
-        </div>
         {visible.some((schedule) => comparisonIssue(schedule, day)) &&
           !(loading && !hasSnapshot) && (
             <p className="m-0 px-3 py-1 text-xs text-u-muted" role="status">

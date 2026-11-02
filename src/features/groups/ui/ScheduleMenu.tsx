@@ -16,6 +16,7 @@ interface Props {
   spotlight?: boolean;
   onSpotlight?: () => void;
   onManage?: () => void;
+  onReveal?: () => HTMLElement | void;
   onRemove?: () => void;
   onClearSpotlights?: () => void;
   hasSpotlights?: boolean;
@@ -31,6 +32,7 @@ export default function ScheduleMenu({
   spotlight = false,
   onSpotlight,
   onManage,
+  onReveal,
   onRemove,
   onClearSpotlights,
   hasSpotlights = false,
@@ -40,11 +42,15 @@ export default function ScheduleMenu({
 }: Props) {
   const [open, setOpen] = useState(false);
   const removing = useRef(false);
+  const revealing = useRef(false);
   return (
     <Popover.Root
       open={open}
       onOpenChange={(next) => {
-        if (next) removing.current = false;
+        if (next) {
+          removing.current = false;
+          revealing.current = false;
+        }
         setOpen(next);
       }}
     >
@@ -53,7 +59,13 @@ export default function ScheduleMenu({
         className="schedule-menu w-64 max-w-[calc(100vw-32px)] max-h-[min(480px,var(--available-height))] overflow-y-auto p-2"
         positionerProps={{ align: 'start' }}
         style={{ '--chip': color } as CSSProperties}
-        finalFocus={() => !removing.current}
+        finalFocus={() => {
+          if (revealing.current) {
+            revealing.current = false;
+            return onReveal?.() ?? true;
+          }
+          return !removing.current;
+        }}
       >
         <Popover.Title className="px-2 py-1 text-sm wrap-anywhere">
           {label}
@@ -67,6 +79,19 @@ export default function ScheduleMenu({
         <div
           className={children ? 'mt-1 border-t border-u-line-soft pt-1' : ''}
         >
+          {onReveal && (
+            <Button
+              variant="ghost"
+              className="min-h-11 w-full justify-start text-sm [&>.u-button-label]:justify-start"
+              onClick={() => {
+                revealing.current = true;
+                setOpen(false);
+              }}
+            >
+              <Icon name="right" size={18} />
+              Показать на шкале
+            </Button>
+          )}
           {onSpotlight && (
             <Button
               variant="ghost"

@@ -93,8 +93,11 @@ clearing all spotlights. Kind visibility changes cards only, not selection or
 calculation; hidden selections remain marked and can be restored directly.
 The compact layout also covers short landscape viewports up to 1000 pixels wide.
 Its header stays at the viewport edge on an opaque theme-colored surface,
-providing a solid boundary for native mobile scroll-edge effects. The Day source
-header sticks below it; keyboard scrolling reserves room for the app header.
+providing a solid boundary for native mobile scroll-edge effects. Day source
+status sticks below it when present; keyboard scrolling reserves room for the app header.
+Week has one date row aligned with its columns, without a separate seven-day
+shortcut strip. Day and List retain that strip. Week's date picker, horizontal
+scrolling, Today and keyboard day navigation remain available.
 The mobile calendar follows the date controls immediately. Its brief result, partial count, freshness and a deduplicated VUC document download follow the timetable. The full included/excluded roster and calculation qualifications live in a closed-by-default disclosure. Desktop result cards also show only the result and a short partial count by default; they grow naturally when details are expanded, without an internal scrollbar. Day, Week and the secondary timeline at every viewport
 expand to their full time range/row count and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
@@ -174,13 +177,13 @@ names and a remainder for dense membership. Horizontal rows keep one fitting
 row regardless of duration. Full membership remains in details; saved collapsed
 members retain their clock marker. Spotlight uses fill without decorative checks.
 
-Day's design-system Select includes all selected schedules, up to thirty.
-Choosing one reveals and focuses its first owned occurrence, or an existing
+In Day, each selected schedule's existing menu offers «Показать на шкале».
+After the menu closes, this reveals and focuses its first owned occurrence, or an existing
 shared card actually containing it when it has no owned occurrence. This can
 skip an owner's earlier solo lesson. Hidden-kind choices explain the hidden
 state without changing visibility or redirecting focus to a card. Genuinely
 empty, unknown and uncovered sources create no visual columns; their distinct
-states remain in the chooser, compact notices and data details. A shared-only
+states remain accessible through source menus, compact notices and data details. A shared-only
 member is labelled as shared, never empty. Shared-only aliases add no empty bands.
 Logical event anchoring retains the event through reorder or width changes,
 with a source fallback if it disappears. Keyboard focus clears the actual rail.
