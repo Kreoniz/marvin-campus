@@ -37,14 +37,15 @@ weekly catalogue is not by itself invalid. Raw-ID-only selections remain visible
 but cannot establish a complete comparison when subgroup lessons exist and the
 response does not verify that ID.
 
-Desktop starts with a compact week grid and a secondary selected-day detail;
+Desktop starts with a compact week grid;
 mobile starts with source-oriented Day. Three labelled 44×44 px header controls
 switch the primary surface between Day, Week and Day list at every viewport.
 The chosen view survives resizing, selection changes and restart as a validated
 local preference, separately for the general calendar and VUC. Missing or blocked
-storage retains the original viewport defaults. The secondary detail
-below desktop Week is always a timeline. Theme, help and display settings are one-click actions in that
-same row; below 420 px the brand keeps its avatar and accessible name.
+storage retains the original viewport defaults. Each primary view shows the compact
+comparison result once below its timetable; Week labels it with the selected date.
+Theme, help and display settings are one-click actions in the header row;
+below 420 px the brand keeps its avatar and accessible name.
 The list replaces the grid, preserves exact intervals and full subjects, shows
 known shared lessons once and expands parallel bundles into separate lessons.
 An interval heading appears once for lessons with exactly equal start and end
@@ -68,7 +69,8 @@ management rows. The whole dialog can scroll at very short viewport heights.
 Desktop management drag commits its final insertion order once, so one Back/Forward
 restores the pre/post-drop order. Cancellation leaves history unchanged.
 Move-up/down buttons support touch; Alt+arrows remain available.
-The strip also retains drag without a visible grip and suppresses menu opening after a drag.
+The strip scrolls horizontally and retains Alt+Left/Right ordering on its chips;
+pointer drag ordering belongs to management.
 Removing the last group keeps the search open and focuses its
 input. The unified search starts empty, without suggestions, and queries the
 official group/lecturer/room categories plus the configured local VUC catalogue.
@@ -98,8 +100,8 @@ status sticks below it when present; keyboard scrolling reserves room for the ap
 Week has one date row aligned with its columns, without a separate seven-day
 shortcut strip. Day and List retain that strip. Week's date picker, horizontal
 scrolling, Today and keyboard day navigation remain available.
-The mobile calendar follows the date controls immediately. Its brief result, partial count, freshness and a deduplicated VUC document download follow the timetable. The full included/excluded roster and calculation qualifications live in a closed-by-default disclosure. Desktop result cards also show only the result and a short partial count by default; they grow naturally when details are expanded, without an internal scrollbar. Day, Week and the secondary timeline at every viewport
-expand to their full time range/row count and use page scrolling vertically; week and
+The mobile calendar follows the date controls immediately. Its brief result, partial count, freshness and a deduplicated VUC document download follow the timetable. The full included/excluded roster and calculation qualifications live in a closed-by-default disclosure. Desktop results also show only the result and a short partial count by default; they grow naturally when details are expanded, without an internal scrollbar. Day and Week at every viewport
+expand to their full time range and use page scrolling vertically; week and
 overlap lanes can still scroll horizontally. Only the day selector shows the date
 in mobile day view. A single selected group shows its timetable without a repeated
 invitation to add another group.
@@ -114,9 +116,10 @@ qualifications and room/building or remote details. Other dates, comparisons,
 lecturers/rooms and unusable or unresolved inputs do not infer a personal
 schedule or a finished day. The clock follows minute boundaries and focus return.
 Custom scrollbars fade out fully when idle, preserving their reserved space.
-The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. Soft edge fades appear only where more selections can be scrolled into view. Exclusion outlines stay inside the 44-pixel chip bounds. The visible thumb is four pixels thick and never covers the schedule-menu control. Drag previews reuse the same chip grammar, names and height; their cloned controls are inert.
-Scrolling, hover, dragging and visible keyboard focus reveal them; focus left by
-a click or tap does not. Forced-color mode keeps scrollbars visible.
+The selected-schedule strip reserves an eight-pixel scrollbar track below its 44-pixel chips. Soft edge fades appear only where more selections can be scrolled into view. Exclusion outlines stay inside the 44-pixel chip bounds. The visible thumb is four pixels thick and never covers the schedule-menu control.
+Scrollbars appear during scrolling, scrollbar hover or drag, and visible keyboard
+focus; focus left by a click or tap does not keep them visible.
+Forced-color mode keeps scrollbars visible.
 Today stays beside the date, including desktop Week, and remains available in
 the date picker. Repeated Today and `t` reveal the selected column without
 adding duplicate date history. Cold/date navigation reveals the selected day
@@ -163,8 +166,7 @@ packs events into reusable lanes in both Day and Week. Compact placement preserv
 semantic/painted collision safety, selection-order ties and bounded source
 affinity. The choice persists locally across reloads, dates, workspace changes
 and resizing; missing, unrecognized or blocked storage defaults to lanes on.
-It affects only the primary vertical calendar, leaving the secondary timeline,
-List, URLs, history, counts and calculations unchanged.
+It affects only Day and Week, leaving List, URLs, history, counts and calculations unchanged.
 
 One full shared card belongs to the first selected visible participating source,
 including a lecturer or room moved ahead of its groups. Every canonical block
@@ -173,9 +175,8 @@ the next visible member. Selection, counts, presence and free-window calculation
 are unchanged. Member order follows selection order in every view and details.
 Shared vertical cards use categorical member sectors beneath the heading.
 Capacity follows measured width and available height, with readable leading
-names and a remainder for dense membership. Horizontal rows keep one fitting
-row regardless of duration. Full membership remains in details; saved collapsed
-members retain their clock marker. Spotlight uses fill without decorative checks.
+names and a remainder for dense membership. Full membership remains in details;
+saved collapsed members retain their clock marker. Spotlight uses fill without decorative checks.
 
 In Day, each selected schedule's existing menu offers «Показать на шкале».
 After the menu closes, this reveals and focuses its first owned occurrence, or an existing
@@ -247,7 +248,7 @@ Spotlight survives reloads and date, subgroup and view changes. Its typed IDs ar
 saved locally, separately for the general calendar and VUC. Initial link/workspace
 restoration must settle before missing selections are pruned. Removing a group drops only
 that group from the spotlight set. Fewer than two remaining groups clears the
-set. Display settings and day detail can clear all spotlights together.
+set. Display settings and schedule menus can clear all spotlights together.
 Viewing a temporary link does not prune highlights belonging to the saved workspace.
 Spotlight and Day/Week/List are saved local preferences; neither enters comparison
 URLs or changes the presence/free calculation.
@@ -262,14 +263,11 @@ the true interval and the minimum painted height, so short events cannot collide
 In compact mode, nonoverlapping events from different sources can reuse the same lane. An isolated
 lesson stays compact. Pressing a card highlights it without moving its geometry.
 Their height still represents duration, including long military classes.
-Simultaneous distinct lessons of one group use stripes. The selected-day timeline uses event rows and
-reserves the week's peak row count to keep its panel height stable.
-Long events in the horizontal day timeline keep their temporal length, but their
-participant labels stay compact; the time range is available in the popover.
+Simultaneous distinct lessons of one group use stripes.
 Presence uses a five-pixel amber bracket and a light wash; free windows use green
-bands, including separate legends. Both layers can coexist in vertical calendars
-and the selected-day timeline. Saved ranges retain their color with dashed edges
-and a weaker free fill in both views. All layers use the same usable comparison
+bands, including separate legends. Both layers can coexist in Day and Week.
+Saved ranges retain their color with dashed edges and a weaker free fill in both
+views. All layers use the same usable comparison
 subset and are independent of the spotlight selection.
 
 Subgroups use their group's unchanged base color and retain their visible public
@@ -341,7 +339,7 @@ The general calendar still accepts mixed VUC selections. Military-preparation
 lesson details can preview one personally chosen VUC schedule for the same date;
 this preference does not join a comparison or infer a group-to-platoon mapping.
 
-Military-preparation cards from 240px also show the personally chosen VUC for that exact date. A shared military event has one card and one inline preview. The preview fits as many complete entries as its measured free space permits. The document status and a reserved remaining-count line cannot be pushed out by long entries. Inline topics use at most two lines and include teachers when space permits; all printed intervals wrap. The popup starts its complete-entry list closed under “Все занятия на этот день”, preserving access to every entry without repeating an open inline schedule. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short/horizontal cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses the design-system Select with short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison. Preview and the source footer offer “Скачать” only for configured, hash-verified PDF/DOCX bytes confirmed by a usable active catalogue; absent originals are explicit. The footer deduplicates by document and has no repeated platoon or period paragraphs. Per-date calculation exclusions, warnings and unparsed source cells remain in the existing data-status disclosure; each known lesson retains its raw source row. Downloads do not require coverage of the selected date.
+Military-preparation cards from 240px also show the personally chosen VUC for that exact date. A shared military event has one card and one inline preview. The preview fits as many complete entries as its measured free space permits. The document status and a reserved remaining-count line cannot be pushed out by long entries. Inline topics use at most two lines and include teachers when space permits; all printed intervals wrap. The popup starts its complete-entry list closed under “Все занятия на этот день”, preserving access to every entry without repeating an open inline schedule. The closed-by-default disclosure on military entries in List opens the same exact-date personal preview. Short cards keep the full details action. Preview data has its own freshness/retention wake-up and never enters the main calculation. Its popup uses the design-system Select with short document-year choices, with source disambiguation when needed; raw per-lesson document rows live on the dedicated page. Specific warnings and unparsed same-date cells remain available in one compact document-notes disclosure. An explicit empty personal choice remains empty even if one VUC is in the comparison. Preview and the source footer offer “Скачать” only for configured, hash-verified PDF/DOCX bytes confirmed by a usable active catalogue; absent originals are explicit. The footer deduplicates by document and has no repeated platoon or period paragraphs. Per-date calculation exclusions, warnings and unparsed source cells remain in the existing data-status disclosure; each known lesson retains its raw source row. Downloads do not require coverage of the selected date.
 
 Where selected VUC sources share the same compact platoon name, navigation, management, membership details and calculation exclusions add document years and, if needed, an existing source description. Identical metadata falls back to the document-scoped ID. Non-colliding names stay compact; chips retain their 44px height and show the disambiguator on a secondary line. Labels never change source identity or date coverage.
 

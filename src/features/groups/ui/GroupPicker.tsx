@@ -308,7 +308,7 @@ export default function GroupPicker({
           (focusScheduleKey
             ? Array.from(
                 document.querySelectorAll<HTMLButtonElement>(
-                  `[data-drag-id="${focusScheduleKey}"]`,
+                  `[data-schedule-trigger="${focusScheduleKey}"]`,
                 ),
               ).find((button) => button.offsetParent !== null)
             : null) ??

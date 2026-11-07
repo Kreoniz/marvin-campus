@@ -185,10 +185,10 @@
   color: var(--u-selection-ink);
 }
 @container (width < 220px) {
-  .lesson-position:not(.horizontal) .shared-sectors .member-code-tail {
+  .lesson-position .shared-sectors .member-code-tail {
     display: block;
   }
-  .lesson-position:not(.horizontal) .shared-sectors .member-code-dash {
+  .lesson-position .shared-sectors .member-code-dash {
     display: none;
   }
 }
@@ -236,9 +236,6 @@
 }
 .group-selection-scroll .u-scroll-thumb:is(:hover, :active)::before {
   background: var(--u-accent-text);
-}
-.drag-chip {
-  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.25));
 }
 .group-controls[data-overflow-x-end] {
   mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
