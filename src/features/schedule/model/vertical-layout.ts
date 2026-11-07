@@ -17,7 +17,7 @@ export interface VerticalPlacement {
 }
 
 // Presentation geometry only: painted minimum heights must not change the
-// lesson times used by presence/free calculations or the horizontal timeline.
+// lesson times used by presence/free calculations.
 export function verticalLayout(
   blocks: LessonBlock[],
   origin: number,

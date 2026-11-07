@@ -16,7 +16,7 @@ interface Props {
   day: string;
   loading: boolean;
   mode: Mode;
-  compact?: boolean;
+  showDate?: boolean;
   placeholder?: boolean;
 }
 
@@ -26,7 +26,7 @@ export default function ComparisonSummary({
   day,
   loading,
   mode,
-  compact = false,
+  showDate = false,
   placeholder = false,
 }: Props) {
   const label = scheduleLabels(schedules);
@@ -56,14 +56,21 @@ export default function ComparisonSummary({
       .join(', ');
   return (
     <Card.Root
-      className={`marvin-card text-u-ink ${compact ? 'compact-summary border-0 rounded-none bg-transparent p-0' : 'w-[300px] shrink-0 self-start rounded-(--u-panel-radius) border-u-line bg-u-surface p-3'}`}
+      className="marvin-card compact-summary rounded-none border-0 bg-transparent p-0 text-u-ink"
       role="complementary"
       aria-label="Результат сравнения"
       aria-busy={pending}
     >
-      {!compact && (
+      {showDate && (
         <p className="summary-date m-0 mb-2 text-xs text-u-muted">
-          {formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })}
+          {placeholder ? (
+            <>
+              <Skeleton className="inline-block h-4 w-36 align-middle" />
+              <span className="sr-only">Загружаем выбранный день</span>
+            </>
+          ) : (
+            formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })
+          )}
         </p>
       )}
       {pending ? (

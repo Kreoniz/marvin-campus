@@ -39,7 +39,10 @@
   combobox search with the reusable ordering/removal list. Removing its last
   selection keeps search available. Management drag passes the final typed
   selection order through `onReorder` to `view.reorder` once; arrow/Alt moves
-  remain individual operations. The exploratory name/icon chooser has been removed.
+  remain individual operations. The selected-schedule strip uses ordinary horizontal
+  scrolling and chip Alt+Left/Right ordering. Schedule triggers share
+  `data-schedule-trigger` for focus restoration after removal and management.
+  The exploratory name/icon chooser has been removed.
 - `src/features/resources`: typed lecturer/auditorium queries and linked metadata
   actions adding to the same selected set. Unified search and kind visibility
   reuse the calendar/list, ordering and spotlight workflow. Resource HTTP
@@ -81,7 +84,7 @@
   `campus-ordered-lanes` (`on`/`off`; only `off` disables lanes). Missing,
   unrecognized or inaccessible storage defaults to on. This local presentation
   choice never enters URLs/history, schedule data or calculation inputs and
-  leaves the secondary horizontal timeline and List unchanged.
+  leaves List unchanged.
   Sources without owned cards reserve no geometry; known cards remain visible
   even when coverage is incomplete. Week reports unavailable
   sources by date; Day keeps navigation in each selected source's menu and exposes
@@ -97,13 +100,14 @@
   Today reveals without writing duplicate date history. All calendars use page
   vertical scrolling, horizontal navigation and focus reveal clearing the rail.
   Week uses its aligned date headings as the only day row; Day/List keep
-  the seven-day strip. Desktop Week's secondary detail is always a timeline; Day/Week/List remains
-  the primary header choice. The horizontal timeline keeps
-  semantic event rows; `src/lib/agenda.ts` projects complete reading entries,
+  the seven-day strip. Day/Week/List remains the primary header choice.
+  `ComparisonSummary` follows each primary view once, with selected-date context
+  in Week and the same partial, saved and loading qualifications.
+  `src/lib/agenda.ts` projects complete reading entries,
   retaining individual bundle occurrences and participant records. Exact interval
   grouping is a separate presentation projection; it never merges lesson
   identities. Calendar layer and kind visibility are local UI state and never
-  remove calculation participants. Rooms remain occupancy overlays. Both orientations
+  remove calculation participants. Rooms remain occupancy overlays. Day and Week
   render presence/free ranges from `compareDay` through `ComparisonHighlights`;
   URL modes remain compatible and never filter the calculation inputs.
   Shared events retain full participant data; vertical lanes separate distinct events conflicting in time

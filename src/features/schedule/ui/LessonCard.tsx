@@ -44,7 +44,6 @@ interface LessonCardProps {
   colors: GroupColors;
   subgroupCatalog?: Record<number, Subgroup[]>;
   style: CSSProperties;
-  horizontal?: boolean;
   spotlightIds?: string[];
   hiddenKinds?: ScheduleKind[];
   presentationOwner?: Selection;
@@ -59,7 +58,6 @@ export default function LessonCard({
   colors,
   subgroupCatalog = {},
   style,
-  horizontal = false,
   spotlightIds = [],
   hiddenKinds = [],
   presentationOwner,
@@ -149,8 +147,7 @@ export default function LessonCard({
     const trigger = cardTrigger.current;
     if (!trigger) return;
     const metrics: typeof memberMetrics = JSON.parse(metricsKey);
-    // Measure only this surface. Duration is not a proxy for the 62px
-    // horizontal row, and labels must leave room for the remainder/markers.
+    // Measure this surface so labels leave room for the remainder/markers.
     const context = document.createElement('canvas').getContext('2d');
     const measure = () => {
       if (!trigger.isConnected) return;
@@ -188,7 +185,7 @@ export default function LessonCard({
         1,
         Math.min(3, metrics.length, Math.floor(width / minimum)),
       );
-      const rows = !horizontal && height >= 440 ? 2 : 1;
+      const rows = height >= 440 ? 2 : 1;
       const slots = columns * rows;
       setMemberColumns(columns);
       setMemberCapacity(
@@ -203,7 +200,7 @@ export default function LessonCard({
     observer.observe(trigger);
     void document.fonts.ready.then(measure);
     return () => observer.disconnect();
-  }, [horizontal, metricsKey]);
+  }, [metricsKey]);
   const visibleMembers = surfaceMembers.slice(0, memberCapacity);
   const dimmed = spotlightIds.length > 0 && !spotlight;
   const hiddenMembers = surfaceMembers.filter(
@@ -334,7 +331,7 @@ export default function LessonCard({
   }
   return (
     <div
-      className={`lesson-position absolute z-[2] [container-type:size] ${members.every((member) => member.kind === 'vuc') ? '' : 'motion-safe:animate-lesson-appear'} ${horizontal ? 'horizontal' : ''} ${long ? 'long' : ''}`}
+      className={`lesson-position absolute z-[2] [container-type:size] ${members.every((member) => member.kind === 'vuc') ? '' : 'motion-safe:animate-lesson-appear'} ${long ? 'long' : ''}`}
       style={style}
       data-source-member={
         presentationOwner ? scheduleKey(presentationOwner) : undefined
@@ -447,14 +444,14 @@ export default function LessonCard({
               </span>
             )}
             <span
-              className={`card-subject min-w-0 flex-1 truncate ${presentationOwner && !compact ? 'text-xs' : 'text-[11px]'} font-bold ${!horizontal && !block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
+              className={`card-subject min-w-0 flex-1 truncate ${presentationOwner && !compact ? 'text-xs' : 'text-[11px]'} font-bold ${!block.parallel ? '[@container(height>=74px)]:line-clamp-2 [@container(height>=74px)]:whitespace-normal' : ''}`}
             >
               {block.parallel
                 ? `${events.length} занятия`
                 : lesson.subject || 'Занятие'}
             </span>
           </span>
-          {!horizontal && (long || (presentationOwner && !compact)) && (
+          {(long || (presentationOwner && !compact)) && (
             <span className="card-time relative z-[1] text-[10px] [@container(height<38px)]:hidden">
               {timeLabel(lesson.start)}–{timeLabel(lesson.end)}
             </span>
@@ -487,7 +484,7 @@ export default function LessonCard({
               {(shared ? visibleMembers : [primaryMember]).map((member) => {
                 const label = groupLabel(member);
                 const code =
-                  shared && isGroup(member) && !horizontal
+                  shared && isGroup(member)
                     ? /^([^-]+)-(\d.*)$/u.exec(label)
                     : null;
                 return (
@@ -506,7 +503,7 @@ export default function LessonCard({
                   >
                     <span
                       className={
-                        shared && !horizontal
+                        shared
                           ? 'line-clamp-2 text-center wrap-anywhere'
                           : 'truncate'
                       }
@@ -583,13 +580,13 @@ export default function LessonCard({
               ))}
             </span>
           </span>
-          {military && !horizontal && (
+          {military && (
             <MilitaryInline
               date={lesson.date}
               onVisibleEntriesChange={setInlineEntries}
             />
           )}
-          {shared && !horizontal && (
+          {shared && (
             <span
               className="short-participant-stripe absolute inset-x-0 bottom-0 hidden h-[3px] [@container(height<42px)]:flex"
               aria-hidden="true"
@@ -735,7 +732,7 @@ export default function LessonCard({
                 /военная\s+подготовка/iu.test(event.subject) && (
                   <MilitaryPreview
                     date={event.date}
-                    collapseEntries={!horizontal && inlineEntries > 0}
+                    collapseEntries={inlineEntries > 0}
                   />
                 )}
             </div>

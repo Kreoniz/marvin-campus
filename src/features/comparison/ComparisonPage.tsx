@@ -21,7 +21,6 @@ import SourceDayCalendar, {
   type SourceDayCalendarHandle,
 } from '../schedule/ui/SourceDayCalendar.tsx';
 import ComparisonSummary from './ui/ComparisonSummary.tsx';
-import DayDetail from './ui/DayDetail.tsx';
 import Icon from '../../shared/ui/Icon.tsx';
 import DisplaySettings from './ui/DisplaySettings.tsx';
 import type { CalendarLayers } from '../schedule/ui/ComparisonHighlights.tsx';
@@ -505,19 +504,17 @@ export default function ComparisonPage({
                             </Button>
                           </div>
                         )}
-                        {(mobile || vucOnly || scheduleView !== 'week') && (
-                          <div className="calendar-result px-3 py-2">
-                            <ComparisonSummary
-                              schedules={source.schedules}
-                              hiddenKinds={hiddenKinds}
-                              day={day}
-                              mode={mode}
-                              loading={busy}
-                              placeholder={links.opening}
-                              compact
-                            />
-                          </div>
-                        )}
+                        <div className="calendar-result px-3 py-2">
+                          <ComparisonSummary
+                            schedules={source.schedules}
+                            hiddenKinds={hiddenKinds}
+                            day={day}
+                            mode={mode}
+                            loading={busy}
+                            placeholder={links.opening}
+                            showDate={scheduleView === 'week'}
+                          />
+                        </div>
                         <VucSources schedules={source.schedules} />
                         {(mobile || vucOnly) && (
                           <ComparisonStatus
@@ -573,25 +570,6 @@ export default function ComparisonPage({
                     )}
                   </GroupPicker>
                 </Card.Root>
-                {(groups.length > 0 || links.opening) &&
-                  !mobile &&
-                  !vucOnly &&
-                  scheduleView === 'week' && (
-                    <DayDetail
-                      schedules={source.schedules}
-                      hiddenKinds={hiddenKinds}
-                      colors={colors}
-                      subgroupCatalog={subgroupCatalog}
-                      day={day}
-                      mode={mode}
-                      layers={layers}
-                      loading={busy}
-                      placeholder={links.opening}
-                      spotlightIds={spotlightIds}
-                      spotlightLabel={spotlightLabel}
-                      onClearSpotlight={() => setSpotlightGroupIds([])}
-                    />
-                  )}
               </>
             )}
           </main>

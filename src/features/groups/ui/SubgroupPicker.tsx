@@ -85,7 +85,7 @@ export default function SubgroupPicker({
           type="button"
           className="subgroup-trigger relative flex h-11 min-h-11 min-w-16 flex-1 cursor-pointer items-center rounded-[inherit] border-0 bg-transparent px-2 text-inherit focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current"
           aria-label={`Подгруппа ${label}: ${currentLabel}`}
-          data-drag-id={groupKey}
+          data-schedule-trigger={groupKey}
           aria-describedby={describedBy}
           onKeyDown={onKeyDown}
           title={currentLabel}
