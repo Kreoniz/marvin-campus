@@ -62,7 +62,7 @@ export default function ComparisonSummary({
       aria-busy={pending}
     >
       {showDate && (
-        <p className="summary-date m-0 mb-2 text-xs text-u-muted">
+        <div className="summary-date m-0 mb-2 text-xs text-u-muted">
           {placeholder ? (
             <>
               <Skeleton className="inline-block h-4 w-36 align-middle" />
@@ -71,7 +71,7 @@ export default function ComparisonSummary({
           ) : (
             formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })
           )}
-        </p>
+        </div>
       )}
       {pending ? (
         <Skeleton className="h-8 w-full" />
