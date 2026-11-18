@@ -3,7 +3,25 @@
 Deployment remains manual by the owner's choice. GitHub CI validates the
 repository. The existing admin SSH connection runs the installed receiver.
 
-## Current release 0.3.2 — 2026-11-18
+## Current release 0.3.3 — 2026-11-18
+
+[Campus 0.3.3](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.3.3)
+was activated at `2026-11-18T13:16:53Z` from revision
+`e566a4ae964fb8d010b3d304551c2abbaacaf7f1`. The image config ID is
+`sha256:412a78c274aefe4f2fbf11964125eb40836b4822514ddc67992028f4b5dfb66e`.
+The published archive SHA-256 is
+`c07d6573376a551833e3ce013d282098bebae7bdb744b357fe6e995ae6069ee1`.
+
+[GitHub CI](https://github.com/Kreoniz/marvin-campus/actions/runs/44311690856)
+passed on the tagged revision. The isolated image and public HTTPS checks
+verified all 37 build files, three app-shell routes and API health. The receiver
+backed up SQLite and verified all
+108 legacy comparisons after activation. The running container is healthy.
+Before and after activation, the Compose configuration, non-image environment,
+VUC data and originals, receiver, container hardening, networks and volume matched.
+The previous 0.3.2 image is available for rollback.
+
+## Previous release 0.3.2 — 2026-11-18
 
 [Campus 0.3.2](https://github.com/Kreoniz/marvin-campus/releases/tag/v0.3.2)
 was activated at `2026-11-18T09:00:13Z` from revision
