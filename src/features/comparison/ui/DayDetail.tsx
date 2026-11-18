@@ -10,13 +10,10 @@ import type {
 } from '../../../lib/types.ts';
 import { selectionKind } from '../../../lib/schedule-ref.ts';
 import { formatDay, timeLabel } from '../../../lib/dates.ts';
-import {
-  compareDay,
-  comparisonIssue,
-  comparisonScope,
-} from '../../../lib/domain.ts';
+import { compareDay, comparisonScope } from '../../../lib/domain.ts';
 import { lessonBlocks } from '../../../lib/lesson-layout.ts';
 import type { GroupColors } from '../../../lib/colors.ts';
+import DayEmpty from '../../schedule/ui/DayEmpty.tsx';
 import LessonCard from '../../schedule/ui/LessonCard.tsx';
 import ComparisonSummary from './ComparisonSummary.tsx';
 import AutoHideScrollArea from '../../../shared/ui/AutoHideScrollArea.tsx';
@@ -200,33 +197,12 @@ export default function DayDetail({
                       />
                     ))}
                     {!placed.length && (
-                      <p className="absolute top-[45px] left-3 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
-                        {schedules.length > 0 &&
-                        schedules.every((group) =>
-                          hiddenKinds.includes(selectionKind(group.selection)),
-                        )
-                          ? 'Карточки скрыты в настройках отображения.'
-                          : schedules.some(
-                                (group) =>
-                                  comparisonIssue(group, day) === 'coverage',
-                              )
-                            ? 'Нет подтверждённых данных документа на этот день.'
-                            : schedules.some(
-                                  (group) =>
-                                    comparisonIssue(group, day) === 'subgroup',
-                                )
-                              ? 'Подгруппа не определена; сравнение ограничено.'
-                              : schedules.some(
-                                    (group) => group.error && !group.snapshot,
-                                  )
-                                ? 'Часть расписаний недоступна.'
-                                : schedules.some((group) => !group.snapshot)
-                                  ? 'Ждём данные расписания.'
-                                  : 'В этот день занятий нет.'}
-                        {saved &&
-                          schedules.every((group) => group.snapshot) && (
-                            <span>По сохранённым данным</span>
-                          )}
+                      <p className="absolute top-[45px] left-3 z-[2] m-0 rounded-sm bg-u-surface px-1 text-[13px] text-u-muted [&>span]:mt-[5px] [&>span]:block [&>span]:text-[11px]">
+                        <DayEmpty
+                          schedules={schedules}
+                          day={day}
+                          hiddenKinds={hiddenKinds}
+                        />
                       </p>
                     )}
                   </>
