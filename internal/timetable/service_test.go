@@ -18,12 +18,13 @@ func TestCacheMissDoesNotCallSourceAndExplicitLoadReusesSameCache(t *testing.T) 
 		t.Fatal(err)
 	}
 	defer c.Close()
-	now := time.Date(2026, 10, 28, 0, 0, 0, 0, time.UTC)
+	omsk := time.FixedZone("Omsk", 6*60*60)
+	now := time.Date(2026, 10, 28, 12, 0, 0, 123456789, omsk)
 	c.Now = func() time.Time { return now }
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls.Add(1); w.Write([]byte(`[]`)) }))
 	defer server.Close()
-	s := Service{Cache: c, Source: upstream.New(server.URL), Location: time.FixedZone("Omsk", 21600)}
+	s := Service{Cache: c, Source: upstream.New(server.URL), Location: omsk}
 	ctx := context.Background()
 	missing, err := s.Week(ctx, 1, "2026-10-26", "cache")
 	if err != nil || missing.State != "NOT_CACHED" || missing.Data != nil || calls.Load() != 0 {
@@ -34,8 +35,8 @@ func TestCacheMissDoesNotCallSourceAndExplicitLoadReusesSameCache(t *testing.T) 
 		t.Fatal("explicit load failed", err)
 	}
 	peek, err := s.Week(ctx, 1, "2026-10-26", "cache")
-	if err != nil || peek.SnapshotRef != loaded.SnapshotRef || calls.Load() != 1 {
-		t.Fatal("cache facade refetched")
+	if err != nil || peek.SnapshotRef != loaded.SnapshotRef || !peek.CheckedAt.Equal(loaded.CheckedAt) || !peek.ExpiresAt.Equal(loaded.ExpiresAt) || calls.Load() != 1 {
+		t.Fatalf("load/cache mismatch: checked %v / %v, ref %s / %s, calls %d, error %v", loaded.CheckedAt, peek.CheckedAt, loaded.SnapshotRef, peek.SnapshotRef, calls.Load(), err)
 	}
 	now = now.Add(2 * time.Hour)
 	stale, err := s.Week(ctx, 1, "2026-10-26", "cache")

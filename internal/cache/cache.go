@@ -113,6 +113,8 @@ func (c *Cache) Get(ctx context.Context, key string, ttl time.Duration, load fun
 			data, loadErr := load(fetchCtx)
 			checked := c.Now()
 			if loadErr == nil {
+				// Return the same UTC observation time that SQLite will read back.
+				checked = checked.UTC().Truncate(time.Second)
 				f.result = Snapshot{Data: data, CheckedAt: checked, ExpiresAt: checked.Add(ttl)}
 				f.err = c.write(key, f.result)
 			} else if found && !checked.After(stored.ExpiresAt.Add(24*time.Hour)) {
