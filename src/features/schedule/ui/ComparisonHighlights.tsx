@@ -48,7 +48,10 @@ export default function ComparisonHighlights({
           >
             {layer === 'free' &&
               (horizontal || (range.end - range.start) * scale >= 14) && (
-                <span className="block truncate px-1 text-[9px] leading-3 text-u-selection-ink">
+                <span className="block truncate px-1 text-[9px] leading-3 text-u-selection-ink compact:text-[11px] compact:font-medium">
+                  {!horizontal && (
+                    <span className="hidden compact:inline">Общее окно · </span>
+                  )}
                   {timeLabel(range.start)}–{timeLabel(range.end)}
                 </span>
               )}
