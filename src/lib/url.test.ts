@@ -52,6 +52,36 @@ test('readable links preserve order, public subgroup number, day and mode withou
   );
   assert.equal(shareID(url), undefined);
 });
+test('same-label groups round-trip by ID alongside readable groups', () => {
+  const selection = [
+    { ...groups[0], id: 7, subgroupNumber: 2 },
+    groups[1],
+    { ...groups[0], subgroup: 81 },
+  ];
+  const url = viewURL(
+    { ...parseView(new URL(base)), groups: selection },
+    new URL(base),
+  );
+  assert.equal(url.pathname, '/g7-s2+ivt-233+g694-sid81');
+  const reopened = parseView(url, '2026-11-18', selection);
+  const partlyKnown = {
+    ...reopened,
+    groups: [selection[0], ...reopened.groups.slice(1)],
+  };
+  assert.equal(viewURL(partlyKnown, url).pathname, url.pathname);
+  assert.deepEqual(
+    reopened.groups.map(({ id, subgroup, subgroupNumber }) => [
+      id,
+      subgroup,
+      subgroupNumber,
+    ]),
+    [
+      [7, undefined, 2],
+      [370, undefined, undefined],
+      [694, 81, undefined],
+    ],
+  );
+});
 test('legacy URLs and short payloads retain source IDs and migrate the removed mode', () => {
   const url = new URL(
     base +

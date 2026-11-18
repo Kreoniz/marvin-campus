@@ -242,25 +242,31 @@ function cleanSelection(value: unknown): Selection | undefined {
 export function viewURL(state: ViewState, base: URL): URL {
   const url = new URL(base);
   const typed = state.groups.some((group) => !isGroup(group));
-  url.pathname =
+  if (
     base.pathname === '/vuc' &&
     state.groups.every((group) => group.kind === 'vuc')
-      ? '/vuc'
-      : typed
-        ? '/compare'
-        : '/' +
-          state.groups
-            .filter(isGroup)
-            .map(
-              (group) =>
-                groupSlug(group) +
-                (group.subgroupNumber
-                  ? `-s${group.subgroupNumber}`
-                  : group.subgroup
-                    ? `-sid${group.subgroup}`
-                    : ''),
-            )
-            .join('+');
+  ) {
+    url.pathname = '/vuc';
+  } else if (typed) {
+    url.pathname = '/compare';
+  } else {
+    const groups = state.groups.filter(isGroup);
+    const slugs = groups.map(groupSlug);
+    // Keep explicit IDs on re-sharing, even if this browser knows only one name of a pair.
+    const numericIds = new Set(
+      readableGroups(base)?.map((request) => request.id),
+    );
+    const parts = groups.map((group, index) => {
+      const slug = slugs[index];
+      const collision = slugs.indexOf(slug) !== slugs.lastIndexOf(slug);
+      const code =
+        collision || numericIds.has(group.id) ? `g${group.id}` : slug;
+      if (group.subgroupNumber) return `${code}-s${group.subgroupNumber}`;
+      if (group.subgroup) return `${code}-sid${group.subgroup}`;
+      return code;
+    });
+    url.pathname = '/' + parts.join('+');
+  }
   url.search = '';
   url.hash = '';
   url.searchParams.set('d', state.day);
