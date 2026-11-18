@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Card } from 'unlikely-ui/card';
 import { Skeleton } from 'unlikely-ui/skeleton';
 import type { GroupSchedule, Mode, ScheduleKind } from '../../../lib/types.ts';
@@ -51,9 +52,14 @@ export default function ComparisonSummary({
     ? `Нет очных занятий: ${withoutOnsite.map((row) => label(row.selection)).join(', ')}.`
     : 'Время присутствия выбранных участников не пересекается.';
   const times = (ranges: typeof result.presence) =>
-    ranges
-      .map((range) => `${timeLabel(range.start)}–${timeLabel(range.end)}`)
-      .join(', ');
+    ranges.map(({ start, end }, index) => (
+      <Fragment key={`${start}:${end}`}>
+        {index > 0 && ', '}
+        <span className="whitespace-nowrap">
+          <time>{timeLabel(start)}</time>–<time>{timeLabel(end)}</time>
+        </span>
+      </Fragment>
+    ));
   return (
     <Card.Root
       className={`marvin-card text-u-ink ${compact ? 'compact-summary border-0 rounded-none bg-transparent p-0' : 'w-[300px] shrink-0 self-start rounded-(--u-panel-radius) border-u-line bg-u-surface p-3'}`}
@@ -93,7 +99,7 @@ export default function ComparisonSummary({
                   <span className="text-u-muted">
                     {layer === 'free' ? 'Общие окна' : 'В вузе'}:{' '}
                   </span>
-                  <strong className="font-semibold">
+                  <strong className="font-semibold tabular-nums">
                     {result[layer].length ? times(result[layer]) : 'нет'}
                   </strong>
                 </p>

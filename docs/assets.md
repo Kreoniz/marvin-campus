@@ -3,9 +3,12 @@
 The owner has not selected an open source license for application code. No
 blanket license is granted for the illustrations or source code by this document.
 
-- `public/fonts/InterVariable.woff2` is Inter, copyright the Inter Project
-  Authors, under SIL Open Font License 1.1. Its complete license is retained in
-  `public/fonts/Inter-LICENSE.txt` and shipped with the application assets.
+- `public/fonts/OnestVariable.woff2` is the variable WOFF2 from
+  [Onest 2.001](https://github.com/simpals/onest/releases/tag/2.001), under SIL Open
+  Font License 1.1. The font and its complete `public/fonts/Onest-LICENSE.txt`
+  ship in the offline shell.
+- `public/fonts/InterVariable.woff2` and `public/fonts/Inter-LICENSE.txt` remain
+  available to older application shells under SIL Open Font License 1.1.
 - Marvin-themed illustrations, logos, icons and social preview variants were
   generated with image generation tools from owner-supplied character references.
   This records their provenance; it does not establish rights to the reference

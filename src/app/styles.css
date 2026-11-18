@@ -4,8 +4,8 @@
 @import 'unlikely-ui/tailwind.css';
 
 @font-face {
-  font-family: Inter;
-  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-family: Onest;
+  src: url('/fonts/OnestVariable.woff2') format('woff2');
   font-weight: 100 900;
   font-display: swap;
 }
@@ -24,7 +24,7 @@
 }
 
 @theme {
-  --font-sans: Inter, system-ui, sans-serif;
+  --font-sans: Onest, system-ui, sans-serif;
   --animate-lesson-appear: lesson-appear 180ms ease-out both;
   @keyframes lesson-appear {
     from {

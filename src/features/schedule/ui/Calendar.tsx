@@ -279,7 +279,7 @@ export default function Calendar({
                 {hours.map((hour) => (
                   <span
                     key={hour}
-                    className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
+                    className="absolute right-1.5 -translate-y-1/2 text-[10px] leading-none tabular-nums first:translate-y-0.5 last:-translate-y-full"
                     style={{ top: (hour - start) * scale }}
                   >
                     <span className="compact:hidden">{timeLabel(hour)}</span>

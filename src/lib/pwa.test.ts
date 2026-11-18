@@ -666,7 +666,7 @@ test('oversized payloads, quota denial, missing entries and eviction do not prom
     false,
   );
 });
-test('compatibility is bounded to two shells, routes old hashed JS/CSS offline and never serves old HTML', async () => {
+test('compatibility is bounded to two shells, routes old hashed JS/CSS and fonts offline and never serves old HTML', async () => {
   const stores = new Map<string, Map<string, Response>>();
   const oldest = worker('oldest', undefined, stores);
   await (
@@ -675,6 +675,7 @@ test('compatibility is bounded to two shells, routes old hashed JS/CSS offline a
   const old = worker('old', undefined, stores);
   const cache = await old.context.caches.open('campus-shell-old');
   await cache.put('/assets/lazy-old.css', new Response('old CSS'));
+  await cache.put('/fonts/InterVariable.woff2', new Response('old font'));
   await cache.put('/', new Response('old HTML'));
   await old.context.caches.open('campus-shell-interrupted');
   const next = worker('next', undefined, stores);
@@ -695,6 +696,10 @@ test('compatibility is bounded to two shells, routes old hashed JS/CSS offline a
   assert.equal(
     await (await intercepted(next, '/assets/lazy-old.css'))!.text(),
     'old CSS',
+  );
+  assert.equal(
+    await (await intercepted(next, '/fonts/InterVariable.woff2'))!.text(),
+    'old font',
   );
   await assert.rejects(intercepted(next, '/assets/lazy-oldest.js')!, /offline/);
   let html!: Promise<Response>;

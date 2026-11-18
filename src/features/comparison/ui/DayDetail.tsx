@@ -148,7 +148,7 @@ export default function DayDetail({
                 {hours.map((hour) => (
                   <span
                     key={hour}
-                    className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px]"
+                    className="absolute top-px z-[1] -translate-x-1/2 bg-u-surface text-[11px] tabular-nums"
                     style={{
                       left: `${((hour - start) * 100) / (end - start)}%`,
                     }}

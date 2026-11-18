@@ -154,12 +154,17 @@ async function networkData(request, key) {
     );
   }
 }
+function canUsePreviousShell(path) {
+  return (
+    /^\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(path) ||
+    /^\/fonts\/[A-Za-z0-9-]+\.woff2$/.test(path)
+  );
+}
 async function shellAsset(request, path) {
   const current = await (await caches.open(SHELL)).match(path);
   if (current) return current;
-  // Only content-addressed JS/CSS from the immediately preceding build can be
-  // routed here. Old HTML/public assets never override this build's shell.
-  if (/^\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(path)) {
+  // The preceding build can supply its bundles and retired fonts.
+  if (canUsePreviousShell(path)) {
     const previous = (await caches.keys())
       .filter((name) => name.startsWith(SHELL_PREFIX) && name !== SHELL)
       .reverse();
@@ -197,7 +202,7 @@ self.addEventListener('fetch', (event) => {
     );
   } else if (
     ASSETS.includes(url.pathname) ||
-    /^\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(url.pathname)
+    canUsePreviousShell(url.pathname)
   ) {
     event.respondWith(shellAsset(request, url.pathname));
   }

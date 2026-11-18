@@ -74,6 +74,7 @@ export default function ComparisonStatus({
   const liveSaved = live.some(
     (g) => g.snapshot && (g.snapshot.stale || g.error),
   );
+  const limited = unresolved || missing || liveSaved;
   const liveMessage = fetching
     ? liveSaved
       ? 'Проверяем… · сохранённые данные'
@@ -98,19 +99,20 @@ export default function ComparisonStatus({
     <>
       <div className="data-status flex min-h-11 min-w-0 items-center justify-between gap-2 px-3.5 compact:pl-[9px]">
         <span
-          className="status-message flex min-w-0 items-center gap-[5px] text-[11px] text-u-muted"
+          className={`status-message flex min-w-0 items-start gap-1.5 py-1 text-[0.8125rem] leading-5 tabular-nums [&>svg]:mt-1 [&>svg]:shrink-0 ${limited ? 'font-semibold text-u-ink' : 'text-u-muted'}`}
           role="status"
           aria-atomic="true"
         >
           {saved && <Icon name="clock" size={13} />}
           <span
-            className={
-              documents.length ? 'py-1 leading-4 wrap-anywhere' : 'truncate'
-            }
+            className="min-w-0 wrap-break-word"
             title={`${message}. Омск, UTC+6.`}
           >
             {message}
-            <span className="timezone compact:hidden"> · Омск, UTC+6</span>
+            <span className="timezone font-normal whitespace-nowrap text-u-muted compact:hidden">
+              {' '}
+              · Омск, UTC+6
+            </span>
           </span>
         </span>
         <div className="status-actions flex shrink-0 gap-0.5 compact:[&_.icon-button]:min-h-11 compact:[&_.icon-button]:min-w-11">

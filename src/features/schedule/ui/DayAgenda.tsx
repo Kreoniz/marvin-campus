@@ -90,7 +90,7 @@ export default function DayAgenda({
               className="agenda-interval"
             >
               <h3 className="mt-0 mb-2 flex items-baseline gap-2 text-xs font-bold tabular-nums">
-                <span>
+                <span className="whitespace-nowrap">
                   <time>{timeLabel(interval.start)}</time>–
                   <time>{timeLabel(interval.end)}</time>
                 </span>

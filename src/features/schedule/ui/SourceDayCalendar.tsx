@@ -285,7 +285,7 @@ export default function SourceDayCalendar({
             {hours.map((hour) => (
               <span
                 key={hour}
-                className="absolute right-1 -translate-y-1/2 text-[10px] leading-none first:translate-y-0.5 last:-translate-y-full"
+                className="absolute right-1 -translate-y-1/2 text-[10px] leading-none tabular-nums first:translate-y-0.5 last:-translate-y-full"
                 style={{ top: (hour - start) * scale }}
               >
                 {timeLabel(hour)}
