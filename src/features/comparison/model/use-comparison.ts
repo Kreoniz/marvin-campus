@@ -426,21 +426,23 @@ export function useComparison(notify: Notify, vucOnly = false) {
           (group) => scheduleKey(group) === key,
         );
         if (!selected || !isGroup(selected)) return;
-        const number =
-          publicSubgroup(
-            catalogRef.current[selected.id]?.find(
-              (subgroup) => subgroup.id === value,
-            )?.label ?? '',
-          ) ??
-          (value !== undefined && selected.subgroup === value
-            ? selected.subgroupNumber
-            : undefined);
+        const catalog = catalogRef.current[selected.id] ?? [];
+        if (
+          value !== undefined &&
+          value === selected.subgroup &&
+          !publicSubgroup(
+            catalog.find((entry) => entry.id === value)?.label ?? '',
+          )
+        )
+          return;
+        const next = resolveSubgroupSelection(
+          { ...selected, subgroup: value, subgroupNumber: undefined },
+          catalog,
+        );
         if (
           !change({
             groups: stateRef.current.groups.map((group) =>
-              scheduleKey(group) === key && isGroup(group)
-                ? { ...group, subgroup: value, subgroupNumber: number }
-                : group,
+              scheduleKey(group) === key ? next : group,
             ),
           })
         )

@@ -158,6 +158,23 @@ test('subgroup re-selection preserves a saved public number without a catalogue;
   assert.deepEqual(env.saved(), [a]);
 });
 
+test('choosing one of two subgroups with the same number preserves the selected ID', (t) => {
+  const env = environment(t);
+  env.values.set(
+    'campus-subgroups',
+    JSON.stringify({
+      1: [
+        { id: 81, label: 'Поток А/1' },
+        { id: 82, label: 'Поток Б/1' },
+      ],
+    }),
+  );
+  const { view } = env.render();
+  view.subgroup(scheduleKey(a), 82);
+  assert.deepEqual(env.saved(), [{ ...a, subgroup: 82 }]);
+  assert.equal(location.pathname, '/ab-123-sid82');
+});
+
 test('typed mixed and legacy payload restoration learns group names without adopting selections', async (t) => {
   const mixed: Selection[] = [
     a,
